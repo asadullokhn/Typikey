@@ -15,7 +15,7 @@ struct PrivateModeCard: View {
     @State private var size = Preferences.keyboardSize
 
     private static let sizeNames = ["Small", "Medium", "Large"]
-    private static let sizeRows = ["four rows of words", "five rows of words", "six rows of words"]
+    private static let sizeKeys = ["small keys", "medium keys", "the biggest keys"]
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -72,7 +72,7 @@ struct PrivateModeCard: View {
                 .onChange(of: size) { _, newValue in
                     Preferences.keyboardSize = newValue
                 }
-                Text("Large gives \(Self.sizeRows[size]) — enough for the whole core vocabulary, including the small words like for, with and my that turn labels into sentences. Smaller sizes leave more of the app visible and drop the last rows. Takes effect the next time the keyboard opens.")
+                Text("The board is always four rows, exactly as designed — the size changes how big each key is, not how many there are. Large gives \(Self.sizeKeys[size]), which is what makes them easy to hit; smaller leaves more of the app you are typing in visible. Takes effect the next time the keyboard opens.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }

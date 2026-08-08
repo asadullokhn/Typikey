@@ -78,23 +78,40 @@ enum WordFiling {
 /// board is deliberately left alone (invariant 8: no unverified strings).
 enum Grammar {
 
-    /// When the sentence happens. The words before the cursor can say who
-    /// is doing something but never when: "you" cannot distinguish "you
-    /// come" from "you came". So tense is the user's to choose, which is
-    /// what every AAC product with grammar support offers — TD Snap as a
-    /// grammar bar, Proloquo2Go as conjugation buttons.
-    enum Tense {
-        case present, past, future
+    /// When the sentence happens.
+    ///
+    /// Read from the sentence rather than set on a control key: the board
+    /// carries only the keys in the team's design, so tense has to come
+    /// from words the user was going to tap anyway. English marks tense on
+    /// the verb, but a time word is what disambiguates it — "yesterday I
+    /// went", "tomorrow I will go" — so a temporal adverb anywhere in the
+    /// current sentence puts every verb key into that tense.
+    enum Tense { case present, past, future }
 
-        /// One key cycles all three, because a key costs a slot and a
-        /// slot costs words.
-        var next: Tense {
-            switch self {
-            case .present: return .past
-            case .past: return .future
-            case .future: return .present
-            }
+    /// Time words that place the sentence. Auxiliaries are deliberately
+    /// absent: "was", "were", "have" and "will" are already handled as
+    /// auxiliaries below, and listing them twice would fight that.
+    private static let pastMarkers: Set<String> =
+        ["yesterday", "before", "ago", "earlier", "then", "used"]
+    private static let futureMarkers: Set<String> =
+        ["tomorrow", "later", "soon", "next", "tonight"]
+
+    /// The tense the current sentence is in. Only the current one: the
+    /// context window still holds everything typed before it, and
+    /// "yesterday" in the last sentence must not reach into this one.
+    static func tense(in context: String) -> Tense {
+        // The nearest marker wins — a sentence is allowed to change its
+        // mind ("yesterday I was tired, tomorrow I will be fine").
+        for word in words(in: currentSentence(context)).reversed() {
+            if pastMarkers.contains(word) { return .past }
+            if futureMarkers.contains(word) { return .future }
         }
+        return .present
+    }
+
+    private static func currentSentence(_ context: String) -> String {
+        guard let end = context.lastIndex(where: { ".!?\n".contains($0) }) else { return context }
+        return String(context[context.index(after: end)...])
     }
 
     /// The form the next verb should take, from the words already typed
@@ -193,12 +210,18 @@ enum Grammar {
             .filter { !$0.isEmpty }
     }
 
-    /// Context first, then tense. An auxiliary already in the text is an
+    /// Auxiliary first, then tense. An auxiliary already in the text is an
     /// unambiguous instruction and always wins — after "I am" the verb is
-    /// -ing whatever the tense key says. Everything else is a subject or
-    /// nothing at all, and there the tense decides.
-    static func verbForm(after context: String, tense: Tense = .present) -> VerbForm {
-        let words = words(in: context)
+    /// -ing, and after "will" it stays base, whatever time words are
+    /// around. Everything else is a subject or nothing at all, and there
+    /// the sentence's tense decides.
+    ///
+    /// `tense` is normally left to the sentence; passing it explicitly is
+    /// what a tense control key would do, if the board ever gets one.
+    static func verbForm(after context: String, tense explicit: Tense? = nil) -> VerbForm {
+        let sentence = currentSentence(context)
+        let tense = explicit ?? self.tense(in: sentence)
+        let words = words(in: sentence)
         guard let last = words.last else { return form(for: tense, thirdPerson: false) }
 
         // "I am not going", "he is never eating" — an adverb between the

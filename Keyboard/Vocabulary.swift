@@ -110,6 +110,15 @@ let vocabulary: [Category] = [
         VocabWord("my", ms: "saya", .pronoun), VocabWord("me", ms: "saya", .pronoun),
         VocabWord("we", ms: "kami", .pronoun), VocabWord("they", ms: "mereka", .pronoun),
         VocabWord("again", ms: "lagi", .descriptor),
+        // Time words, and they do double duty: they are ordinary
+        // vocabulary AND they are how the board knows what tense it is in.
+        // The design has no tense control and gets no extra key, so
+        // "yesterday" is what turns `go` into `went` and `be` into `was` —
+        // which is how English works anyway, since the verb ending is
+        // ambiguous and the adverb is what actually places the sentence.
+        VocabWord("will", ms: "akan", .verb),
+        VocabWord("yesterday", ms: "semalam", .descriptor),
+        VocabWord("tomorrow", ms: "esok", .descriptor),
     ]),
     Category(en: "People", ms: "Orang", words: [
         VocabWord("I", ms: "saya", .pronoun), VocabWord("you", ms: "awak", .pronoun),

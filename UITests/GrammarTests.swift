@@ -49,18 +49,18 @@ final class GrammarTests: XCTestCase {
                        "the copula key moved — grid positions must never change")
     }
 
-    // Tense is the user's choice because nothing in the text can supply it:
-    // "you" says who, never when. One key cycles now / past / future and
-    // every verb key follows it, in place.
-    func testTenseKeyPutsTheWholeBoardInThePast() {
+    // Tense comes from the sentence's own time words, because the board
+    // carries the design's keys and no others. "Yesterday" is an ordinary
+    // word cell that also happens to place the whole sentence.
+    func testATimeWordPutsTheWholeBoardInThePast() {
         let app = launchToKeyboard()
         guard let goFrame = gridKey(app, "go")?.frame else {
             return XCTFail("the 'go' key is not on the home board")
         }
-        tenseKey(in: app).tap()
+        gridKey(app, "yesterday")?.tap()
 
         XCTAssertTrue(app.staticTexts["went"].waitForExistence(timeout: 5),
-                      "the tense key should put the verb keys in the simple past")
+                      "'yesterday' should put the verb keys in the simple past")
         XCTAssertEqual(gridKey(app, "went")?.frame.minX ?? -1, goFrame.minX, accuracy: 2,
                        "a relabelled key must not move")
 
@@ -70,24 +70,15 @@ final class GrammarTests: XCTestCase {
                       "past tense after 'You' should give 'were', not 'was'")
     }
 
-    // A tense belongs to one sentence. Left set, it silently corrupts the
-    // next one.
-    func testTenseResetsAtTheEndOfASentence() {
+    // A tense belongs to one sentence, and the context window still holds
+    // the sentence before it.
+    func testTenseDoesNotLeakIntoTheNextSentence() {
         let app = launchToKeyboard()
-        tenseKey(in: app).tap()
+        gridKey(app, "yesterday")?.tap()
         XCTAssertTrue(app.staticTexts["went"].waitForExistence(timeout: 5), "setup: not in past tense")
         gridKey(app, ".")?.tap()
         XCTAssertTrue(app.staticTexts["go"].waitForExistence(timeout: 5),
                       "a full stop should return the board to the present")
-    }
-
-    /// The tense key reads "Tense" over whichever tense it is set to, so it
-    /// is matched on the stable half of its label.
-    private func tenseKey(in app: XCUIApplication) -> XCUIElement {
-        let key = app.staticTexts.matching(
-            NSPredicate(format: "label BEGINSWITH %@", "Tense")).firstMatch
-        XCTAssertTrue(key.waitForExistence(timeout: 5), "the tense key is not on the board")
-        return key
     }
 
     private func launchToKeyboard() -> XCUIApplication {
