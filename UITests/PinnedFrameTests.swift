@@ -1,18 +1,29 @@
 import XCTest
 
-// The redesign's new invariant: control keys occupy identical frames on
-// every level. Keys are plain UILabels, so they surface as staticTexts.
+// Invariant 9, in the form the team's design left it: ONE pinned column,
+// on the left, occupying identical frames on every level. Enter, ⌄ and →
+// moved into the content grid, so they are no longer part of this promise
+// — what is asserted about them instead is that they exist on the word
+// boards, which is `testGridControlsPresentOnWordBoards`.
+// Keys are plain UILabels, so they surface as staticTexts.
 // PRECONDITION (same as KeyboardHeightTests): Typikey enabled on the
 // simulator and Connect Hardware Keyboard OFF.
 final class PinnedFrameTests: XCTestCase {
 
+    // The language slot is deliberately absent: it holds the system globe
+    // (a real UIButton, not a staticText) whenever iOS asks for a keyboard
+    // switcher, which is every configuration with a second keyboard
+    // installed — i.e. every real device.
+    private let pinnedLabels = ["Home", "Clear all", "⌫ word"]
+
     func testPinnedKeysIdenticalAcrossLevels() {
         let app = launchToTypikey()
 
-        let pinned = ["Home", "Clear all", "⌫ word", "←", "⌫", "→", "⌄"]
-        let baseline = frames(of: pinned, in: app)
+        let baseline = frames(of: pinnedLabels, in: app)
         for (label, frame) in baseline {
             XCTAssertFalse(frame.isEmpty, "\(label) missing on home level")
+            XCTAssertLessThan(frame.midX, app.frame.width / 2,
+                              "\(label) belongs to the LEFT pinned column")
         }
 
         app.staticTexts["Categories"].tap()
@@ -27,6 +38,33 @@ final class PinnedFrameTests: XCTestCase {
 
         app.staticTexts["123"].tap()
         assertFrames(baseline, in: app, level: "numbers")
+    }
+
+    // Enter, hide-keyboard and cursor-right now live inside the grid. They
+    // are placed before any word is packed, so this also proves the packer
+    // never lets a word overwrite one of them.
+    func testGridControlsPresentOnWordBoards() {
+        let app = launchToTypikey()
+        for level in ["home", "categories"] {
+            XCTAssertTrue(app.staticTexts["⌄"].exists, "hide-keyboard missing on \(level)")
+            XCTAssertTrue(app.staticTexts["→"].exists, "cursor-right missing on \(level)")
+            XCTAssertTrue(app.staticTexts["return"].exists || app.staticTexts["Done"].exists
+                            || app.staticTexts["Go"].exists || app.staticTexts["Send"].exists
+                            || app.staticTexts["Search"].exists,
+                          "Enter missing on \(level)")
+            if level == "home" { app.staticTexts["Categories"].tap() }
+        }
+    }
+
+    // Character-level repair belongs to the levels where characters are
+    // typed: the word boards have no ⌫ or ←, the letters level has both.
+    func testCharacterToolsLiveOnTheTypingLevels() {
+        let app = launchToTypikey()
+        XCTAssertFalse(app.staticTexts["←"].exists, "no cursor-left on a word board")
+        app.staticTexts["abc"].tap()
+        XCTAssertTrue(app.staticTexts["q"].waitForExistence(timeout: 3), "letters level did not open")
+        XCTAssertTrue(app.staticTexts["⌫"].exists, "single-character delete missing on letters")
+        XCTAssertTrue(app.staticTexts["←"].exists, "cursor-left missing on letters")
     }
 
     func testHomeWordTapInsertsWord() {

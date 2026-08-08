@@ -134,11 +134,10 @@ final class KeyboardViewController: UIInputViewController {
     private var lastIntentSignature: String?
 
     // Compact (floating / Split View / Slide Over): word boards drop to 5
-    // wide-enough columns showing the first 20 content cells; the typing
-    // levels keep all 10 columns — a letter that isn't there at all is
-    // worse than a narrower key. Pinned columns never move: layoutKeys()
-    // sizes col 0 and the right pinned column from bounds.width alone
-    // (bounds.width / 12), never from contentColumns, so their frames are
+    // wide-enough columns; the typing levels keep all 10 columns — a letter
+    // that isn't there at all is worse than a narrower key. The pinned
+    // column never moves: layoutKeys() sizes col 0 from bounds.width alone
+    // (bounds.width / 11), never from contentColumns, so its frame is
     // identical whether the content grid is 5 or 10 columns wide.
     private var contentColumns: Int {
         switch level {
@@ -481,20 +480,23 @@ final class KeyboardViewController: UIInputViewController {
         return result
     }
 
-    // MARK: Frame (spec: pinned columns identical on every level)
+    // MARK: Frame (spec: the pinned column is identical on every level)
 
-    private var leftColumn: [(KeyAction, String)] {
+    /// The one pinned column, from the team's design: where you go, what
+    /// you undo, and what language you are in. The design replaced the old
+    /// right-hand control column with keys placed inside the grid — see
+    /// `gridControls` — so this is now the only column whose geometry never
+    /// depends on the content grid.
+    ///
+    /// Row 3 is the language slot. iOS will not accept a synthesised tap on
+    /// the keyboard switcher, so when the system asks for one, a real globe
+    /// button takes that slot and Typikey's own EN/MS toggle keeps its cell
+    /// on the home board; when it doesn't, the EN/MS key takes the slot.
+    private var pinnedColumn: [(KeyAction, String)?] {
         [(.home, "Home"),
          (.clearAll, clearArmedAt == nil ? "Clear all" : "tap again"),
          (.deleteWord, lang == .ms ? "⌫ kata" : "⌫ word"),
-         (.cursorLeft, "←")]
-    }
-
-    private var rightColumn: [(KeyAction, String)] {
-        [(.delete, "⌫"),
-         (.ret, goLabel()),
-         (.cursorRight, "→"),
-         (.dismiss, "⌄")]
+         needsInputModeSwitchKey ? nil : (.language, lang == .en ? "EN" : "MS")]
     }
 
     /// allCategories() index of the Chat board (offset 1 for Recents).
@@ -648,10 +650,19 @@ final class KeyboardViewController: UIInputViewController {
         }
     }
 
-    /// Core + Chat fill the home board: 36 word cells + 4 nav cells = 4x10.
+    /// Core, plus the Chat phrases that earn a place on the home board.
+    ///
+    /// The design spends four grid slots on Enter, ⌄ and →, so home holds
+    /// 32 words rather than the old 36. Core is all 24 of them; the eight
+    /// Chat phrases below are the ones a conversation opens and closes
+    /// with. The rest of Chat is one tap away under Categories.
     private var homeWords: [VocabWord] {
-        (vocabulary.first { $0.en == "Core" }?.words ?? []) +
-        (vocabulary.first { $0.en == "Chat" }?.words ?? [])
+        let onHome: Set<String> = [
+            "hello", "bye", "please", "thank you",
+            "sorry", "how are you", "I'm good", "I use this to talk",
+        ]
+        return (vocabulary.first { $0.en == "Core" }?.words ?? [])
+            + (vocabulary.first { $0.en == "Chat" }?.words ?? []).filter { onHome.contains($0.en) }
     }
 
     private func wordCell(_ word: VocabWord) -> ContentCell {
@@ -671,120 +682,150 @@ final class KeyboardViewController: UIInputViewController {
     }
 
     private func contentRows(for level: Level) -> [[ContentCell?]] {
-        let cols = contentColumns
         switch level {
         case .home:
-            var cells: [ContentCell?] = [
-                ContentCell(.toCategories, "Categories"),
-                ContentCell(.toLetters, "abc"),
-                ContentCell(.language, lang == .en ? "EN" : "MS"),
-                ContentCell(.size, "⤢"),
-            ]
-            cells += homeWords.map { Optional(wordCell($0)) }
-            return chunk(cells, into: cols, maxRows: wordBoardMaxRows)
-        case .categories:
-            if cols >= 10 {
-                // Big targets suit the AAC use case: five tiles across,
-                // each a 2x2 block. The number of bands follows the number
-                // of categories, so adding one (Web, say) grows the board
-                // downward instead of pushing Mine off the end — which is
-                // what a fixed 10-slot tiling used to do.
-                let categories = allCategories()
-                let bands = max(2, Int(ceil(Double(categories.count) / 5.0)))
-                var rows: [[ContentCell?]] = Array(
-                    repeating: Array(repeating: nil, count: cols), count: bands * 2)
-                for (i, category) in categories.enumerated() {
-                    rows[(i / 5) * 2][(i % 5) * 2] = ContentCell(
-                        .toWords(i), category.name, colSpan: 2, rowSpan: 2)
-                }
-                return rows
-            } else if wordBoardMaxRows == 8 {
-                // Phone: five tiles across in full-height bands, same rule.
-                let categories = allCategories()
-                let bands = max(2, Int(ceil(Double(categories.count) / 5.0)))
-                var rows: [[ContentCell?]] = Array(
-                    repeating: Array(repeating: nil, count: cols), count: bands * 4)
-                for (i, category) in categories.enumerated() {
-                    rows[(i / 5) * 4][i % 5] = ContentCell(.toWords(i), category.name, rowSpan: 4)
-                }
-                return rows
-            } else {
-                // iPad compact (floating / Split View): plain single cells.
-                let categories = allCategories()
-                let cells: [ContentCell?] = categories.enumerated().map { (i, category) in
-                    ContentCell(.toWords(i), category.name)
-                }
-                return chunk(cells, into: cols)
+            var cells = [ContentCell(.toCategories, "Categories"),
+                         ContentCell(.toLetters, "abc")]
+            // EN/MS only needs a board cell when the globe has taken the
+            // pinned language slot; otherwise it IS the pinned slot, and a
+            // second copy here would be two keys for one job.
+            if needsInputModeSwitchKey {
+                cells.append(ContentCell(.language, lang == .en ? "EN" : "MS"))
             }
+            cells.append(ContentCell(.size, "⤢"))
+            cells += homeWords.map(wordCell)
+            return board(cells)
+        case .categories:
+            // Wide, short tiles rather than the old 2x2 blocks: now that
+            // four grid slots belong to Enter, ⌄ and →, a 2x2 tiling no
+            // longer fits eleven categories into four rows — and a category
+            // that needs a taller keyboard to reach is one he won't find.
+            let span = contentColumns >= 10 ? 2 : 1
+            return board(allCategories().enumerated().map {
+                ContentCell(.toWords($0.offset), $0.element.name, colSpan: span)
+            })
         case .words(let index):
             let categories = allCategories()
             let words = index < categories.count ? categories[index].words : []
-            if words.isEmpty {
-                // Mine's empty state isn't Recents' "used often" story —
-                // same English hint in both languages (invariant 8: no new
-                // Malay strings). Mine is always the last category
-                // allCategories() appends, so that's the robust way to
-                // detect it — never a name string match.
-                let isMine = index == categories.count - 1
-                let hint = isMine
-                    ? "Add words in the Typikey app"
-                    : (lang == .ms
-                        ? "Perkataan yang kerap digunakan akan muncul di sini"
-                        : "Words you use often will appear here")
-                // Recents' hint jumps to Core (toWords(1)) since its text
-                // points there; Mine's hint has nowhere in particular to
-                // jump to, so it just backs out to the category picker.
-                let hintAction: KeyAction = isMine ? .toCategories : .toWords(1)
-                var rows: [[ContentCell?]] = Array(repeating: Array(repeating: nil, count: cols), count: 4)
-                rows[0][0] = ContentCell(hintAction, hint, colSpan: cols)
-                return rows
+            guard !words.isEmpty else {
+                return board([emptyHint(forCategoryAt: index, of: categories.count)])
             }
-            let cells: [ContentCell?] = words.map { Optional(wordCell($0)) }
-            return chunk(cells, into: cols, maxRows: wordBoardMaxRows)
+            return board(words.map(wordCell))
         case .letters:
             var rows: [[ContentCell?]] = [
                 "qwertyuiop".map { Optional(ContentCell(.char(String($0)), String($0))) },
                 "asdfghjkl".map { Optional(ContentCell(.char(String($0)), String($0))) } + [Optional(ContentCell(.shift, "⇧"))],
                 "zxcvbnm".map { Optional(ContentCell(.char(String($0)), String($0))) }
                     + [Optional(ContentCell(.char(","), ",")), Optional(ContentCell(.char("."), ".")), Optional(ContentCell(.char("?"), "?"))],
-                Array(repeating: nil, count: cols),
+                typingBottomRow(switchingTo: ContentCell(.toNumbers, "123", colSpan: 2)),
             ]
-            rows[3][0] = ContentCell(.space, "space", colSpan: 8)
-            rows[3][8] = ContentCell(.toNumbers, "123", colSpan: 2)
+            rows[2] += Array(repeating: nil, count: 10 - rows[2].count)
             return rows
         case .numbers:
             var rows: [[ContentCell?]] = [
                 "1234567890".map { Optional(ContentCell(.char(String($0)), String($0))) },
                 ["-", "/", ":", ";", "(", ")", "$", "&", "@", "\""].map { Optional(ContentCell(.char($0), $0)) },
                 [".", ",", "?", "!", "'"].map { Optional(ContentCell(.char($0), $0)) },
-                Array(repeating: nil, count: cols),
+                typingBottomRow(switchingTo: ContentCell(.toLetters, "abc", colSpan: 2)),
             ]
-            rows[2] += Array(repeating: nil, count: cols - rows[2].count)
-            rows[3][0] = ContentCell(.space, "space", colSpan: 8)
-            rows[3][8] = ContentCell(.toLetters, "abc", colSpan: 2)
+            rows[2] += Array(repeating: nil, count: 10 - rows[2].count)
             return rows
         }
     }
 
-    /// Pack cells row-major into at least 4 and at most `maxRows` rows of
-    /// `cols`, padding with nil. Word boards pass 8 on phones so ALL cells
-    /// stay reachable in the 5-column grid — a phone is not an occasional
-    /// squeeze like Split View, it's the whole device.
-    private func chunk(_ cells: [ContentCell?], into cols: Int, maxRows: Int = 4) -> [[ContentCell?]] {
-        var rows: [[ContentCell?]] = []
-        for start in stride(from: 0, to: cells.count, by: cols) {
-            rows.append(Array(cells[start..<min(start + cols, cells.count)]))
+    /// Mine's empty state isn't Recents' "used often" story — same English
+    /// hint in both languages (invariant 8: no new Malay strings). Mine is
+    /// always the last category `allCategories()` appends, so that's the
+    /// robust way to detect it — never a name string match. Recents' hint
+    /// jumps to Core (toWords(1)) since its text points there; Mine's hint
+    /// has nowhere in particular to go, so it backs out to the picker.
+    private func emptyHint(forCategoryAt index: Int, of count: Int) -> ContentCell {
+        let isMine = index == count - 1
+        let hint = isMine
+            ? "Add words in the Typikey app"
+            : (lang == .ms
+                ? "Perkataan yang kerap digunakan akan muncul di sini"
+                : "Words you use often will appear here")
+        return ContentCell(isMine ? .toCategories : .toWords(1), hint, colSpan: contentColumns)
+    }
+
+    /// The controls the design places inside the content grid: Enter at
+    /// double width on the second row, and the two keys in the bottom-right
+    /// corner. `board` lays them down before any word, so a word can never
+    /// be silently overwritten by one — which is how cells used to vanish.
+    private func gridControls(rows rowCount: Int) -> [(cell: ContentCell, row: Int, col: Int)] {
+        let cols = contentColumns
+        return [
+            (ContentCell(.ret, goLabel(), colSpan: 2), 1, cols - 2),
+            (ContentCell(.dismiss, "⌄"), rowCount - 1, cols - 2),
+            (ContentCell(.cursorRight, "→"), rowCount - 1, cols - 1),
+        ]
+    }
+
+    /// Packs cells row-major into a word board, around the fixed controls.
+    /// A cell that doesn't fit the free run where it lands slides right and
+    /// then down, so a wide cell never straddles a control.
+    private func board(_ cells: [ContentCell]) -> [[ContentCell?]] {
+        let cols = contentColumns
+        let rowCount = wordBoardRows
+        var rows: [[ContentCell?]] = Array(
+            repeating: Array(repeating: nil, count: cols), count: rowCount)
+        var taken = Set<Int>()
+
+        func place(_ cell: ContentCell, row: Int, col: Int) {
+            rows[row][col] = cell
+            for r in row..<min(row + cell.rowSpan, rowCount) {
+                for c in col..<min(col + cell.colSpan, cols) { taken.insert(r * cols + c) }
+            }
         }
-        while rows.count < 4 { rows.append([]) }
-        rows = Array(rows.prefix(maxRows))
-        for i in rows.indices where rows[i].count < cols {
-            rows[i] += Array(repeating: nil, count: cols - rows[i].count)
+        for control in gridControls(rows: rowCount) {
+            place(control.cell, row: control.row, col: control.col)
+        }
+
+        var next = 0
+        for row in 0..<rowCount {
+            var col = 0
+            while col < cols, next < cells.count {
+                let span = min(cells[next].colSpan, cols)
+                let free = col + span <= cols
+                    && !(col..<(col + span)).contains { taken.contains(row * cols + $0) }
+                if free {
+                    place(cells[next], row: row, col: col)
+                    next += 1
+                    col += span
+                } else {
+                    col += 1
+                }
+            }
         }
         return rows
     }
 
-    /// 8 content rows for word boards on a compact phone, 4 everywhere else.
-    private var wordBoardMaxRows: Int {
+    /// The typing levels keep their own bottom row. Enter cannot sit on row
+    /// 1 there without displacing a letter, and bottom-right is where every
+    /// keyboard puts it anyway.
+    ///
+    /// The two character-level tools the design drops from the word boards
+    /// live here, and only here: single-character delete and ←. A word board
+    /// produces whole words, so whole-word delete is the right unit there;
+    /// the moment you are spelling something out, one wrong letter is the
+    /// likeliest mistake and the cursor has to be able to go back to it.
+    private func typingBottomRow(switchingTo other: ContentCell) -> [ContentCell?] {
+        var row: [ContentCell?] = Array(repeating: nil, count: 10)
+        row[0] = ContentCell(.space, "space", colSpan: 2)
+        row[2] = other
+        row[4] = ContentCell(.delete, "⌫")
+        row[5] = ContentCell(.ret, goLabel(), colSpan: 2)
+        row[7] = ContentCell(.cursorLeft, "←")
+        row[8] = ContentCell(.dismiss, "⌄")
+        row[9] = ContentCell(.cursorRight, "→")
+        return row
+    }
+
+    /// 8 content rows for word boards on a compact phone, 4 everywhere else
+    /// — a phone is not an occasional squeeze like Split View, it's the
+    /// whole device, so every cell has to stay reachable in 5 columns.
+    private var wordBoardRows: Int {
         UIDevice.current.userInterfaceIdiom == .phone && isCompact ? 8 : 4
     }
 
@@ -832,12 +873,11 @@ final class KeyboardViewController: UIInputViewController {
         let content = contentRows(for: level)
         contentRowCount = content.count
 
-        // Pinned columns are ALWAYS 4 rows (invariant 9) even when the
+        // The pinned column is ALWAYS 4 rows (invariant 9) even when the
         // content grid runs 8 rows on a phone — layoutKeys() gives the two
         // grids independent row heights.
-        for row in 0..<4 {
-            addKey(leftColumn[row], row: row, col: 0)
-            addKey(rightColumn[row], row: row, col: contentColumns + 1)
+        for (row, definition) in pinnedColumn.enumerated() {
+            if let definition { addKey(definition, row: row, col: 0) }
         }
         for (row, cells) in content.enumerated() {
             for (i, cell) in cells.enumerated() {
@@ -847,15 +887,21 @@ final class KeyboardViewController: UIInputViewController {
             }
         }
 
-        // The globe lives in the top suggestion bar (same slot on every
-        // level and every device), never in the content grid — it used
-        // to overwrite the last home cell ("haha"), silently dropping it.
+        // The globe is the one key iOS insists on owning — a synthesised
+        // tap will not open the keyboard list — so it is a real button
+        // rather than a KeyView, dressed to match its neighbours. It fills
+        // the pinned column's bottom slot: the design's position, and the
+        // one every iOS keyboard uses.
         if needsInputModeSwitchKey {
             let globe = UIButton(type: .system)
             globe.setImage(UIImage(systemName: "globe"), for: .normal)
-            globe.tintColor = .label
-            globe.backgroundColor = .systemGray3
-            globe.layer.cornerRadius = 10
+            globe.tintColor = Palette.foreground(on: Palette.navigate)
+            globe.backgroundColor = Palette.navigate
+            globe.layer.cornerRadius = 16
+            globe.layer.cornerCurve = .continuous
+            globe.layer.borderWidth = 1
+            globe.layer.borderColor = Palette.navigate.darkened(by: 0.16).cgColor
+            globe.accessibilityLabel = "Change keyboard"
             globe.addTarget(self, action: #selector(handleInputModeList(from:with:)), for: .allTouchEvents)
             trackingView.addSubview(globe)
             globeButton = globe
@@ -984,41 +1030,26 @@ final class KeyboardViewController: UIInputViewController {
             x: 0, y: yOffset, width: fullBounds.width, height: fullBounds.height - yOffset)
         let inset: CGFloat = 4
 
-        // The globe gets a fixed square slot at the right end of the top
-        // bar — same place on every level and device — instead of living
-        // inside the content grid, where it used to silently overwrite
-        // whatever cell was last in the bottom row.
-        let globeWidth: CGFloat = globeButton != nil ? (topBarHeight - inset * 2) : 0
-        let barWidth = bounds.width - inset * 2 - globeWidth
-        let slotWidth = barWidth / 3
+        // The globe moved into the pinned column, so the suggestion bar
+        // gets the full width back for its three chips.
+        let slotWidth = (bounds.width - inset * 2) / 3
         for (i, button) in suggestionButtons.enumerated() {
             button.frame = CGRect(
                 x: inset + CGFloat(i) * slotWidth + 3, y: yOffset + inset,
                 width: slotWidth - 6, height: topBarHeight - inset * 2)
         }
-        if let globe = globeButton {
-            globe.frame = CGRect(
-                x: bounds.width - inset - globeWidth, y: yOffset + inset,
-                width: globeWidth, height: topBarHeight - inset * 2)
-        }
 
-        // Pinned columns are sized from bounds.width alone — never from
-        // contentColumns — so col 0 and the right pinned column land on
-        // the exact same frame whether the content grid is 5 columns
-        // (compact) or 10 (full width/typing levels). pinnedW is
-        // identical to the old uniform cell width (bounds.width / 12,
-        // since there are always 2 pinned columns + up to 10 content
-        // columns at full width); at contentColumns == 10 this makes
-        // contentW == pinnedW == bounds.width / 12 too, so the geometry
-        // below is numerically identical to the pre-fix single-cellW
-        // math at full width — only compact mode's content columns
-        // (still evenly split, just across 5 instead of 10) differ.
-        let pinnedW = bounds.width / 12
-        let contentW = (bounds.width - 2 * pinnedW) / CGFloat(contentColumns)
+        // The pinned column is sized from bounds.width alone — never from
+        // contentColumns — so col 0 lands on the exact same frame whether
+        // the content grid is 5 columns (compact) or 10 (full width and
+        // the typing levels). One pinned column plus ten content columns
+        // is eleven, so at full width every key is bounds.width / 11 wide.
+        let pinnedW = bounds.width / 11
+        let contentW = (bounds.width - pinnedW) / CGFloat(contentColumns)
         let gridTop = yOffset + topBarHeight
-        // Pinned columns always divide the band into 4 (invariant 9: their
-        // frames never depend on the content grid); the content grid rows
-        // can be 8 on a phone.
+        // The pinned column always divides the band into 4 (invariant 9:
+        // its frames never depend on the content grid); the content grid
+        // rows can be 8 on a phone.
         let pinnedRowH = (fullBounds.height - gridTop) / 4
         let contentRowH = (fullBounds.height - gridTop) / CGFloat(max(contentRowCount, 4))
         // A transient sub-topBarHeight container (before the height
@@ -1027,27 +1058,22 @@ final class KeyboardViewController: UIInputViewController {
         guard pinnedRowH > 0 else { return }
 
         for key in keys {
-            let x: CGFloat
-            let width: CGFloat
-            let rowH: CGFloat
-            if key.col == 0 {
-                x = 0
-                width = pinnedW
-                rowH = pinnedRowH
-            } else if key.col == contentColumns + 1 {
-                x = bounds.width - pinnedW
-                width = pinnedW
-                rowH = pinnedRowH
-            } else {
-                x = pinnedW + CGFloat(key.col - 1) * contentW
-                width = contentW * CGFloat(key.colSpan)
-                rowH = contentRowH
-            }
+            let pinned = key.col == 0
+            let x = pinned ? 0 : pinnedW + CGFloat(key.col - 1) * contentW
+            let width = pinned ? pinnedW : contentW * CGFloat(key.colSpan)
+            let rowH = pinned ? pinnedRowH : contentRowH
             key.view.frame = CGRect(
                 x: x + 3,
                 y: gridTop + CGFloat(key.row) * rowH + 3,
                 width: width - 6, height: rowH * CGFloat(key.rowSpan) - 6)
         }
+
+        // The globe is a real button rather than a Key, so it is placed by
+        // hand — on the pinned column's bottom slot, the same frame the
+        // EN/MS key would occupy if iOS were not asking for a switcher.
+        globeButton?.frame = CGRect(
+            x: 3, y: gridTop + 3 * pinnedRowH + 3,
+            width: pinnedW - 6, height: pinnedRowH - 6)
     }
 
     // MARK: Explore-then-commit (called by TrackingView)
@@ -1079,8 +1105,9 @@ final class KeyboardViewController: UIInputViewController {
     }
 
     /// No dead zones: any point below the suggestion bar maps to the
-    /// nearest key by center distance. The globe now lives in the top
-    /// bar, so this guard already excludes it — no separate check needed.
+    /// nearest key by center distance. The globe is a real button filling
+    /// its whole pinned slot, so it takes its own touches before this runs
+    /// and only the 3pt gutters around it fall through to a neighbour.
     private func keyIndex(at point: CGPoint) -> Int? {
         guard point.y > layoutYOffset + topBarHeight else { return nil } // suggestion buttons handle themselves
         var best: (index: Int, distance: CGFloat)?

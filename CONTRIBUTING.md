@@ -35,7 +35,7 @@ These come from the team's community research — breaking them breaks the produ
 6. **Prediction lives in the suggestion bar only** — never inside the grid.
 7. **Language switching relabels in place** — positions never move between languages.
 8. Malay strings are unverified drafts until checked with the community. Mark any new translation as unverified in your PR description.
-9. **Pinned control columns render identical frames on every level** (asserted by `PinnedFrameTests`).
+9. **The pinned control column renders identical frames on every level** (asserted by `PinnedFrameTests`). It is one column, on the left — Home, Clear all, word-delete, language. The team's design (2026-08-07) moved Enter, ⌄ and → into the content grid, which is why there is no longer a right-hand pinned column; the surviving guarantee is that the left one never derives its geometry from the content grid's column count.
 
 ## Memory budget
 
