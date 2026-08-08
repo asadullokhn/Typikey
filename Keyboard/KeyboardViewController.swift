@@ -42,6 +42,7 @@ final class KeyboardViewController: UIInputViewController {
         case size
         case dismiss
         case language
+        case tense        // cycles now / past / future for the verb keys
     }
 
     private enum Level: Equatable {
@@ -119,6 +120,11 @@ final class KeyboardViewController: UIInputViewController {
     /// Only "be" needs it — it is the one English verb that still inflects
     /// for person as well as tense.
     private var verbSubject: String?
+
+    /// When the sentence happens. Nothing in the text can tell us — "you"
+    /// says who, never when — so this is the user's choice, made with the
+    /// tense key and reset at the end of every sentence.
+    private var tense: Grammar.Tense = .present
 
     /// The form verb cells are currently showing, recomputed whenever the
     /// text around the cursor changes. Held rather than derived on the fly
@@ -421,13 +427,20 @@ final class KeyboardViewController: UIInputViewController {
         requestPhraseCompletion()
     }
 
-    /// Rebuilds only when the required verb form actually changed — a
+    /// Rebuilds only when the board would actually read differently — a
     /// rebuild on every keystroke would fight the explore-then-commit
     /// slide, since rebuilding drops the highlight. `buildKeys` recomputes
-    /// the form itself, so this only decides whether to call it.
+    /// everything itself, so this only decides whether to call it.
+    ///
+    /// The subject is checked as well as the form, and that is not
+    /// redundant: tapping "you" after "I" leaves the form at `.base` while
+    /// changing what `be` should read from "am" to "are". Comparing the
+    /// form alone is why the board looked frozen.
     private func refreshVerbForms() {
         guard lang == .en, smartGrammar, isWordLevel else { return }
-        guard Grammar.verbForm(after: contextBefore()) != verbForm else { return }
+        let context = contextBefore()
+        guard Grammar.verbForm(after: context, tense: tense) != verbForm
+                || Grammar.subject(before: context) != verbSubject else { return }
         buildKeys()
     }
 
@@ -650,19 +663,20 @@ final class KeyboardViewController: UIInputViewController {
         }
     }
 
-    /// Core, plus the Chat phrases that earn a place on the home board.
+    /// All of Core, then as many conversation openers as still fit.
     ///
-    /// The design spends four grid slots on Enter, ⌄ and →, so home holds
-    /// 32 words rather than the old 36. Core is all 24 of them; the eight
-    /// Chat phrases below are the ones a conversation opens and closes
-    /// with. The rest of Chat is one tap away under Categories.
+    /// Home is the generative board: pronouns, auxiliaries and the verbs
+    /// that combine with everything. That is where the freedom is — a
+    /// stored phrase says one thing, whereas "he" + "be" + the tense key
+    /// says "he is", "he was", "he will be". Fixed phrases are one tap
+    /// away on Chat, and the openers listed here are ordered by how often
+    /// a conversation needs them, so whichever slots remain go to the most
+    /// useful ones.
     private var homeWords: [VocabWord] {
-        let onHome: Set<String> = [
-            "hello", "bye", "please", "thank you",
-            "sorry", "how are you", "I'm good", "I use this to talk",
-        ]
-        return (vocabulary.first { $0.en == "Core" }?.words ?? [])
-            + (vocabulary.first { $0.en == "Chat" }?.words ?? []).filter { onHome.contains($0.en) }
+        let core = vocabulary.first { $0.en == "Core" }?.words ?? []
+        let chat = vocabulary.first { $0.en == "Chat" }?.words ?? []
+        let openers = ["hello", "thank you", "please", "sorry", "bye", "how are you"]
+        return core + openers.compactMap { name in chat.first { $0.en == name } }
     }
 
     private func wordCell(_ word: VocabWord) -> ContentCell {
@@ -750,16 +764,38 @@ final class KeyboardViewController: UIInputViewController {
     }
 
     /// The controls the design places inside the content grid: Enter at
-    /// double width on the second row, and the two keys in the bottom-right
-    /// corner. `board` lays them down before any word, so a word can never
+    /// double width on the second row, and the corner keys at the bottom
+    /// right. `board` lays them down before any word, so a word can never
     /// be silently overwritten by one — which is how cells used to vanish.
-    private func gridControls(rows rowCount: Int) -> [(cell: ContentCell, row: Int, col: Int)] {
+    ///
+    /// The tense slot is reserved even where nothing is drawn in it. Malay
+    /// marks tense with particles rather than by inflecting the verb, so
+    /// the key has nothing to do there, and smart grammar can be switched
+    /// off entirely — but if the slot collapsed in those cases, every word
+    /// cell after it would shift by one and the board would stop being the
+    /// same shape in both languages (invariants 1 and 7). A hole costs one
+    /// cell; a shift costs the muscle memory of the whole board.
+    private func gridControls(rows rowCount: Int) -> [(cell: ContentCell?, row: Int, col: Int)] {
         let cols = contentColumns
+        let tense = (lang == .en && smartGrammar) ? ContentCell(.tense, tenseLabel()) : nil
         return [
             (ContentCell(.ret, goLabel(), colSpan: 2), 1, cols - 2),
+            (tense, rowCount - 1, cols - 3),
             (ContentCell(.dismiss, "⌄"), rowCount - 1, cols - 2),
             (ContentCell(.cursorRight, "→"), rowCount - 1, cols - 1),
         ]
+    }
+
+    /// The tense key reads as what it is set to, not as what tapping will
+    /// do: a mode key spends nearly all its life being read rather than
+    /// pressed, and "what tense am I in" is the question it has to answer
+    /// at a glance.
+    private func tenseLabel() -> String {
+        switch tense {
+        case .present: return "Tense\nnow"
+        case .past: return "Tense\npast"
+        case .future: return "Tense\nfuture"
+        }
     }
 
     /// Packs cells row-major into a word board, around the fixed controls.
@@ -779,7 +815,11 @@ final class KeyboardViewController: UIInputViewController {
             }
         }
         for control in gridControls(rows: rowCount) {
-            place(control.cell, row: control.row, col: control.col)
+            if let cell = control.cell {
+                place(cell, row: control.row, col: control.col)
+            } else {
+                taken.insert(control.row * cols + control.col) // reserved, undrawn
+            }
         }
 
         var next = 0
@@ -866,7 +906,7 @@ final class KeyboardViewController: UIInputViewController {
         // matter what caused it — a level change back from the letters
         // keyboard, a re-show, or the sentence simply moving on.
         let context = contextBefore()
-        verbForm = (lang == .en && smartGrammar) ? Grammar.verbForm(after: context) : .base
+        verbForm = (lang == .en && smartGrammar) ? Grammar.verbForm(after: context, tense: tense) : .base
         verbSubject = (lang == .en && smartGrammar) ? Grammar.subject(before: context) : nil
         inflectionBase.removeAll()
 
@@ -921,7 +961,7 @@ final class KeyboardViewController: UIInputViewController {
     /// Which of the three jobs a key does. The role decides its color, and
     /// the color is the only thing the user needs to read to know whether a
     /// key will write, travel, or undo.
-    private enum KeyRole { case write, navigate, erase, action }
+    private enum KeyRole { case write, navigate, erase, action, grammar }
 
     private func role(of action: KeyAction) -> KeyRole {
         switch action {
@@ -934,6 +974,11 @@ final class KeyboardViewController: UIInputViewController {
             return .navigate
         case .delete, .deleteWord, .clearAll:
             return .erase
+        case .tense:
+            // Its own colour because it is its own kind of thing: it writes
+            // nothing, goes nowhere and erases nothing — it changes what
+            // the other keys say.
+            return .grammar
         }
     }
 
@@ -952,6 +997,8 @@ final class KeyboardViewController: UIInputViewController {
             background = Palette.navigate
         case .action:
             background = Palette.action
+        case .grammar:
+            background = Palette.grammar
         case .erase:
             // Armed clear-all is the one irreversible key; it announces
             // itself in red rather than relying on the label change alone.
@@ -961,7 +1008,11 @@ final class KeyboardViewController: UIInputViewController {
         let foreground = Palette.foreground(on: background)
         label.paint(fill: background, focused: highlighted)
         label.textColor = foreground
-        label.lines = role(of: action) == .write ? 3 : 1
+        switch role(of: action) {
+        case .write: label.lines = 3      // phrases have to be allowed to wrap
+        case .grammar: label.lines = 2    // "Tense" over the tense it is set to
+        default: label.lines = 1          // one word: shrink rather than break
+        }
 
         switch action {
         case .word(let w):
@@ -990,7 +1041,7 @@ final class KeyboardViewController: UIInputViewController {
             label.attributedText = nil
             label.font = .systemFont(ofSize: 32, weight: .medium)
             label.text = level == .letters && shifted ? text.uppercased() : text
-        case .home, .toCategories, .toWords, .toLetters, .toNumbers, .language, .size, .shift:
+        case .home, .toCategories, .toWords, .toLetters, .toNumbers, .language, .size, .shift, .tense:
             label.attributedText = nil
             label.font = .systemFont(ofSize: 18, weight: .semibold)
             label.text = text
@@ -1139,6 +1190,10 @@ final class KeyboardViewController: UIInputViewController {
         case .punct(let p):
             terminateToken()
             insertPunctuation(p)
+            if ".!?".contains(p) { endSentence() }
+        case .tense:
+            tense = tense.next
+            buildKeys()
         case .char(let c):
             // An apostrophe is token-internal (so "don't" accumulates as
             // one token) even though it isn't a letter — terminateToken's
@@ -1185,6 +1240,7 @@ final class KeyboardViewController: UIInputViewController {
         case .clearAll:
             typedToken = ""
             completionWords = []
+            endSentence()
             handleClearAll()
         case .cursorLeft:
             typedToken = ""
@@ -1198,6 +1254,7 @@ final class KeyboardViewController: UIInputViewController {
         case .ret:
             terminateToken()
             textDocumentProxy.insertText("\n")
+            endSentence()
         case .size:
             sizeIndex = (sizeIndex + 1) % sizePresets.count
             store.set(sizeIndex, forKey: "sizeIndex")
@@ -1224,6 +1281,15 @@ final class KeyboardViewController: UIInputViewController {
         case .delete, .deleteWord, .clearAll, .cursorLeft, .cursorRight: return true
         default: return false
         }
+    }
+
+    /// A tense belongs to a sentence, not to the session. Left set, it
+    /// quietly turns the next sentence wrong: "I went to the park." then
+    /// three taps later "I was happy" when he meant "I am happy".
+    private func endSentence() {
+        guard tense != .present else { return }
+        tense = .present
+        buildKeys()
     }
 
     private func handleClearAll() {

@@ -75,6 +75,16 @@ let vocabulary: [Category] = [
         VocabWord("where", ms: "di mana", .question), VocabWord("when", ms: "bila", .question),
         VocabWord("who", ms: "siapa", .question), VocabWord("can", ms: "boleh", .verb),
         VocabWord(".", .punct), VocabWord("?", .punct),
+        // Appended, never inserted (invariant 1). These six are what make
+        // grammar reachable at all: without a subject to agree with and an
+        // auxiliary to follow, the verb keys have nothing to respond to and
+        // the board looks frozen. "be" is the one every AAC vendor uses to
+        // demonstrate the feature — write "I" and it reads "am".
+        // Malay: unverified drafts. Malay has no present-tense copula, so
+        // "adalah" is a formal approximation and needs Fadillah's read.
+        VocabWord("he", ms: "dia", .pronoun), VocabWord("she", ms: "dia", .pronoun),
+        VocabWord("it", ms: "ia", .pronoun), VocabWord("be", ms: "adalah", .verb),
+        VocabWord("do", ms: "buat", .verb), VocabWord("have", ms: "ada", .verb),
     ]),
     Category(en: "People", ms: "Orang", words: [
         VocabWord("I", ms: "saya", .pronoun), VocabWord("you", ms: "awak", .pronoun),

@@ -43,6 +43,11 @@ enum Palette {
     static let action = UIColor(red: 0.00, green: 0.48, blue: 1.00, alpha: 1)
     /// Clear all, once armed — the only irreversible key on the board.
     static let destructive = UIColor(red: 0.84, green: 0.24, blue: 0.24, alpha: 1)
+    /// Changes what the other keys say: the tense selector. Neither light
+    /// (it writes nothing) nor grey (it removes nothing) nor blue (it
+    /// finishes nothing), so it gets a colour of its own — mid-tone violet,
+    /// deep enough to read as a mode rather than a word.
+    static let grammar = UIColor(red: 0.45, green: 0.40, blue: 0.66, alpha: 1)
 
     // MARK: Chrome
 
@@ -69,7 +74,7 @@ enum Palette {
 
     /// Roles rendered dark enough to need white text.
     static func foreground(on background: UIColor) -> UIColor {
-        if background == action || background == destructive { return onDark }
+        if background == action || background == destructive || background == grammar { return onDark }
         if background == navigate { return action } // blue glyphs on near-white
         return onLight
     }
