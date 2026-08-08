@@ -47,6 +47,22 @@ struct SetupView: View {
                                 step(2, "Tap the text field, then hold the globe key")
                                 step(3, "Select Typikey")
                             }
+                            // The strip of undo / copy / paste buttons above
+                            // the keyboard belongs to the app you are typing
+                            // in, not to Typikey — iOS gives a keyboard no
+                            // way to remove it from another app. Typikey
+                            // hides it in its own practice field; everywhere
+                            // else it takes this one system switch.
+                            VStack(alignment: .leading, spacing: 10) {
+                                Text("Hide the grey bar above the keyboard")
+                                    .font(.subheadline.weight(.semibold))
+                                    .foregroundStyle(.secondary)
+                                step(1, "Settings → General → Keyboard")
+                                step(2, "Turn off Shortcuts")
+                                Text("That strip of undo and paste buttons belongs to whichever app you are typing in, so no keyboard can remove it — this switch turns it off for every app at once, and gives Typikey back the height it was using.")
+                                    .font(.footnote)
+                                    .foregroundStyle(.secondary)
+                            }
                         }
                         .padding(.top, 10)
                     } label: {
