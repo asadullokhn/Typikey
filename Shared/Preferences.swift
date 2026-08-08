@@ -52,6 +52,29 @@ enum Preferences {
         store.object(forKey: grammarKey) as? Bool ?? true
     }
 
+    // MARK: Keyboard size
+
+    /// 0 small, 1 medium, 2 large. It used to be the ⤢ key on the board,
+    /// which spent one of the scarcest things here — a grid slot — on a
+    /// choice made once and then never again. A slot is a word.
+    private static let sizeKey = "sizeIndex"
+
+    static var keyboardSize: Int {
+        get {
+            (shared?.object(forKey: sizeKey) as? Int)
+                ?? (UserDefaults.standard.object(forKey: sizeKey) as? Int)
+                ?? 2
+        }
+        set {
+            UserDefaults.standard.set(newValue, forKey: sizeKey)
+            shared?.set(newValue, forKey: sizeKey)
+        }
+    }
+
+    static func keyboardSize(in store: UserDefaults) -> Int {
+        (store.object(forKey: sizeKey) as? Int) ?? 2
+    }
+
     // MARK: Storage
 
     private static var shared: UserDefaults? { UserDefaults(suiteName: ScreenWords.suiteName) }

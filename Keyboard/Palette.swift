@@ -24,6 +24,11 @@ enum Palette {
     static let social = UIColor(red: 0.99, green: 0.85, blue: 0.91, alpha: 1)      // pink
     static let question = UIColor(red: 0.90, green: 0.85, blue: 0.98, alpha: 1)    // purple
     static let negative = UIColor(red: 0.98, green: 0.72, blue: 0.72, alpha: 1)    // salmon
+    /// Prepositions, conjunctions, articles — the Fitzgerald key's white
+    /// class. Warm off-white so it separates from the punctuation keys
+    /// without leaving the "light writes" family: these words do write,
+    /// they just carry grammar rather than meaning.
+    static let function = UIColor(red: 0.96, green: 0.95, blue: 0.91, alpha: 1)
 
     /// Types a character — letters, numbers, punctuation. Word cells carry
     /// their class colour instead, but sit in the same light family, so

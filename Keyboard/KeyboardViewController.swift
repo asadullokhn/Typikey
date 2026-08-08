@@ -39,7 +39,6 @@ final class KeyboardViewController: UIInputViewController {
         case toNumbers
         case space
         case ret
-        case size
         case dismiss
         case language
         case tense        // cycles now / past / future for the verb keys
@@ -60,14 +59,20 @@ final class KeyboardViewController: UIInputViewController {
         let rowSpan: Int
     }
 
-    // Three height presets, cycled by the ⤢ key like Apple's keyboard
-    // minimize behavior. Layout is fully width-responsive on top: when the
-    // system narrows us (floating, Split View, Slide Over, Stage Manager)
-    // the grid drops to compact mode instead of breaking.
-    // Same three-preset cycle on both device families; the phone numbers
-    // are smaller because an iPad preset would swallow an iPhone screen.
+    // Three height presets, chosen in the app rather than on the board —
+    // the size key spent a grid slot on something adjusted once and then
+    // never again, and grid slots are the scarcest thing here.
+    //
+    // The iPad numbers are deliberately large. A dedicated AAC app takes
+    // the whole screen, and this one has to fit a real core vocabulary:
+    // Large is what makes six rows of ten possible at ~97pt each, which is
+    // taller than a key on the system keyboard, not smaller.
+    // Layout is fully width-responsive on top: when the system narrows us
+    // (floating, Split View, Slide Over, Stage Manager) the grid drops to
+    // compact mode instead of breaking. The phone numbers stay small
+    // because an iPad preset would swallow an iPhone screen.
     private var sizePresets: [CGFloat] {
-        UIDevice.current.userInterfaceIdiom == .phone ? [260, 310, 360] : [280, 360, 440]
+        UIDevice.current.userInterfaceIdiom == .phone ? [260, 310, 360] : [360, 500, 640]
     }
     private var sizeIndex = 2
     private var heightConstraint: NSLayoutConstraint?
@@ -248,9 +253,7 @@ final class KeyboardViewController: UIInputViewController {
         if let saved = store.string(forKey: "lang"), let restored = Lang(rawValue: saved) {
             lang = restored
         }
-        if store.object(forKey: "sizeIndex") != nil {
-            sizeIndex = min(max(store.integer(forKey: "sizeIndex"), 0), sizePresets.count - 1)
-        }
+        sizeIndex = min(max(Preferences.keyboardSize(in: store), 0), sizePresets.count - 1)
 
         // Height lives on OUR content view, never on the root view. The
         // system derives the window height from content fitting; a height
@@ -301,6 +304,10 @@ final class KeyboardViewController: UIInputViewController {
         // in-progress token from a previous field never leaks into a new one.
         isPrivate = Preferences.privateMode(in: store)
         smartGrammar = Preferences.smartGrammar(in: store)
+        // Size is chosen in the app now, so it has to be re-read here —
+        // otherwise the change would not land until the extension is next
+        // restarted, which from the user's side looks like nothing happened.
+        sizeIndex = min(max(Preferences.keyboardSize(in: store), 0), sizePresets.count - 1)
         myWords = (store.array(forKey: "myWords") as? [String]) ?? []
         reloadScreenWords()
         promoteFrequentWords()
@@ -706,7 +713,6 @@ final class KeyboardViewController: UIInputViewController {
             if needsInputModeSwitchKey {
                 cells.append(ContentCell(.language, lang == .en ? "EN" : "MS"))
             }
-            cells.append(ContentCell(.size, "⤢"))
             cells += homeWords.map(wordCell)
             return board(cells)
         case .categories:
@@ -862,11 +868,27 @@ final class KeyboardViewController: UIInputViewController {
         return row
     }
 
-    /// 8 content rows for word boards on a compact phone, 4 everywhere else
-    /// — a phone is not an occasional squeeze like Split View, it's the
-    /// whole device, so every cell has to stay reachable in 5 columns.
+    /// How many rows a word board gets. Rows follow the height the user
+    /// chose, so a key is never squeezed below a comfortable target: at
+    /// Large the board is six rows of roughly 97pt, at Small it is four of
+    /// 76pt. Bands rather than a division, so the count is predictable and
+    /// a pixel of measurement drift can never reflow the board.
+    ///
+    /// This is what makes a real core vocabulary fit. Prepositions,
+    /// conjunctions and articles are the words that turn a board of labels
+    /// into sentences, and there is no way to predict them onto a smaller
+    /// board — "I am waiting ___" needs `for` to be somewhere he can reach
+    /// in one tap, every time, in the same place.
+    ///
+    /// A compact phone keeps its 8 rows: it is not an occasional squeeze
+    /// like Split View, it's the whole device, so every cell has to stay
+    /// reachable in 5 columns.
     private var wordBoardRows: Int {
-        UIDevice.current.userInterfaceIdiom == .phone && isCompact ? 8 : 4
+        if UIDevice.current.userInterfaceIdiom == .phone && isCompact { return 8 }
+        let available = requestedHeight - topBarHeight
+        if available >= 520 { return 6 }
+        if available >= 380 { return 5 }
+        return 4
     }
 
     // MARK: Building
@@ -970,7 +992,7 @@ final class KeyboardViewController: UIInputViewController {
         case .ret:
             return .action // Enter finishes the message; the design's one blue key
         case .home, .toCategories, .toWords, .toLetters, .toNumbers, .language,
-             .size, .shift, .cursorLeft, .cursorRight, .dismiss:
+             .shift, .cursorLeft, .cursorRight, .dismiss:
             return .navigate
         case .delete, .deleteWord, .clearAll:
             return .erase
@@ -1041,7 +1063,7 @@ final class KeyboardViewController: UIInputViewController {
             label.attributedText = nil
             label.font = .systemFont(ofSize: 32, weight: .medium)
             label.text = level == .letters && shifted ? text.uppercased() : text
-        case .home, .toCategories, .toWords, .toLetters, .toNumbers, .language, .size, .shift, .tense:
+        case .home, .toCategories, .toWords, .toLetters, .toNumbers, .language, .shift, .tense:
             label.attributedText = nil
             label.font = .systemFont(ofSize: 18, weight: .semibold)
             label.text = text
@@ -1255,10 +1277,6 @@ final class KeyboardViewController: UIInputViewController {
             terminateToken()
             textDocumentProxy.insertText("\n")
             endSentence()
-        case .size:
-            sizeIndex = (sizeIndex + 1) % sizePresets.count
-            store.set(sizeIndex, forKey: "sizeIndex")
-            heightConstraint?.constant = requestedHeight
         case .dismiss:
             let signature = "\(textDocumentProxy.keyboardType?.rawValue ?? -1)|\(textDocumentProxy.returnKeyType?.rawValue ?? -1)"
             persistPendingRestore(signature: signature, level: level)

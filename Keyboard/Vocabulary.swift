@@ -15,7 +15,7 @@ enum Lang: String {
 
 
 enum WordClass {
-    case pronoun, verb, descriptor, noun, social, question, punct
+    case pronoun, verb, descriptor, noun, social, question, function, punct
 
     var color: UIColor {
         switch self {
@@ -25,6 +25,7 @@ enum WordClass {
         case .noun:       return Palette.noun
         case .social:     return Palette.social
         case .question:   return Palette.question
+        case .function:   return Palette.function
         case .punct:      return Palette.paper
         }
     }
@@ -85,6 +86,30 @@ let vocabulary: [Category] = [
         VocabWord("he", ms: "dia", .pronoun), VocabWord("she", ms: "dia", .pronoun),
         VocabWord("it", ms: "ia", .pronoun), VocabWord("be", ms: "adalah", .verb),
         VocabWord("do", ms: "buat", .verb), VocabWord("have", ms: "ada", .verb),
+        // The closed classes. These are the words that turn a board of
+        // labels into sentences: "I am waiting" is a dead end without
+        // "for", and no amount of prediction fixes that — a preposition has
+        // to be in one known place, reachable in one tap, every time.
+        // Core word lists (Banajee, Boenisch & Soto) put them among the
+        // highest-frequency words in everything anyone says, and every
+        // published core board carries them permanently.
+        // Malay: unverified drafts, and weaker here than anywhere else.
+        // Malay preposition boundaries do not line up with English ones,
+        // possession is postposed ("kawan saya"), and Malay has no articles
+        // at all — "a" and "the" have no Malay cell and are left in English
+        // rather than invented. Needs Fadillah before it goes anywhere near
+        // Sayfullah.
+        VocabWord("to", ms: "ke", .function), VocabWord("for", ms: "untuk", .function),
+        VocabWord("with", ms: "dengan", .function), VocabWord("in", ms: "dalam", .function),
+        VocabWord("on", ms: "atas", .function), VocabWord("at", ms: "di", .function),
+        VocabWord("of", ms: "daripada", .function), VocabWord("from", ms: "dari", .function),
+        VocabWord("out", ms: "keluar", .function), VocabWord("up", ms: "naik", .function),
+        VocabWord("and", ms: "dan", .function), VocabWord("but", ms: "tetapi", .function),
+        VocabWord("or", ms: "atau", .function), VocabWord("because", ms: "kerana", .function),
+        VocabWord("a", .function), VocabWord("the", .function),
+        VocabWord("my", ms: "saya", .pronoun), VocabWord("me", ms: "saya", .pronoun),
+        VocabWord("we", ms: "kami", .pronoun), VocabWord("they", ms: "mereka", .pronoun),
+        VocabWord("again", ms: "lagi", .descriptor),
     ]),
     Category(en: "People", ms: "Orang", words: [
         VocabWord("I", ms: "saya", .pronoun), VocabWord("you", ms: "awak", .pronoun),

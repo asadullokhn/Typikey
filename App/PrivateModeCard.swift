@@ -1,7 +1,8 @@
 import SwiftUI
 
-/// The two switches a person may need before a conversation: whether
-/// Typikey remembers it, and whether verb keys reshape themselves.
+/// The settings a person may want before a conversation: whether Typikey
+/// remembers it, whether verb keys reshape themselves, and how big the
+/// board is.
 ///
 /// Kept on the home screen rather than buried in Diagnostics, because it is
 /// something a person reaches for *before* a private conversation, not
@@ -11,6 +12,10 @@ import SwiftUI
 struct PrivateModeCard: View {
     @State private var isOn = Preferences.privateMode
     @State private var grammarOn = Preferences.smartGrammar
+    @State private var size = Preferences.keyboardSize
+
+    private static let sizeNames = ["Small", "Medium", "Large"]
+    private static let sizeRows = ["four rows of words", "five rows of words", "six rows of words"]
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -51,11 +56,32 @@ struct PrivateModeCard: View {
             Text("Keys never move — only the word on them changes. Every AAC app with this feature also lets you switch it off, because for some people the changing labels are more distracting than helpful. Turn it off and the keys stay in their plain form.")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
+
+            Divider()
+
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Keyboard size")
+                    .font(.title3.weight(.semibold))
+                Picker("Keyboard size", selection: $size) {
+                    ForEach(0..<Self.sizeNames.count, id: \.self) { index in
+                        Text(Self.sizeNames[index]).tag(index)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .accessibilityIdentifier("keyboardSizePicker")
+                .onChange(of: size) { _, newValue in
+                    Preferences.keyboardSize = newValue
+                }
+                Text("Large gives \(Self.sizeRows[size]) — enough for the whole core vocabulary, including the small words like for, with and my that turn labels into sentences. Smaller sizes leave more of the app visible and drop the last rows. Takes effect the next time the keyboard opens.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
         }
         .homeCardStyle()
         .onAppear {
             isOn = Preferences.privateMode
             grammarOn = Preferences.smartGrammar
+            size = Preferences.keyboardSize
         }
     }
 }
