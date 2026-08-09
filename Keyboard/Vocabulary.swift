@@ -64,17 +64,17 @@ struct Category {
 
 let vocabulary: [Category] = [
     Category(en: "Core", ms: "Teras", words: [
-        VocabWord("I", ms: "saya", .pronoun), VocabWord("you", ms: "awak", .pronoun),
-        VocabWord("want", ms: "mahu", .verb), VocabWord("like", ms: "suka", .verb),
-        VocabWord("go", ms: "pergi", .verb), VocabWord("help", ms: "tolong", emoji: "🤝", .verb),
-        VocabWord("more", ms: "lagi", .descriptor), VocabWord("stop", ms: "berhenti", emoji: "✋", .verb),
+        VocabWord("I", ms: "saya", emoji: "🙋", .pronoun), VocabWord("you", ms: "awak", emoji: "👉", .pronoun),
+        VocabWord("want", ms: "mahu", emoji: "🤲", .verb), VocabWord("like", ms: "suka", emoji: "❤️", .verb),
+        VocabWord("go", ms: "pergi", emoji: "🚶", .verb), VocabWord("help", ms: "tolong", emoji: "🤝", .verb),
+        VocabWord("more", ms: "lagi", emoji: "➕", .descriptor), VocabWord("stop", ms: "berhenti", emoji: "✋", .verb),
         VocabWord("yes", ms: "ya", emoji: "✅", .social), VocabWord("no", ms: "tidak", emoji: "❌", .social),
-        VocabWord("not", ms: "bukan", .descriptor), VocabWord("this", ms: "ini", .pronoun),
+        VocabWord("not", ms: "bukan", emoji: "🚫", .descriptor), VocabWord("this", ms: "ini", emoji: "👇", .pronoun),
         VocabWord("that", ms: "itu", .pronoun), VocabWord("good", ms: "bagus", emoji: "👍", .descriptor),
-        VocabWord("bad", ms: "teruk", emoji: "👎", .descriptor), VocabWord("now", ms: "sekarang", .descriptor),
-        VocabWord("later", ms: "nanti", .descriptor), VocabWord("what", ms: "apa", .question),
-        VocabWord("where", ms: "di mana", .question), VocabWord("when", ms: "bila", .question),
-        VocabWord("who", ms: "siapa", .question), VocabWord("can", ms: "boleh", .verb),
+        VocabWord("bad", ms: "teruk", emoji: "👎", .descriptor), VocabWord("now", ms: "sekarang", emoji: "⏰", .descriptor),
+        VocabWord("later", ms: "nanti", emoji: "🕒", .descriptor), VocabWord("what", ms: "apa", emoji: "❓", .question),
+        VocabWord("where", ms: "di mana", emoji: "📍", .question), VocabWord("when", ms: "bila", .question),
+        VocabWord("who", ms: "siapa", .question), VocabWord("can", ms: "boleh", emoji: "💪", .verb),
         VocabWord(".", .punct), VocabWord("?", .punct),
         // Appended, never inserted (invariant 1). These six are what make
         // grammar reachable at all: without a subject to agree with and an
@@ -109,7 +109,7 @@ let vocabulary: [Category] = [
         VocabWord("a", .function), VocabWord("the", .function),
         VocabWord("my", ms: "saya", .pronoun), VocabWord("me", ms: "saya", .pronoun),
         VocabWord("we", ms: "kami", .pronoun), VocabWord("they", ms: "mereka", .pronoun),
-        VocabWord("again", ms: "lagi", .descriptor),
+        VocabWord("again", ms: "lagi", emoji: "🔁", .descriptor),
         // Time words, and they do double duty: they are ordinary
         // vocabulary AND they are how the board knows what tense it is in.
         // The design has no tense control and gets no extra key, so
@@ -121,7 +121,7 @@ let vocabulary: [Category] = [
         VocabWord("tomorrow", ms: "esok", .descriptor),
     ]),
     Category(en: "People", ms: "Orang", words: [
-        VocabWord("I", ms: "saya", .pronoun), VocabWord("you", ms: "awak", .pronoun),
+        VocabWord("I", ms: "saya", emoji: "🙋", .pronoun), VocabWord("you", ms: "awak", emoji: "👉", .pronoun),
         VocabWord("Mum", ms: "Ibu", emoji: "👩", .noun), VocabWord("Dad", ms: "Ayah", emoji: "👨", .noun),
         VocabWord("brother", ms: "abang", emoji: "👦", .noun), VocabWord("sister", ms: "kakak", emoji: "👧", .noun),
         VocabWord("friend", ms: "kawan", emoji: "🧑‍🤝‍🧑", .noun), VocabWord("teacher", ms: "cikgu", emoji: "🧑‍🏫", .noun),
