@@ -464,7 +464,7 @@ final class KeyboardViewController: UIInputViewController {
         for word in recents where !seen.contains(word.en) {
             seen.insert(word.en)
             unique.append(word)
-            if unique.count == 12 { break }
+            if unique.count == wordSlots { break }
         }
         let recentsName = lang == .ms ? "Terkini" : "Recents"
         // Mine appends after the built-in categories — never reorders them
@@ -812,6 +812,16 @@ final class KeyboardViewController: UIInputViewController {
             (ContentCell(.dismiss, "Hide keyboard"), rowCount - 1, cols - 2),
             (ContentCell(.cursorRight, "Cursor right"), rowCount - 1, cols - 1),
         ]
+    }
+
+    /// How many word cells a board actually has, once the design's
+    /// controls have taken theirs. Derived from `gridControls` rather than
+    /// written down a second time, so moving a control can never leave a
+    /// stale number behind.
+    private var wordSlots: Int {
+        let reserved = gridControls(rows: wordBoardRows)
+            .reduce(0) { $0 + ($1.cell?.colSpan ?? 1) }
+        return max(0, wordBoardRows * contentColumns - reserved)
     }
 
     /// Packs cells row-major into a word board, around the fixed controls.
