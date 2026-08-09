@@ -244,6 +244,7 @@ final class KeyboardViewController: UIInputViewController {
         usageCounts = (store.dictionary(forKey: "usage") as? [String: Int]) ?? [:]
         learnedBigrams = (store.dictionary(forKey: "bigrams") as? [String: Int]) ?? [:]
         myWords = (store.array(forKey: "myWords") as? [String]) ?? []
+        autoFileCache = (store.dictionary(forKey: "wordFiling") as? [String: String]) ?? [:]
         reloadScreenWords()
         if let saved = store.string(forKey: "lang"), let restored = Lang(rawValue: saved) {
             lang = restored
@@ -498,14 +499,26 @@ final class KeyboardViewController: UIInputViewController {
 
     /// On-device semantic filing for a user's word: personal names go to
     /// People, place names to Places, verbs to Actions. Single words only —
-    /// phrases stay Mine-only. Cached: NLTagger per word per keystroke
-    /// would be wasteful, and a word's reading never changes.
-    private var autoFileCache: [String: String?] = [:]
+    /// phrases stay Mine-only.
+    ///
+    /// Remembered in the store, not just in memory. `WordFiling` runs a
+    /// tagger over three carrier sentences per word, and this cache used to
+    /// die with the keyboard instance — so every fresh keyboard paid that
+    /// cost again, for every word he has ever added, inside a process with
+    /// a 60-80MB ceiling and a board that rebuilds whenever the verb form
+    /// changes. Words only accumulate, so that bill only grows. A word's
+    /// reading never changes; it is worth writing down.
+    ///
+    /// Empty string means "filed nowhere" — a plist cannot hold nil, and
+    /// the distinction between "no category" and "not looked at yet" is the
+    /// whole point of the cache.
+    private var autoFileCache: [String: String] = [:]
 
     private func autoCategory(for word: String) -> String? {
-        if let cached = autoFileCache[word] { return cached }
+        if let cached = autoFileCache[word] { return cached.isEmpty ? nil : cached }
         let result = WordFiling.category(for: word)
-        autoFileCache[word] = result
+        autoFileCache[word] = result ?? ""
+        learn(autoFileCache, forKey: "wordFiling")
         return result
     }
 
