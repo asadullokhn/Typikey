@@ -84,7 +84,18 @@ First run on a new device needs Developer Mode enabled (Settings → Privacy & S
 ## Testing
 
 - Manual: build to a device, enable the keyboard, and use the practice field in the app. The regression checklist that matters: open/close/reopen the keyboard several times, rotate both ways, and confirm the height never grows (this was a real bug — see the git history on `fix/rotation-height`).
-- Automated: `UITests/KeyboardHeightTests.swift` contains a scripted version of that exact checklist with height assertions. It is currently prefixed `todo_` (skipped) because reliably making a third-party keyboard the *active* keyboard inside a simulator is unsolved — the file documents what was tried. Run it by renaming the method to `test...` and running the Typikey scheme's tests against a **freshly erased** simulator.
+- Automated: 17 UI tests across six files, all passing as of build 22. They cover the pinned frame, the grid controls, grammar, private mode, My Words, screen learning, and the height regression checklist above.
+
+  ```bash
+  defaults write com.apple.iphonesimulator ConnectHardwareKeyboard -bool false
+  xcodebuild test -project Typikey.xcodeproj -scheme Typikey \
+    -destination 'id=<booted iPad simulator UDID>'
+  ```
+
+  **The one precondition is that Typikey is enabled on that simulator**, which is per-simulator and persists once done: install the app there, then Settings → General → Keyboard → Keyboards → Add New Keyboard → Typikey. Confirm with
+  `plutil -p ~/Library/Developer/CoreSimulator/Devices/<UDID>/data/Library/Preferences/.GlobalPreferences.plist | grep -A4 AppleKeyboards` — the extension's bundle id should be in the list. Writing that key directly does *not* work; the live input system ignores it.
+
+  The tests were assumed unrunnable for most of this project's life and were never executed. They were runnable all along, and the first run found four real defects — including a VoiceOver regression and a feature that could not be reached at all. Run them.
 
 ## Known limitations / not yet decided
 

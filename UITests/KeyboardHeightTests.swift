@@ -7,11 +7,15 @@ import XCTest
 // app-visible size stays put.
 //
 // PRECONDITION: Typikey must already be enabled on the simulator
-// (Settings → General → Keyboard → Keyboards → Add New Keyboard).
-// Automating that enablement proved unreliable — the AppleKeyboards
-// defaults write is ignored by the live input system, and Settings-app
-// navigation differs on iPadOS 26 (attempts preserved in
-// enableTypikeyViaSettings, currently unused).
+// (Settings → General → Keyboard → Keyboards → Add New Keyboard), and the
+// hardware keyboard off:
+//   defaults write com.apple.iphonesimulator ConnectHardwareKeyboard -bool false
+// Enablement is per-simulator and persists, so it is a one-time step per
+// device rather than a per-run one. Automating it is still unsolved — the
+// AppleKeyboards defaults write is ignored by the live input system, and
+// Settings-app navigation differs on iPadOS 26 (attempts preserved in
+// enableTypikeyViaSettings, currently unused). That is a nuisance, not a
+// blocker: with the precondition met the whole suite runs green.
 //
 // Measurement note: a custom keyboard does NOT surface as a `Keyboard`
 // AX element, so app.keyboards is useless here. Instead we detect
