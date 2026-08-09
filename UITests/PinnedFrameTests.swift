@@ -14,7 +14,7 @@ final class PinnedFrameTests: XCTestCase {
     // (a real UIButton, not a staticText) whenever iOS asks for a keyboard
     // switcher, which is every configuration with a second keyboard
     // installed — i.e. every real device.
-    private let pinnedLabels = ["Home", "Clear", "Delete\nword"]
+    private let pinnedLabels = ["Home", "Clear", "Delete word"]
 
     func testPinnedKeysIdenticalAcrossLevels() {
         let app = launchToTypikey()

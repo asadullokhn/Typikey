@@ -692,13 +692,21 @@ final class KeyboardViewController: UIInputViewController {
     ///
     /// Every word named here is defined once, in the Core category. This
     /// list only decides what is one tap away instead of two.
+    /// `yesterday` and `tomorrow` are here in place of `a` and `the`, and
+    /// that swap is deliberate. Time words are the whole tense mechanism —
+    /// without one on this board, past tense costs three taps through
+    /// Categories and nobody will pay it, which makes the feature
+    /// decorative. Dropping an article costs "I want the book" becoming "I
+    /// want book": telegraphic, and understood. Dropping tense costs "I go"
+    /// when he meant "I went", which is simply the wrong thing said. Both
+    /// articles are still one tap away on Core.
     private static let homeSelection = [
         "I", "you", "he", "she", "it", "we", "they",
         "be", "do", "have", "can", "will",
         "want", "like", "go", "help", "stop",
         "not", "more",
         "to", "for", "with", "in", "on",
-        "and", "a", "the", "my",
+        "and", "my", "yesterday", "tomorrow",
         "what", "yes", "no", ".", "?",
     ]
 
@@ -1091,6 +1099,11 @@ final class KeyboardViewController: UIInputViewController {
                 content.append(NSAttributedString(
                     string: emoji, attributes: [.font: UIFont.systemFont(ofSize: 22)]))
                 label.attributedText = content
+                // The cell is called by its word. Without this a screen
+                // reader announces "want raised hands", and the symbol —
+                // which exists to be glanced at, not read — ends up being
+                // read aloud on every single key.
+                label.spokenLabel = text
             } else {
                 label.attributedText = nil
                 label.font = .systemFont(ofSize: 21, weight: .semibold)
@@ -1112,6 +1125,8 @@ final class KeyboardViewController: UIInputViewController {
                 ], range: NSRange(location: start, length: (text as NSString).length - start))
             }
             label.attributedText = content
+            // Two drawn lines, one spoken name.
+            label.spokenLabel = text.replacingOccurrences(of: "\n", with: " ")
         case .punct:
             label.attributedText = nil
             label.font = .systemFont(ofSize: 30, weight: .semibold)
@@ -1363,6 +1378,14 @@ final class KeyboardViewController: UIInputViewController {
         }
         updateSuggestions()
         requestPhraseCompletion()
+        // The document proxy can lag its own insertion by a run loop, so a
+        // form change caused by THIS commit is not always visible to
+        // textDidChange when it fires. Re-check once the text has settled:
+        // that is what was leaving the board in the past tense after a full
+        // stop had already ended the sentence. refreshVerbForms rebuilds
+        // only when the board would actually read differently, so this
+        // costs nothing on the commits that change nothing.
+        DispatchQueue.main.async { [weak self] in self?.refreshVerbForms() }
     }
 
     /// Repeats are intentional for deletes and cursor movement; clear-all
