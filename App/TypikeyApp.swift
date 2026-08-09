@@ -367,6 +367,7 @@ private struct ScreenReaderDiagnostics: View {
     @State private var framesSeen = false
     @State private var keyboardReady = false
     @State private var selfTest: String?
+    @State private var fit: KeyboardFit.Reading?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -380,6 +381,26 @@ private struct ScreenReaderDiagnostics: View {
             status("\(learnedCount) words learned", ok: learnedCount > 0, noText: "No words yet")
             status("Keyboard can read them", ok: keyboardReady,
                    noText: "Turn on Allow Full Access: Settings → General → Keyboard → Keyboards → Typikey")
+
+            Divider()
+
+            Text("Keyboard fit")
+                .font(.headline)
+            if let fit {
+                status("Whole board visible", ok: fit.fits,
+                       noText: "The bottom row is cut off by \(Int((fit.rowHeight * CGFloat(fit.rows) + fit.barHeight) - fit.granted))pt")
+                Text("Asked iOS for \(Int(fit.requested))pt, got \(Int(fit.granted))pt — \(fit.rows) rows of \(Int(fit.rowHeight))pt."
+                     + (fit.shortfall > 0 ? " iOS reserves a band above third-party keyboards; Typikey adds \(Int(fit.shortfall))pt to its request to compensate." : ""))
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .accessibilityIdentifier("keyboardFitDetail")
+            } else {
+                Text("Open the keyboard once and come back — only the keyboard can see the height iOS gives it.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+
+            Divider()
 
             Button("Test the reader") { runSelfTest() }
                 .font(.subheadline.weight(.semibold))
@@ -412,6 +433,7 @@ private struct ScreenReaderDiagnostics: View {
         sessionStarted = store.double(forKey: "screenSessionStart") > 0
         framesSeen = store.double(forKey: "screenLastFrame") > 0
         keyboardReady = store.bool(forKey: ScreenWords.keyboardAccessKey)
+        fit = KeyboardFit.read(from: store)
     }
 
     /// Runs the exact OCR path the broadcast extension uses — same request,

@@ -110,6 +110,7 @@ final class KeyboardViewController: UIInputViewController {
 
     private var keys: [Key] = []
     private var contentRowCount = 4
+    private var lastFitSignature: String?
 
     /// Private mode: typing works exactly as always, nothing is remembered.
     /// Re-read on every appearance so a toggle in the app takes effect on
@@ -1193,6 +1194,28 @@ final class KeyboardViewController: UIInputViewController {
         globeButton?.frame = CGRect(
             x: 3, y: gridTop + 3 * pinnedRowH + 3,
             width: pinnedW - 6, height: pinnedRowH - 6)
+
+        recordFit(rowHeight: contentRowH)
+    }
+
+    /// Publishes the height the system actually granted, so the app can say
+    /// whether the whole board fits. Only the extension can see this
+    /// number, and "is the bottom row cut off?" is otherwise a question
+    /// nobody can answer without photographing a screen.
+    ///
+    /// Written straight to the store rather than through `learn`: this is
+    /// geometry, not something he said, and private mode's promise is about
+    /// the latter. Recorded only when it changes, since layout runs often.
+    private func recordFit(rowHeight: CGFloat) {
+        let reading = KeyboardFit.Reading(
+            requested: requestedHeight,
+            granted: view.bounds.height,
+            rowHeight: rowHeight,
+            rows: contentRowCount)
+        let signature = "\(Int(reading.requested))|\(Int(reading.granted))|\(Int(reading.rowHeight))|\(reading.rows)"
+        guard signature != lastFitSignature else { return }
+        lastFitSignature = signature
+        KeyboardFit.record(reading, in: store)
     }
 
     // MARK: Explore-then-commit (called by TrackingView)
