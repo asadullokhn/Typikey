@@ -448,10 +448,16 @@ final class KeyboardViewController: UIInputViewController {
     // MARK: Categories
 
     /// Tab 0 is Recents — computed from usage across both languages.
+    ///
+    /// His own words count here too. They used to fall out: Recents looked
+    /// every used word up in `vocabIndex`, which only knows the built-in
+    /// vocabulary, so a name he added and then used every day could never
+    /// reach the one board that exists to shorten the reach to what he
+    /// actually says.
     private func allCategories() -> [(name: String, words: [VocabWord])] {
         let recents = usageCounts
             .sorted { $0.value > $1.value }
-            .compactMap { vocabIndex[$0.key] }
+            .compactMap { vocabIndex[$0.key] ?? myWord(named: $0.key) }
         var seen = Set<String>()
         var unique: [VocabWord] = []
         for word in recents where !seen.contains(word.en) {
@@ -479,6 +485,14 @@ final class KeyboardViewController: UIInputViewController {
             builtIn[i].words.append(VocabWord(word, .social))
         }
         return [(recentsName, unique)] + builtIn.map { ($0.name, $0.words) } + [("Mine", mineWords)]
+    }
+
+    /// A word of the user's own, as a cell. Matched case-insensitively
+    /// because usage is counted on the text that was inserted and My Words
+    /// stores names capitalised.
+    private func myWord(named word: String) -> VocabWord? {
+        myWords.first { $0.caseInsensitiveCompare(word) == .orderedSame }
+            .map { VocabWord($0, .social) }
     }
 
     /// On-device semantic filing for a user's word: personal names go to
@@ -689,7 +703,14 @@ final class KeyboardViewController: UIInputViewController {
 
     private var homeWords: [VocabWord] {
         let core = vocabulary.first { $0.en == "Core" }?.words ?? []
-        return Self.homeSelection.compactMap { name in core.first { $0.en == name } }
+        let words = Self.homeSelection.compactMap { name in core.first { $0.en == name } }
+        // A name that stops matching a Core word would simply vanish from
+        // the board — silently, with no crash and no gap, because the
+        // packer closes up behind it. That is exactly the class of bug
+        // that cost us the `be` key for a whole build.
+        assert(words.count == Self.homeSelection.count,
+               "homeSelection names a word that is not in Core")
+        return words
     }
 
     private func wordCell(_ word: VocabWord) -> ContentCell {
