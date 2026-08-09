@@ -14,7 +14,7 @@ final class PinnedFrameTests: XCTestCase {
     // (a real UIButton, not a staticText) whenever iOS asks for a keyboard
     // switcher, which is every configuration with a second keyboard
     // installed — i.e. every real device.
-    private let pinnedLabels = ["Home", "Clear all", "⌫ word"]
+    private let pinnedLabels = ["Home", "Clear", "Delete\nword"]
 
     func testPinnedKeysIdenticalAcrossLevels() {
         let app = launchToTypikey()
@@ -46,8 +46,8 @@ final class PinnedFrameTests: XCTestCase {
     func testGridControlsPresentOnWordBoards() {
         let app = launchToTypikey()
         for level in ["home", "categories"] {
-            XCTAssertTrue(app.staticTexts["⌄"].exists, "hide-keyboard missing on \(level)")
-            XCTAssertTrue(app.staticTexts["→"].exists, "cursor-right missing on \(level)")
+            XCTAssertTrue(app.staticTexts["Hide keyboard"].exists, "hide-keyboard missing on \(level)")
+            XCTAssertTrue(app.staticTexts["Cursor right"].exists, "cursor-right missing on \(level)")
             XCTAssertTrue(app.staticTexts["return"].exists || app.staticTexts["Done"].exists
                             || app.staticTexts["Go"].exists || app.staticTexts["Send"].exists
                             || app.staticTexts["Search"].exists,
@@ -60,11 +60,11 @@ final class PinnedFrameTests: XCTestCase {
     // typed: the word boards have no ⌫ or ←, the letters level has both.
     func testCharacterToolsLiveOnTheTypingLevels() {
         let app = launchToTypikey()
-        XCTAssertFalse(app.staticTexts["←"].exists, "no cursor-left on a word board")
+        XCTAssertFalse(app.staticTexts["Cursor left"].exists, "no cursor-left on a word board")
         app.staticTexts["abc"].tap()
         XCTAssertTrue(app.staticTexts["q"].waitForExistence(timeout: 3), "letters level did not open")
         XCTAssertTrue(app.staticTexts["⌫"].exists, "single-character delete missing on letters")
-        XCTAssertTrue(app.staticTexts["←"].exists, "cursor-left missing on letters")
+        XCTAssertTrue(app.staticTexts["Cursor left"].exists, "cursor-left missing on letters")
     }
 
     func testHomeWordTapInsertsWord() {
@@ -82,7 +82,7 @@ final class PinnedFrameTests: XCTestCase {
         var value = practiceField(in: app).value as? String ?? ""
         XCTAssertTrue(value.contains("Want"), "setup: word not inserted")
 
-        app.staticTexts["Clear all"].tap()
+        app.staticTexts["Clear"].tap()
         value = practiceField(in: app).value as? String ?? ""
         XCTAssertTrue(value.contains("Want"), "first tap must only arm, not clear")
         XCTAssertTrue(app.staticTexts["tap again"].waitForExistence(timeout: 2),
@@ -97,7 +97,7 @@ final class PinnedFrameTests: XCTestCase {
         let app = launchToTypikey()
         app.staticTexts["abc"].tap()
         XCTAssertTrue(app.staticTexts["q"].waitForExistence(timeout: 3), "letters level did not open")
-        app.staticTexts["⌄"].tap() // dismiss keyboard
+        app.staticTexts["Hide keyboard"].tap()
         practiceField(in: app).tap() // same field, same signature
         XCTAssertTrue(app.staticTexts["q"].waitForExistence(timeout: 5),
                       "manual level was reset on re-show — intent mapping must not refire for an unchanged field signature")

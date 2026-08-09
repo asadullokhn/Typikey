@@ -508,8 +508,10 @@ final class KeyboardViewController: UIInputViewController {
     /// on the home board; when it doesn't, the EN/MS key takes the slot.
     private var pinnedColumn: [(KeyAction, String)?] {
         [(.home, "Home"),
-         (.clearAll, clearArmedAt == nil ? "Clear all" : "tap again"),
-         (.deleteWord, lang == .ms ? "⌫ kata" : "⌫ word"),
+         (.clearAll, clearArmedAt == nil ? "Clear" : "tap again"),
+         // Two lines with the second struck through in red, as drawn: the
+         // word says what goes, and the strike says it goes away.
+         (.deleteWord, lang == .ms ? "Padam\nkata" : "Delete\nword"),
          needsInputModeSwitchKey ? nil : (.language, lang == .en ? "EN" : "MS")]
     }
 
@@ -785,8 +787,8 @@ final class KeyboardViewController: UIInputViewController {
         let cols = contentColumns
         return [
             (ContentCell(.ret, goLabel(), colSpan: 2), 1, cols - 2),
-            (ContentCell(.dismiss, "⌄"), rowCount - 1, cols - 2),
-            (ContentCell(.cursorRight, "→"), rowCount - 1, cols - 1),
+            (ContentCell(.dismiss, "Hide keyboard"), rowCount - 1, cols - 2),
+            (ContentCell(.cursorRight, "Cursor right"), rowCount - 1, cols - 1),
         ]
     }
 
@@ -848,9 +850,9 @@ final class KeyboardViewController: UIInputViewController {
         row[2] = other
         row[4] = ContentCell(.delete, "⌫")
         row[5] = ContentCell(.ret, goLabel(), colSpan: 2)
-        row[7] = ContentCell(.cursorLeft, "←")
-        row[8] = ContentCell(.dismiss, "⌄")
-        row[9] = ContentCell(.cursorRight, "→")
+        row[7] = ContentCell(.cursorLeft, "Cursor left")
+        row[8] = ContentCell(.dismiss, "Hide keyboard")
+        row[9] = ContentCell(.cursorRight, "Cursor right")
         return row
     }
 
@@ -935,12 +937,12 @@ final class KeyboardViewController: UIInputViewController {
         if needsInputModeSwitchKey {
             let globe = UIButton(type: .system)
             globe.setImage(UIImage(systemName: "globe"), for: .normal)
-            globe.tintColor = Palette.foreground(on: Palette.navigate)
-            globe.backgroundColor = Palette.navigate
+            globe.tintColor = Palette.foreground(on: Palette.erase)
+            globe.backgroundColor = Palette.erase
             globe.layer.cornerRadius = 16
             globe.layer.cornerCurve = .continuous
             globe.layer.borderWidth = 1
-            globe.layer.borderColor = Palette.navigate.darkened(by: 0.16).cgColor
+            globe.layer.borderColor = Palette.erase.darkened(by: 0.16).cgColor
             globe.accessibilityLabel = "Change keyboard"
             globe.addTarget(self, action: #selector(handleInputModeList(from:with:)), for: .allTouchEvents)
             trackingView.addSubview(globe)
@@ -977,6 +979,26 @@ final class KeyboardViewController: UIInputViewController {
         }
     }
 
+    /// The controls the design draws as glyphs rather than words.
+    private func symbolName(for action: KeyAction) -> String? {
+        switch action {
+        case .home: return "house.fill"
+        case .toCategories: return "square.grid.2x2.fill"
+        case .dismiss: return "keyboard.chevron.compact.down"
+        case .cursorRight: return "arrow.right"
+        case .cursorLeft: return "arrow.left"
+        default: return nil
+        }
+    }
+
+    private func symbolImage(_ name: String, tint: UIColor) -> NSAttributedString {
+        let configuration = UIImage.SymbolConfiguration(pointSize: 26, weight: .semibold)
+        let attachment = NSTextAttachment()
+        attachment.image = UIImage(systemName: name, withConfiguration: configuration)?
+            .withTintColor(tint, renderingMode: .alwaysOriginal)
+        return NSAttributedString(attachment: attachment)
+    }
+
     private func style(_ label: KeyView, action: KeyAction, label text: String, highlighted: Bool) {
         var background: UIColor
         switch role(of: action) {
@@ -989,7 +1011,9 @@ final class KeyboardViewController: UIInputViewController {
                 background = Palette.paper
             }
         case .navigate:
-            background = Palette.navigate
+            // Home has no card in the design — it sits directly on the
+            // tray, in the tray's own colour, so only the glyph reads.
+            background = action == .home ? Palette.board : Palette.navigate
         case .action:
             background = Palette.action
         case .erase:
@@ -999,31 +1023,63 @@ final class KeyboardViewController: UIInputViewController {
         }
 
         let foreground = Palette.foreground(on: background)
-        label.paint(fill: background, focused: highlighted)
+        // Home is the one key the design draws with no card at all — it
+        // sits directly on the tray.
+        label.paint(fill: background, focused: highlighted, bordered: action != .home)
         label.textColor = foreground
         // Phrases have to be allowed to wrap; a control label is one word
-        // and should shrink rather than break across lines.
-        label.lines = role(of: action) == .write ? 3 : 1
+        // and should shrink rather than break across lines. Delete word is
+        // two, because that is how it is drawn.
+        label.lines = role(of: action) == .write ? 3 : (action == .deleteWord ? 2 : 1)
+        label.spokenLabel = nil
+
+        // Four controls are glyphs in the design. Drawing them as an image
+        // inside the same label keeps every key on one code path; the
+        // spoken label carries the name so VoiceOver and the tests read
+        // the board a sighted user sees.
+        if let symbol = symbolName(for: action) {
+            // Home is grey rather than blue: it is not one of the keys that
+            // send you somewhere new, it is the way back to where you were.
+            let tint = action == .home ? UIColor(white: 0.58, alpha: 1) : foreground
+            label.attributedText = symbolImage(symbol, tint: tint)
+            label.spokenLabel = text
+            return
+        }
 
         switch action {
         case .word(let w):
             if let word = vocabIndex[w] ?? vocabIndex[inflectionBase[w] ?? w], let emoji = word.emoji {
-                // The WORD is what gets typed, so it leads; the emoji is a
-                // recognition cue above it, deliberately smaller. It used to
-                // be the other way round, which made the label hard to read.
+                // Word on top, symbol underneath, as drawn: the word is
+                // what gets typed, and the symbol is the recognition cue.
                 let content = NSMutableAttributedString(
-                    string: emoji + "\n", attributes: [.font: UIFont.systemFont(ofSize: 17)])
-                content.append(NSAttributedString(
-                    string: text, attributes: [
+                    string: text + "\n", attributes: [
                         .font: UIFont.systemFont(ofSize: 19, weight: .semibold),
                         .foregroundColor: foreground,
-                    ]))
+                    ])
+                content.append(NSAttributedString(
+                    string: emoji, attributes: [.font: UIFont.systemFont(ofSize: 22)]))
                 label.attributedText = content
             } else {
                 label.attributedText = nil
                 label.font = .systemFont(ofSize: 21, weight: .semibold)
                 label.text = text
             }
+        case .deleteWord:
+            // The strike falls on the second line only — it is the word
+            // that goes, and the red line is what says so.
+            let content = NSMutableAttributedString(
+                string: text, attributes: [
+                    .font: UIFont.systemFont(ofSize: 19, weight: .semibold),
+                    .foregroundColor: foreground,
+                ])
+            if let newline = text.range(of: "\n") {
+                let start = text.distance(from: text.startIndex, to: newline.upperBound)
+                content.addAttributes([
+                    .strikethroughStyle: NSUnderlineStyle.single.rawValue,
+                    .strikethroughColor: Palette.destructive,
+                ], range: NSRange(location: start, length: (text as NSString).length - start))
+            }
+            label.attributedText = content
         case .punct:
             label.attributedText = nil
             label.font = .systemFont(ofSize: 30, weight: .semibold)
