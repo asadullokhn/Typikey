@@ -1,0 +1,228 @@
+# 200 things Sayfullah might actually send.
+#
+# Written to spread across who he is writing to, because the vocabulary of
+# asking ChatGPT for a story has almost nothing in common with the
+# vocabulary of telling his mother he is in pain. Sentences are written
+# the way a fluent writer would write them, NOT telegraphically — the
+# point is to measure what saying the whole thing costs, and a corpus of
+# already-abbreviated sentences would flatter the board.
+#
+#   ./Tools/tapcost/run.sh --file Tools/tapcost/corpus-200.txt
+
+# --- Mum: needs, food, home ---
+I am hungry
+I want to eat rice now
+can I have juice please
+I want more chicken
+I do not want noodles
+what time is dinner
+I am thirsty
+can I have some water
+I want bread for breakfast
+I am not hungry now
+can we have chicken tonight
+I want to eat with you
+I finished my food
+the food is very good
+I do not like this food
+I am tired
+I want to go to bed
+can I sleep now
+I am not tired yet
+my head hurts
+my tummy hurts
+I feel sick
+I am okay now
+I am sad today
+I am happy
+I want a hug
+can you help me please
+I love you Mum
+thank you for the food
+I am ready to go
+I want to go home
+can we go home now
+I do not want to go out
+where are you going
+when are you coming home
+I am waiting for you
+please come here
+can you come here
+I need help
+I need the toilet
+
+# --- Dad ---
+can you help me with the computer
+the computer is not working
+can you open this for me
+I want to watch a video with you
+can we watch the game
+I like this song
+can you play the music
+can you turn it up
+that is too loud
+I want to go to the park
+can we go outside
+can we go to the shop
+I want to buy a new comic
+how much is it
+can you take a photo
+I drew a new picture
+do you want to see it
+look at my picture
+I made this today
+I am proud of it
+
+# --- Brother and sister ---
+do you want to play a game
+can I play too
+it is my turn
+that is not fair
+you took my thing
+give it back please
+I want to play with you
+can we play outside
+you are very funny
+that was funny
+stop it please
+do not do that
+I am playing now
+wait for me
+I like your drawing
+can I have a look
+that is cool
+we can share
+
+# --- Friends ---
+hello how are you
+I am good thank you
+what are you doing
+I am drawing a monster
+do you want to see
+see you at school tomorrow
+I will be there
+I cannot come today
+maybe tomorrow
+are you free today
+what time are you coming
+I am on the bus now
+I am at home
+where are you now
+did you finish the homework
+the homework is very hard
+I do not understand it
+can you help me with it
+thank you so much
+that is very funny
+I like that song
+have you seen the new video
+send it to me
+I will watch it later
+that was a good game
+you played very well
+I want to play again
+next time I will win
+good night
+
+# --- Teacher ---
+good morning
+I am sorry I am late
+I do not understand the homework
+can you explain it again
+I need more time
+I finished my work
+can I go to the toilet please
+I am not feeling well
+can I go to the nurse
+my computer is not working
+I cannot hear you
+can you speak louder
+I have a question
+what is the answer
+I need help with this
+I did the homework at home
+I forgot my book
+can I borrow a pen
+thank you for the help
+see you tomorrow
+
+# --- Doctor and nurse ---
+my head hurts a lot
+my tummy hurts now
+I feel very tired
+I am not sleeping well
+it hurts here
+it started yesterday
+I feel better today
+I do not feel sick now
+I am scared
+can Mum stay with me
+how long will it take
+does it hurt
+I want to go home now
+thank you doctor
+
+# --- ChatGPT and the web ---
+can you write a story about a monster
+can you make the story funny
+write a song about the rain
+what is a good name for my comic
+how do I draw a dragon
+can you help me with my homework
+explain this to me
+make it shorter
+make it easier
+I do not understand that
+can you say it again
+give me some ideas
+what is a good idea for a picture
+tell me a joke
+search for videos about space
+find a video about drawing
+open YouTube for me
+play the next video
+go back to the page
+share this link with me
+download this picture
+what is the weather today
+how many days until my birthday
+what time is it now
+tell me about dragons
+write a short story for me
+can you draw with words
+I like this one
+make one more
+
+# --- Feelings and everyday ---
+I am excited
+I am bored
+I am angry
+I do not like that
+I like it a lot
+that is great
+I am scared of that
+I feel much better now
+I want to be alone
+I want to talk
+I am fine thank you
+that is okay
+I do not mind
+I want to try again
+I can do it
+I cannot do it
+help me please
+wait a moment
+I am thinking
+I am finished
+
+# --- Getting around, plans ---
+I want to go to school
+can we go to the park tomorrow
+yesterday I went to the park with my friend
+we can go on the bus
+the MRT is faster
+how long is the ride
+I am ready to go now
+we will be late
+can we go later
+I do not want to go today

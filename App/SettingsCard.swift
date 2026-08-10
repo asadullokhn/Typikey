@@ -1,16 +1,28 @@
 import SwiftUI
 
-/// The two switches a person may need before a conversation: whether
-/// Typikey remembers it, and whether verb keys reshape themselves.
+/// Every setting in one place: whether Typikey remembers a conversation,
+/// whether verb keys reshape themselves, and how big the board is.
+///
+/// All three cross from the app into the keyboard through the shared
+/// container, so all three need Allow Full Access to have any effect —
+/// which is what `ReadinessCard` says at the top of the screen, since a
+/// setting that silently does nothing is worse than one that is missing.
 ///
 /// Kept on the home screen rather than buried in Diagnostics, because it is
 /// something a person reaches for *before* a private conversation, not
 /// something they troubleshoot afterwards. The copy says exactly what stops
 /// and what does not, since a privacy control nobody understands is worse
 /// than none at all.
-struct PrivateModeCard: View {
+struct SettingsCard: View {
     @State private var isOn = Preferences.privateMode
     @State private var grammarOn = Preferences.smartGrammar
+    @State private var size = Preferences.keyboardSize
+
+    @State private var reshapeOn = Preferences.boardFollowsSentence
+    @State private var fit: KeyboardFit.Reading?
+
+    private let store: UserDefaults =
+        UserDefaults(suiteName: ScreenWords.suiteName) ?? .standard
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -51,11 +63,47 @@ struct PrivateModeCard: View {
             Text("Keys never move — only the word on them changes. Every AAC app with this feature also lets you switch it off, because for some people the changing labels are more distracting than helpful. Turn it off and the keys stay in their plain form.")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
+
+            Divider()
+
+            Toggle(isOn: $reshapeOn) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Use the spare keys")
+                        .font(.title3.weight(.semibold))
+                    Text(reshapeOn
+                         ? "After “can you”, the I / you / he keys offer verbs"
+                         : "Every key stays where it is, always")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .accessibilityIdentifier("boardFollowsSentenceToggle")
+            .onChange(of: reshapeOn) { _, newValue in
+                Preferences.boardFollowsSentence = newValue
+            }
+
+            Text("Once you have written “can you”, nothing can follow it that reads “can you I” — so those seven cells are doing nothing, and they change to verbs instead. They turn green, so you can see which ones moved. Delete a word and they change straight back.\n\nThis is the one setting that moves a key. Fixed positions are the best-evidenced idea in this whole keyboard — one study measured 3.3 seconds per selection against keys that stay put, against 6.0 seconds for keys that move. If Sayfullah starts hunting, turn this off first.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+
+            Divider()
+
+            VStack(alignment: .leading, spacing: 10) {
+                Text("Keyboard size")
+                    .font(.title3.weight(.semibold))
+                KeyboardSizePicker(selection: $size, measured: fit)
+                    .onChange(of: size) { _, newValue in
+                        Preferences.keyboardSize = newValue
+                    }
+            }
         }
         .homeCardStyle()
         .onAppear {
             isOn = Preferences.privateMode
             grammarOn = Preferences.smartGrammar
+            size = Preferences.keyboardSize
+            reshapeOn = Preferences.boardFollowsSentence
+            fit = KeyboardFit.read(from: store)
         }
     }
 }

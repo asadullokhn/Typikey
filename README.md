@@ -29,11 +29,12 @@ Every interaction decision traces to a specific research finding:
 
 ## Features (current state)
 
-- Uniform frame on every level: pinned control columns — Home, Clear all, word-delete, cursor-left on the left; char-delete, Go, cursor-right, dismiss on the right — flank a 4×10 content grid. The pinned columns render identical frames regardless of level, so muscle memory for "delete is always over there" survives every navigation
-- Three levels deep: the home word board (Core + Chat vocabulary) → Categories → a category's words. Letters and numbers are a parallel typing track reached via the abc/123 cells, for words not in the grid
-- Category tiles: Recents / Core / People / Actions / Feelings / Food / Places / Art / Chat
-- Recents learns his 12 most-used words automatically
-- Prediction bar above the grid, with the globe key fixed at its right end (same slot on every level and device) — next-word prediction is an on-device bigram model, seeded with defaults, learning his real word patterns over time
+- Uniform frame on every level (team design, 2026-08-07): one pinned column on the left — Home, Clear all, word-delete, language — beside a 4×10 content grid. It renders an identical frame regardless of level, so muscle memory for "delete is always over there" survives every navigation. Enter (double-width, row 2), ⌄ and → sit inside the grid at fixed positions rather than in a second pinned column
+- Home is the generative board, curated to its 33 cells: every pronoun, the auxiliaries `be do have can will`, the verbs that combine with everything, and the closed classes — `to for with in on`, `and`, `a the my`. A stored phrase says one thing; "I am waiting" is a dead end without `for`, and no amount of prediction fixes that — a preposition has to sit in one known place, one tap away, every time. Core word lists (Banajee et al.; Boenisch & Soto) rank these among the highest-frequency words in anything anyone says, which is why every published core board carries them permanently. Core and Little words hold the rest, one tap away under Categories. Both are sized to fit a four-row board: a board with more words than cells loses the overflow silently, which is how eleven words once ended up in the app but on no board at all
+- Three levels deep: the home word board → Categories → a category's words. Letters and numbers are a parallel typing track reached via the abc/123 cells, for words not in the grid
+- Category tiles: Recents / Core / People / Actions / Feelings / Food / Places / Art / Web / Chat / Little words / Mine — wide double-width tiles, all twelve within the four-row board
+- Recents learns his 12 most-used words automatically — his own words included, not just the built-in vocabulary
+- Prediction bar above the grid, full width for three suggestions — next-word prediction is an on-device bigram model, seeded with defaults, learning his real word patterns over time. The system globe sits in the pinned column's bottom slot, where iOS keyboards put it
 - Phrase completion (iOS 26 devices with Apple Intelligence): the bar offers a short continuation in the user's own vocabulary — tap the phrase to take it all, or ▸ to take one word. Generated entirely on device; on unsupported devices the bar simply shows word prediction as before.
 - Keyword capture: words typed letter-by-letter three or more times become candidates in the app's My Words screen — accept one and it joins the keyboard's Mine category. Counts stay in the on-device store, nowhere else.
 - My Words: a tremor-friendly editor in the app (big buttons, two-tap remove, no drag-and-drop) feeding the Mine category through the shared container. Requires the Full Access grant to reach the keyboard.
@@ -44,13 +45,17 @@ Every interaction decision traces to a specific research finding:
 - Punctuation cells that attach to the preceding word
 - Two grid languages: English and Malay (Bahasa Melayu), toggled by the EN/MS key. Language switching relabels cells in place — grid positions never move, so muscle memory survives the switch. Prediction seeds and category names follow the active language. Malay translations are drafts pending verification with Fadillah
 - Typing follows the text, not the toggle: letters-level word completions detect the language of what's actually in the field (any language the system spell-checker knows) and complete in it; phrase completion answers in the language the sentence is written in; screen learning OCRs whatever language is on screen. No setting to flip — it just works
-- Three height presets cycled by the size key, persisted between sessions
+- Three keyboard sizes, chosen in the app rather than on the board — a grid slot is a word, and size is set once and then never again. The board is always four rows of ten, exactly as designed; the size changes how big each key is, not how many there are. Large is 640pt, giving rows of roughly 146pt — the easiest targets this board has had
 - Dismiss key, like Apple's iPad keyboard
 - Field-type intent mapping: the keyboard opens on the level that matches the focused field (e.g. a search field opens on letters, a numeric field opens on numbers) — applied once per field, never mid-typing; manual navigation always wins afterward
 - Key-commit feedback: three distinct haptics, deliberately strong, because the iPad sits on a stand and is driven by joystick — a heavy impulse when a key commits, a soft tick when the finger slides onto a different key (so the board can be read by feel), and a warning pattern when Clear all arms. Haptics need Full Access; without it iOS drops them silently, so nothing depends on them
-- Verb forms follow the sentence: after "I am" the `go` key reads `going`, after "he" it reads `goes`, after "have" it reads `gone` — relabelled in place, never moved. Matches what TD Snap calls a Grammar button and Grid 3 calls Smart Grammar. English only; Malay marks tense with particles instead of inflecting
-- Responsive layout: word boards drop to a compact 5-column content grid when the system narrows the keyboard (floating, Split View, Slide Over); the letters and numbers levels keep all 10 columns so no character goes missing. Pinned columns never change width or position, at any width
-- iPhone: the same keyboard, smaller — phone-sized height presets, and compact word boards run 8 content rows so ALL 40 cells stay reachable (the pinned control columns keep their 4-row frames). Categories become two banks of five full-height tiles
+- Grammar support, in both the forms the AAC products offer it:
+  - **Context-driven** — verb forms follow the sentence. After "I am" the `go` key reads `going`, after "he" it reads `goes`, after "have" it reads `gone`, and `be` reads `am` / `is` / `are` from the subject. Relabelled in place, never moved
+  - **Tense from the sentence's own time words** — `yesterday` puts every verb key in the simple past (`go` → `went`, `be` → `was`/`were`), `tomorrow` and `will` put them in the future. No tense key: the board carries the design's controls and no others, so tense is read from words the user was going to tap anyway. That is also how English works — the verb ending is ambiguous and the adverb is what places the sentence. Scoped to the current sentence, so a full stop clears it
+  - An auxiliary already in the text always wins over the tense key — "I will went" is not a sentence anyone wants
+  - English only. Malay marks tense with particles rather than by inflecting, so the tense slot is reserved but left empty there, which keeps every word cell on identical coordinates in both languages. Same when Smart Grammar is switched off in the app
+- Responsive layout: word boards drop to a compact 5-column content grid when the system narrows the keyboard (floating, Split View, Slide Over) and take 8 rows instead of 4, so every word cell survives the squeeze — narrow layouts pay in height, which is the one thing they still have. The letters and numbers levels keep all 10 columns so no character goes missing. The pinned column never changes width or position, at any width
+- iPhone: the same keyboard, smaller — phone-sized height presets, and the same 8-row compact board every narrow layout gets (the pinned column keeps its 4-row frame)
 - Auto-filing (Gilbert build): a word added to My Words that is recognizably a person, place, or action ALSO appears at the end of that category's page, in Mine's pink so it always reads as "his word" — the board configures itself, visibly, so nobody hunts for a word. Detection is on-device NLTagger; ambiguous words stay Mine-only; the My Words screen says where each word was filed
 - All learning (usage counts, bigrams) stays on-device: in the shared app-group container when Full Access is granted (so the app can read it), in the keyboard's own sandbox when not — never on a network
 
@@ -79,7 +84,18 @@ First run on a new device needs Developer Mode enabled (Settings → Privacy & S
 ## Testing
 
 - Manual: build to a device, enable the keyboard, and use the practice field in the app. The regression checklist that matters: open/close/reopen the keyboard several times, rotate both ways, and confirm the height never grows (this was a real bug — see the git history on `fix/rotation-height`).
-- Automated: `UITests/KeyboardHeightTests.swift` contains a scripted version of that exact checklist with height assertions. It is currently prefixed `todo_` (skipped) because reliably making a third-party keyboard the *active* keyboard inside a simulator is unsolved — the file documents what was tried. Run it by renaming the method to `test...` and running the Typikey scheme's tests against a **freshly erased** simulator.
+- Automated: 17 UI tests across six files, all passing as of build 22. They cover the pinned frame, the grid controls, grammar, private mode, My Words, screen learning, and the height regression checklist above.
+
+  ```bash
+  defaults write com.apple.iphonesimulator ConnectHardwareKeyboard -bool false
+  xcodebuild test -project Typikey.xcodeproj -scheme Typikey \
+    -destination 'id=<booted iPad simulator UDID>'
+  ```
+
+  **The one precondition is that Typikey is enabled on that simulator**, which is per-simulator and persists once done: install the app there, then Settings → General → Keyboard → Keyboards → Add New Keyboard → Typikey. Confirm with
+  `plutil -p ~/Library/Developer/CoreSimulator/Devices/<UDID>/data/Library/Preferences/.GlobalPreferences.plist | grep -A4 AppleKeyboards` — the extension's bundle id should be in the list. Writing that key directly does *not* work; the live input system ignores it.
+
+  The tests were assumed unrunnable for most of this project's life and were never executed. They were runnable all along, and the first run found four real defects — including a VoiceOver regression and a feature that could not be reached at all. Run them.
 
 ## Known limitations / not yet decided
 

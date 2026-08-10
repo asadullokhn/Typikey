@@ -30,7 +30,7 @@ The full list with reasoning lives in `CONTRIBUTING.md`. The short version:
 6. Prediction appears only in the suggestion bar, never by reordering the grid.
 7. Language switching relabels cells in place.
 8. Malay vocabulary is an unverified draft — flag any translation you add as unverified.
-9. Pinned control columns render identical frames on every level — never derive their geometry from the content grid's column count.
+9. The pinned control column (one column, on the left: Home, Clear all, word-delete, language) renders identical frames on every level — never derive its geometry from the content grid's column count. Enter, ⌄ and → live inside the content grid, per the team's design.
 
 ## When unsure
 

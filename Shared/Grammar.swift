@@ -78,28 +78,105 @@ enum WordFiling {
 /// board is deliberately left alone (invariant 8: no unverified strings).
 enum Grammar {
 
-    /// The form the next verb should take, read from the words already typed.
+    /// When the sentence happens.
+    ///
+    /// Read from the sentence rather than set on a control key: the board
+    /// carries only the keys in the team's design, so tense has to come
+    /// from words the user was going to tap anyway. English marks tense on
+    /// the verb, but a time word is what disambiguates it — "yesterday I
+    /// went", "tomorrow I will go" — so a temporal adverb anywhere in the
+    /// current sentence puts every verb key into that tense.
+    enum Tense { case present, past, future }
+
+    /// Time words that place the sentence. Auxiliaries are deliberately
+    /// absent: "was", "were", "have" and "will" are already handled as
+    /// auxiliaries below, and listing them twice would fight that.
+    private static let pastMarkers: Set<String> =
+        ["yesterday", "before", "ago", "earlier", "then", "used"]
+    private static let futureMarkers: Set<String> =
+        ["tomorrow", "later", "soon", "next", "tonight"]
+
+    /// The tense the current sentence is in. Only the current one: the
+    /// context window still holds everything typed before it, and
+    /// "yesterday" in the last sentence must not reach into this one.
+    static func tense(in context: String) -> Tense {
+        // The nearest marker wins — a sentence is allowed to change its
+        // mind ("yesterday I was tired, tomorrow I will be fine").
+        for word in words(in: currentSentence(context)).reversed() {
+            if pastMarkers.contains(word) { return .past }
+            if futureMarkers.contains(word) { return .future }
+        }
+        return .present
+    }
+
+    /// The sentence in progress, not everything in the field. Shared with
+    /// SentenceShape and BoardPlan: a second copy of this drifted from
+    /// this one once already, and the board spent a build disagreeing with
+    /// itself about what "do you" meant.
+    static func currentSentence(_ context: String) -> String {
+        guard let end = context.lastIndex(where: { ".!?\n".contains($0) }) else { return context }
+        return String(context[context.index(after: end)...])
+    }
+
+    /// The form the next verb should take, from the words already typed
+    /// and the chosen tense.
     enum VerbForm {
-        case base           // I go, you go, to go, will go, don't go
-        case thirdPerson    // he goes
-        case progressive    // I am going
-        case past           // I went, I have gone -> past participle
+        case base            // I go, to go, don't go
+        case thirdPerson     // he goes
+        case progressive     // I am going
+        case pastSimple      // I went
+        case pastParticiple  // I have gone
+        case future          // I will go
     }
 
     /// Auxiliaries that put the next verb in the -ing form.
     private static let progressiveAuxiliaries: Set<String> =
         ["am", "is", "are", "was", "were", "being", "i'm", "you're", "he's", "she's", "it's", "we're", "they're"]
 
-    /// Words after which the verb stays in its plain base form. Modals,
-    /// "to", negations, and plural/first/second-person subjects.
+    /// Words that pin the next verb to its plain base form whatever tense
+    /// is selected, because they have already said when: modals, "to",
+    /// negations. "I will went" is not a sentence anyone wants.
     private static let baseTriggers: Set<String> = [
         "to", "will", "would", "can", "could", "should", "must", "may", "might", "shall",
         "don't", "doesn't", "didn't", "won't", "can't", "let", "please", "help",
-        "i", "you", "we", "they",
+        // Do-support. Missing these produced "do you are" and "did he
+        // goes", because nothing recognised the auxiliary standing in
+        // front of the subject.
+        "do", "does", "did",
     ]
 
-    /// Subjects that take the -s form.
-    private static let thirdPersonSubjects: Set<String> = ["he", "she", "it", "mum", "dad", "everyone", "who"]
+    /// Everything that can govern a following verb, in one set.
+    ///
+    /// It exists because there were two lists — this one and a copy inside
+    /// SentenceShape — and they disagreed about do-support. One list, so
+    /// they cannot drift again.
+    static let verbGovernors: Set<String> =
+        baseTriggers
+            .union(progressiveAuxiliaries)
+            .union(perfectAuxiliaries)
+            .union(["be", "been"])
+
+    /// Subjects that take the -s form. Subjects say who, never when, so
+    /// after one of these the selected tense decides the form.
+    private static let thirdPersonPronouns: Set<String> = ["he", "she", "it", "who"]
+
+    /// A common noun standing where a subject goes is third-person
+    /// singular. Read off the vocabulary rather than listed here, so a
+    /// noun added to any category is a noun a sentence can be about.
+    ///
+    /// Standing where a subject goes is the whole difficulty. Most nouns
+    /// in most sentences are objects — "I drew a picture" — and treating
+    /// one as a subject turns the next verb third-person, so the board
+    /// offered "picture does" and the sentence needed "picture do". A
+    /// clause has one subject, so a noun is only it when nothing else has
+    /// claimed the role: "my head hurts" and "what time is dinner" have no
+    /// pronoun in front of the noun, and "I drew a picture" does.
+    private static func isThirdPerson(_ word: String, in words: [String]) -> Bool {
+        if thirdPersonPronouns.contains(word) { return true }
+        guard nounWords.contains(word) else { return false }
+        let before = words.dropLast()
+        return !before.contains { copula[.base]?[$0] != nil || nounWords.contains($0) }
+    }
 
     /// Auxiliaries that call for the past participle.
     private static let perfectAuxiliaries: Set<String> = ["have", "has", "had", "i've", "you've", "we've", "they've"]
@@ -110,11 +187,23 @@ enum Grammar {
     /// table because it inflects for person as well as tense — the only
     /// English verb that still does.
     private static let copula: [VerbForm: [String: String]] = [
+        // The demonstratives are here because they stand in for a noun and
+        // the copula still has to agree with something: "who IS that", not
+        // "who be that".
         .base: ["i": "am", "he": "is", "she": "is", "it": "is",
+                "this": "is", "that": "is", "these": "are", "those": "are",
                 "you": "are", "we": "are", "they": "are"],
-        .past: ["i": "was", "he": "was", "she": "was", "it": "was",
-                "you": "were", "we": "were", "they": "were"],
+        .pastSimple: ["i": "was", "he": "was", "she": "was", "it": "was",
+                      "this": "was", "that": "was", "these": "were", "those": "were",
+                      "you": "were", "we": "were", "they": "were"],
     ]
+
+    /// Which of the copula's six people a subject counts as. Keeps the
+    /// table six entries long instead of trying to name every noun in
+    /// English: "dinner" agrees exactly as "it" does.
+    private static func person(of subject: String) -> String {
+        copula[.base]?[subject] != nil ? subject : (nounWords.contains(subject) ? "it" : subject)
+    }
 
     private static let copulaForms: Set<String> =
         ["be", "am", "is", "are", "was", "were", "been", "being"]
@@ -160,19 +249,54 @@ enum Grammar {
     /// Only the copula needs this; every other English verb collapses
     /// person into a single form.
     static func subject(before context: String) -> String? {
-        words(in: context).last.flatMap { copula[.base]?[$0] != nil ? $0 : nil }
+        let words = words(in: currentSentence(context))
+        guard let last = words.last, isSubject(last, in: words) else { return nil }
+        // A governed subject does not inflect the copula: "can you be",
+        // never "can you are". The modal has already taken the tense.
+        guard governor(of: last, in: words) == nil else { return nil }
+        return last
     }
 
-    private static func words(in context: String) -> [String] {
+    /// Every subject the board can put in front of a verb.
+    private static func isSubject(_ word: String, in words: [String]) -> Bool {
+        copula[.base]?[word] != nil || isThirdPerson(word, in: words)
+    }
+
+    /// The auxiliary or modal governing the subject, when the sentence has
+    /// inverted into a question: "can you", "is he", "have they".
+    ///
+    /// English hands the tense to the auxiliary and leaves the verb alone
+    /// — "can he go", never "can he goes"; "can you be", never "can you
+    /// are". Without this the board agreed with the subject and ignored
+    /// the word in front of it, which is wrong in every question anyone
+    /// would actually ask.
+    private static func governor(of subject: String, in words: [String]) -> String? {
+        guard words.count >= 2, isSubject(subject, in: words) else { return nil }
+        let before = words[words.count - 2]
+        guard verbGovernors.contains(before) else { return nil }
+        return before
+    }
+
+    static func words(in context: String) -> [String] {
         context
             .lowercased()
             .components(separatedBy: CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "'")).inverted)
             .filter { !$0.isEmpty }
     }
 
-    static func verbForm(after context: String) -> VerbForm {
-        let words = words(in: context)
-        guard let last = words.last else { return .base }
+    /// Auxiliary first, then tense. An auxiliary already in the text is an
+    /// unambiguous instruction and always wins — after "I am" the verb is
+    /// -ing, and after "will" it stays base, whatever time words are
+    /// around. Everything else is a subject or nothing at all, and there
+    /// the sentence's tense decides.
+    ///
+    /// `tense` is normally left to the sentence; passing it explicitly is
+    /// what a tense control key would do, if the board ever gets one.
+    static func verbForm(after context: String, tense explicit: Tense? = nil) -> VerbForm {
+        let sentence = currentSentence(context)
+        let tense = explicit ?? self.tense(in: sentence)
+        let words = words(in: sentence)
+        guard let last = words.last else { return form(for: tense, thirdPerson: false) }
 
         // "I am not going", "he is never eating" — an adverb between the
         // auxiliary and the verb must not break the agreement.
@@ -180,11 +304,70 @@ enum Grammar {
         let effective = adverbs.contains(last) && words.count >= 2 ? words[words.count - 2] : last
 
         if progressiveAuxiliaries.contains(effective) { return .progressive }
-        if perfectAuxiliaries.contains(effective) { return .past }
+        if perfectAuxiliaries.contains(effective) { return .pastParticiple }
         if baseTriggers.contains(effective) { return .base }
-        if thirdPersonSubjects.contains(effective) { return .thirdPerson }
-        return .base
+
+        // An inverted question puts the auxiliary in front of the subject,
+        // and the auxiliary is what the verb answers to — not the subject
+        // standing next to it. "Can he go", never "can he goes". "Is he
+        // going". "Have they gone".
+        if let governor = governor(of: effective, in: words) {
+            if progressiveAuxiliaries.contains(governor) { return .progressive }
+            if perfectAuxiliaries.contains(governor) { return .pastParticiple }
+            return .base
+        }
+        return form(for: tense, thirdPerson: isThirdPerson(effective, in: words))
     }
+
+    private static func form(for tense: Tense, thirdPerson: Bool) -> VerbForm {
+        switch tense {
+        case .present: return thirdPerson ? .thirdPerson : .base
+        case .past: return .pastSimple
+        case .future: return .future
+        }
+    }
+
+    /// Whether a word takes third-person agreement on its own — a bare
+    /// subject with no sentence around it, which is what Rephrase has
+    /// when it is deciding between "do" and "does".
+    static func thirdPerson(_ word: String) -> Bool {
+        isThirdPerson(word.lowercased(), in: [word.lowercased()])
+    }
+
+    /// The dictionary form of a verb, or nil if this is not a verb the
+    /// board could have produced.
+    ///
+    /// Built by running every verb in the vocabulary through every form.
+    /// The board can only ever write a word it can make, so a table of
+    /// what it makes is a complete answer for anything it wrote — and
+    /// answering nil for everything else is what lets callers use this to
+    /// find the verb in a sentence at all.
+    static func baseForm(of word: String) -> String? { baseForms[word.lowercased()] }
+
+    private static let baseForms: [String: String] = {
+        var forms: [String: String] = [:]
+        let verbs = Set(vocabulary.flatMap(\.words)
+            .filter { $0.wordClass == .verb && !$0.en.contains(" ") }
+            .map { $0.en.lowercased() })
+            .union(irregular.keys)
+            .union(copulaForms)
+        for verb in verbs {
+            forms[verb] = copulaForms.contains(verb) ? "be" : verb
+            for form in [VerbForm.thirdPerson, .progressive, .pastSimple, .pastParticiple] {
+                let inflected = inflect(verb, as: form).lowercased()
+                // First writer wins: "read" is its own past tense, and
+                // "left" is the past of "leave" before it is anything
+                // else. A later verb must not steal a form already
+                // claimed by the verb that owns it outright.
+                if forms[inflected] == nil { forms[inflected] = copulaForms.contains(verb) ? "be" : verb }
+            }
+        }
+        for (subject, form) in (copula[.base] ?? [:]).merging(copula[.pastSimple] ?? [:], uniquingKeysWith: { a, _ in a }) {
+            _ = subject
+            forms[form] = "be"
+        }
+        return forms
+    }()
 
     /// The verb in the requested form. Falls back to the base word whenever
     /// a rule would be a guess — a wrong word in a fixed position is worse
@@ -193,18 +376,18 @@ enum Grammar {
         let lower = verb.lowercased()
         guard !invariable.contains(lower), !verb.contains(" ") else { return verb }
 
-        // "be" is answered by the subject, not by the tense rules: after
-        // "I" it is "am", after "they" it is "are", after nothing at all it
-        // stays "be" ("I want to be").
+        // "be" is answered by the subject, not by the tense rules alone:
+        // after "I" it is "am", after "they" it is "are", after nothing at
+        // all it stays "be" ("I want to be").
         if copulaForms.contains(lower) {
             switch form {
             case .progressive: return "being"
-            case .past:
-                if let subject, let was = copula[.past]?[subject] { return was }
-                return "been"
-            default:
-                if let subject, let now = copula[.base]?[subject] { return now }
-                return "be"
+            case .pastParticiple: return "been"
+            case .future: return "will be"
+            case .pastSimple:
+                return subject.flatMap { copula[.pastSimple]?[person(of: $0)] } ?? "was"
+            case .base, .thirdPerson:
+                return subject.flatMap { copula[.base]?[person(of: $0)] } ?? "be"
             }
         }
 
@@ -213,7 +396,9 @@ enum Grammar {
             case .base: return verb
             case .thirdPerson: return forms.0
             case .progressive: return forms.1
-            case .past: return forms.3   // participle: "I have gone", "I have eaten"
+            case .pastSimple: return forms.2          // "I went", "I ate"
+            case .pastParticiple: return forms.3      // "I have gone", "I have eaten"
+            case .future: return "will " + verb
             }
         }
 
@@ -221,7 +406,11 @@ enum Grammar {
         case .base: return verb
         case .thirdPerson: return thirdPersonForm(lower)
         case .progressive: return progressiveForm(lower)
-        case .past: return pastForm(lower)
+        // Regular verbs spell the simple past and the participle the same
+        // way — "I walked", "I have walked" — which is why only the
+        // irregular table needs to tell them apart.
+        case .pastSimple, .pastParticiple: return pastForm(lower)
+        case .future: return "will " + verb
         }
     }
 

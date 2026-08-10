@@ -39,7 +39,6 @@ final class KeyboardViewController: UIInputViewController {
         case toNumbers
         case space
         case ret
-        case size
         case dismiss
         case language
     }
@@ -59,16 +58,22 @@ final class KeyboardViewController: UIInputViewController {
         let rowSpan: Int
     }
 
-    // Three height presets, cycled by the ⤢ key like Apple's keyboard
-    // minimize behavior. Layout is fully width-responsive on top: when the
-    // system narrows us (floating, Split View, Slide Over, Stage Manager)
-    // the grid drops to compact mode instead of breaking.
-    // Same three-preset cycle on both device families; the phone numbers
-    // are smaller because an iPad preset would swallow an iPhone screen.
-    private var sizePresets: [CGFloat] {
-        UIDevice.current.userInterfaceIdiom == .phone ? [260, 310, 360] : [280, 360, 440]
+    // Three height presets, chosen in the app rather than on the board —
+    // the size key spent a grid slot on something adjusted once and then
+    // never again, and grid slots are the scarcest thing here.
+    //
+    // The iPad numbers are deliberately large. A dedicated AAC app takes
+    // the whole screen, and this one has to fit a real core vocabulary:
+    // Large is what makes six rows of ten possible at ~97pt each, which is
+    // taller than a key on the system keyboard, not smaller.
+    // Layout is fully width-responsive on top: when the system narrows us
+    // (floating, Split View, Slide Over, Stage Manager) the grid drops to
+    // compact mode instead of breaking. The phone numbers stay small
+    // because an iPad preset would swallow an iPhone screen.
+    private var size: KeyboardSize = .large
+    private var presetHeight: CGFloat {
+        size.height(phone: UIDevice.current.userInterfaceIdiom == .phone)
     }
-    private var sizeIndex = 2
     private var heightConstraint: NSLayoutConstraint?
     private var healAttempts = 0
     private var lastCompact = false
@@ -86,7 +91,7 @@ final class KeyboardViewController: UIInputViewController {
     private var heightDeficit: CGFloat = 0
     private var requestedHeight: CGFloat {
         let screenHeight = (view.window?.screen ?? UIScreen.main).bounds.height
-        return min(sizePresets[sizeIndex] + heightDeficit, screenHeight * 0.6)
+        return min(presetHeight + heightDeficit, screenHeight * 0.6)
     }
 
     private var isCompact: Bool {
@@ -105,6 +110,7 @@ final class KeyboardViewController: UIInputViewController {
 
     private var keys: [Key] = []
     private var contentRowCount = 4
+    private var lastFitSignature: String?
 
     /// Private mode: typing works exactly as always, nothing is remembered.
     /// Re-read on every appearance so a toggle in the app takes effect on
@@ -114,6 +120,16 @@ final class KeyboardViewController: UIInputViewController {
     /// Whether verb keys follow the sentence. Every AAC product with this
     /// feature ships a way to turn it off; see `Preferences.smartGrammar`.
     private var smartGrammar = true
+
+    /// Whether cells the sentence cannot use are re-offered as words it
+    /// can. The one feature here that moves a cell, so it has the loudest
+    /// switch — see `Preferences.boardFollowsSentence`.
+    private var boardFollowsSentence = true
+
+    /// The shape the board was last built for. Held so a rebuild happens
+    /// when the sentence starts needing something different, and not on
+    /// every keystroke.
+    private var boardSlot: SentenceShape.Slot = .any
 
     /// The subject the sentence is about, when the last word named one.
     /// Only "be" needs it — it is the one English verb that still inflects
@@ -134,11 +150,10 @@ final class KeyboardViewController: UIInputViewController {
     private var lastIntentSignature: String?
 
     // Compact (floating / Split View / Slide Over): word boards drop to 5
-    // wide-enough columns showing the first 20 content cells; the typing
-    // levels keep all 10 columns — a letter that isn't there at all is
-    // worse than a narrower key. Pinned columns never move: layoutKeys()
-    // sizes col 0 and the right pinned column from bounds.width alone
-    // (bounds.width / 12), never from contentColumns, so their frames are
+    // wide-enough columns; the typing levels keep all 10 columns — a letter
+    // that isn't there at all is worse than a narrower key. The pinned
+    // column never moves: layoutKeys() sizes col 0 from bounds.width alone
+    // (bounds.width / 11), never from contentColumns, so its frame is
     // identical whether the content grid is 5 or 10 columns wide.
     private var contentColumns: Int {
         switch level {
@@ -229,6 +244,12 @@ final class KeyboardViewController: UIInputViewController {
     private let completionEngine = CompletionEngine()
     private var completionWords: [String] = []
 
+    /// Ways of saying what the finished sentence seems to mean, offered
+    /// after the question key and cleared by anything else. Held here
+    /// rather than recomputed on every rebuild because it is an answer to
+    /// one deliberate act — pressing `?` — and not a running commentary.
+    private var rephrasings: [String] = []
+
     // MARK: Lifecycle
 
     override func viewDidLoad() {
@@ -239,13 +260,12 @@ final class KeyboardViewController: UIInputViewController {
         usageCounts = (store.dictionary(forKey: "usage") as? [String: Int]) ?? [:]
         learnedBigrams = (store.dictionary(forKey: "bigrams") as? [String: Int]) ?? [:]
         myWords = (store.array(forKey: "myWords") as? [String]) ?? []
+        autoFileCache = (store.dictionary(forKey: "wordFiling") as? [String: String]) ?? [:]
         reloadScreenWords()
         if let saved = store.string(forKey: "lang"), let restored = Lang(rawValue: saved) {
             lang = restored
         }
-        if store.object(forKey: "sizeIndex") != nil {
-            sizeIndex = min(max(store.integer(forKey: "sizeIndex"), 0), sizePresets.count - 1)
-        }
+        size = KeyboardSize.clamped(Preferences.keyboardSize(in: store))
 
         // Height lives on OUR content view, never on the root view. The
         // system derives the window height from content fitting; a height
@@ -256,7 +276,7 @@ final class KeyboardViewController: UIInputViewController {
         trackingView.isMultipleTouchEnabled = false
         trackingView.controller = self
         view.addSubview(trackingView)
-        let height = trackingView.heightAnchor.constraint(equalToConstant: sizePresets[sizeIndex])
+        let height = trackingView.heightAnchor.constraint(equalToConstant: presetHeight)
         NSLayoutConstraint.activate([
             trackingView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             trackingView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
@@ -273,6 +293,23 @@ final class KeyboardViewController: UIInputViewController {
 
         buildSuggestionBar()
         buildKeys()
+    }
+
+    /// Tears the height constraint down and builds a new one.
+    ///
+    /// Height lives on the content view, never the root view — a height
+    /// constraint on the root fights the system's cached window frame, and
+    /// the loser gets re-cached, which is the feedback loop that made the
+    /// keyboard grow on every open. Within that rule, replacing the
+    /// constraint is the strongest signal available that the size really
+    /// changed.
+    private func rebuildHeightConstraint() {
+        heightConstraint?.isActive = false
+        let height = trackingView.heightAnchor.constraint(equalToConstant: requestedHeight)
+        height.isActive = true
+        heightConstraint = height
+        view.setNeedsLayout()
+        view.layoutIfNeeded()
     }
 
     // Pointer support (trackpad, Apple Pencil hover, AssistiveTouch
@@ -296,6 +333,34 @@ final class KeyboardViewController: UIInputViewController {
         // in-progress token from a previous field never leaks into a new one.
         isPrivate = Preferences.privateMode(in: store)
         smartGrammar = Preferences.smartGrammar(in: store)
+        boardFollowsSentence = Preferences.boardFollowsSentence(in: store)
+        // Size is chosen in the app now, so it has to be re-read here —
+        // otherwise the change would not land until the extension is next
+        // restarted, which from the user's side looks like nothing happened.
+        let chosenSize = KeyboardSize.clamped(Preferences.keyboardSize(in: store))
+        if chosenSize != size {
+            size = chosenSize
+            // heightDeficit is a shortfall MEASURED AGAINST ONE PRESET, and
+            // it never decays. Carried across a size change it makes every
+            // other size wrong, and a shrink wrong in a way that looks like
+            // nothing happened at all: the request stays
+            // (old preset + deficit) tall, the system keeps the window that
+            // tall, and only the drawn board gets smaller — leaving a band
+            // of dead space above it. Forget the measurement and take it
+            // again for the size actually chosen.
+            heightDeficit = 0
+            // The self-heal shrinks an oversized window, and it gives up
+            // after two tries. Those tries were spent on the old size.
+            healAttempts = 0
+            // Replace the constraint rather than retune it. Changing
+            // `constant` asks the system to revisit a window height it has
+            // already cached — the same cache that caused the historic
+            // growth bug — and on a size change that request is quietly
+            // ignored often enough that the picker looked dead. A new
+            // constraint object is a change the layout engine cannot
+            // coalesce away.
+            rebuildHeightConstraint()
+        }
         myWords = (store.array(forKey: "myWords") as? [String]) ?? []
         reloadScreenWords()
         promoteFrequentWords()
@@ -422,35 +487,61 @@ final class KeyboardViewController: UIInputViewController {
         requestPhraseCompletion()
     }
 
-    /// Rebuilds only when the required verb form actually changed — a
+    /// Rebuilds only when the board would actually read differently — a
     /// rebuild on every keystroke would fight the explore-then-commit
     /// slide, since rebuilding drops the highlight. `buildKeys` recomputes
-    /// the form itself, so this only decides whether to call it.
+    /// everything itself, so this only decides whether to call it.
+    ///
+    /// The subject is checked as well as the form, and that is not
+    /// redundant: tapping "you" after "I" leaves the form at `.base` while
+    /// changing what `be` should read from "am" to "are". Comparing the
+    /// form alone is why the board looked frozen.
     private func refreshVerbForms() {
         guard lang == .en, smartGrammar, isWordLevel else { return }
-        guard Grammar.verbForm(after: contextBefore()) != verbForm else { return }
+        let context = contextBefore()
+        guard Grammar.verbForm(after: context) != verbForm
+                || Grammar.subject(before: context) != verbSubject
+                || SentenceShape.expected(after: context) != boardSlot else { return }
         buildKeys()
     }
 
     // MARK: Categories
 
     /// Tab 0 is Recents — computed from usage across both languages.
+    ///
+    /// His own words count here too. They used to fall out: Recents looked
+    /// every used word up in `vocabIndex`, which only knows the built-in
+    /// vocabulary, so a name he added and then used every day could never
+    /// reach the one board that exists to shorten the reach to what he
+    /// actually says.
     private func allCategories() -> [(name: String, words: [VocabWord])] {
         let recents = usageCounts
             .sorted { $0.value > $1.value }
-            .compactMap { vocabIndex[$0.key] }
+            .compactMap { vocabIndex[$0.key] ?? myWord(named: $0.key) }
         var seen = Set<String>()
         var unique: [VocabWord] = []
         for word in recents where !seen.contains(word.en) {
             seen.insert(word.en)
             unique.append(word)
-            if unique.count == 12 { break }
+            if unique.count == wordSlots { break }
         }
         let recentsName = lang == .ms ? "Terkini" : "Recents"
         // Mine appends after the built-in categories — never reorders them
         // (invariant 1). Plain-text cells built on the fly; myWords are
         // never added to vocabIndex (that stays the built-in lookup only).
-        let mineWords = myWords.map { VocabWord($0, .social) }
+        // Mine is the one board that grows on its own — promotion adds
+        // words whenever they earn it — so it is the one that can outgrow
+        // the grid. Capped deliberately here rather than left to the
+        // packer, which drops the overflow without saying so.
+        //
+        // Capped in insertion order, not by how often each word is used.
+        // Usage order would reshuffle the board under his fingers every
+        // time a count changed, which is the one thing invariant 1 exists
+        // to prevent. The cost is that a word past the cap does not appear
+        // on the board; it is still in My Words, still offered by
+        // prediction and completion, and the app now says how many are
+        // over so he can prune.
+        let mineWords = myWords.prefix(wordSlots).map { VocabWord($0, .social) }
         // Auto-filing (Gilbert: the board should quietly configure itself,
         // but visibly, so nobody hunts for a word): a user's word that is
         // recognizably a person, place, or action ALSO appears at the end
@@ -468,33 +559,58 @@ final class KeyboardViewController: UIInputViewController {
         return [(recentsName, unique)] + builtIn.map { ($0.name, $0.words) } + [("Mine", mineWords)]
     }
 
+    /// A word of the user's own, as a cell. Matched case-insensitively
+    /// because usage is counted on the text that was inserted and My Words
+    /// stores names capitalised.
+    private func myWord(named word: String) -> VocabWord? {
+        myWords.first { $0.caseInsensitiveCompare(word) == .orderedSame }
+            .map { VocabWord($0, .social) }
+    }
+
     /// On-device semantic filing for a user's word: personal names go to
     /// People, place names to Places, verbs to Actions. Single words only —
-    /// phrases stay Mine-only. Cached: NLTagger per word per keystroke
-    /// would be wasteful, and a word's reading never changes.
-    private var autoFileCache: [String: String?] = [:]
+    /// phrases stay Mine-only.
+    ///
+    /// Remembered in the store, not just in memory. `WordFiling` runs a
+    /// tagger over three carrier sentences per word, and this cache used to
+    /// die with the keyboard instance — so every fresh keyboard paid that
+    /// cost again, for every word he has ever added, inside a process with
+    /// a 60-80MB ceiling and a board that rebuilds whenever the verb form
+    /// changes. Words only accumulate, so that bill only grows. A word's
+    /// reading never changes; it is worth writing down.
+    ///
+    /// Empty string means "filed nowhere" — a plist cannot hold nil, and
+    /// the distinction between "no category" and "not looked at yet" is the
+    /// whole point of the cache.
+    private var autoFileCache: [String: String] = [:]
 
     private func autoCategory(for word: String) -> String? {
-        if let cached = autoFileCache[word] { return cached }
+        if let cached = autoFileCache[word] { return cached.isEmpty ? nil : cached }
         let result = WordFiling.category(for: word)
-        autoFileCache[word] = result
+        autoFileCache[word] = result ?? ""
+        learn(autoFileCache, forKey: "wordFiling")
         return result
     }
 
-    // MARK: Frame (spec: pinned columns identical on every level)
+    // MARK: Frame (spec: the pinned column is identical on every level)
 
-    private var leftColumn: [(KeyAction, String)] {
+    /// The one pinned column, from the team's design: where you go, what
+    /// you undo, and what language you are in. The design replaced the old
+    /// right-hand control column with keys placed inside the grid — see
+    /// `gridControls` — so this is now the only column whose geometry never
+    /// depends on the content grid.
+    ///
+    /// Row 3 is the language slot. iOS will not accept a synthesised tap on
+    /// the keyboard switcher, so when the system asks for one, a real globe
+    /// button takes that slot and Typikey's own EN/MS toggle keeps its cell
+    /// on the home board; when it doesn't, the EN/MS key takes the slot.
+    private var pinnedColumn: [(KeyAction, String)?] {
         [(.home, "Home"),
-         (.clearAll, clearArmedAt == nil ? "Clear all" : "tap again"),
-         (.deleteWord, lang == .ms ? "⌫ kata" : "⌫ word"),
-         (.cursorLeft, "←")]
-    }
-
-    private var rightColumn: [(KeyAction, String)] {
-        [(.delete, "⌫"),
-         (.ret, goLabel()),
-         (.cursorRight, "→"),
-         (.dismiss, "⌄")]
+         (.clearAll, clearArmedAt == nil ? "Clear" : "tap again"),
+         // Two lines with the second struck through in red, as drawn: the
+         // word says what goes, and the strike says it goes away.
+         (.deleteWord, lang == .ms ? "Padam\nkata" : "Delete\nword"),
+         needsInputModeSwitchKey ? nil : (.language, lang == .en ? "EN" : "MS")]
     }
 
     /// allCategories() index of the Chat board (offset 1 for Recents).
@@ -648,154 +764,249 @@ final class KeyboardViewController: UIInputViewController {
         }
     }
 
-    /// Core + Chat fill the home board: 36 word cells + 4 nav cells = 4x10.
-    private var homeWords: [VocabWord] {
-        (vocabulary.first { $0.en == "Core" }?.words ?? []) +
-        (vocabulary.first { $0.en == "Chat" }?.words ?? [])
+    /// How the board decides what to show, and the only place that
+    /// decision lives. Rebuilt per use rather than cached: it is four
+    /// dictionaries by reference, and a stale copy would mean the board
+    /// answering from learning the keyboard has already moved past.
+    private var plan: BoardPlan {
+        BoardPlan(
+            lang: lang,
+            learning: .init(usage: usageCounts, bigrams: learnedBigrams,
+                            screen: screenWords, mine: myWords),
+            followsSentence: boardFollowsSentence,
+            smartGrammar: smartGrammar)
     }
 
+
     private func wordCell(_ word: VocabWord) -> ContentCell {
-        var text = word.text(lang)
-        // Verb keys follow the sentence: after "I am", `go` reads `going`.
-        // The cell does not move — this is the same relabel-in-place
-        // mechanism as the language switch (invariants 1 and 7). English
-        // only; Malay marks tense with particles, not inflection.
-        if word.wordClass == .verb, lang == .en, smartGrammar {
-            let inflected = Grammar.inflect(text, as: verbForm, subject: verbSubject)
-            if inflected != text {
-                inflectionBase[inflected] = text
-                text = inflected
-            }
-        }
+        let (text, base) = plan.label(for: word, after: contextBefore())
+        if text != base { inflectionBase[text] = base }
         return ContentCell(word.wordClass == .punct ? .punct(text) : .word(text), text)
     }
 
     private func contentRows(for level: Level) -> [[ContentCell?]] {
-        let cols = contentColumns
         switch level {
         case .home:
-            var cells: [ContentCell?] = [
-                ContentCell(.toCategories, "Categories"),
-                ContentCell(.toLetters, "abc"),
-                ContentCell(.language, lang == .en ? "EN" : "MS"),
-                ContentCell(.size, "⤢"),
-            ]
-            cells += homeWords.map { Optional(wordCell($0)) }
-            return chunk(cells, into: cols, maxRows: wordBoardMaxRows)
-        case .categories:
-            if cols >= 10 {
-                // Big targets suit the AAC use case: five tiles across,
-                // each a 2x2 block. The number of bands follows the number
-                // of categories, so adding one (Web, say) grows the board
-                // downward instead of pushing Mine off the end — which is
-                // what a fixed 10-slot tiling used to do.
-                let categories = allCategories()
-                let bands = max(2, Int(ceil(Double(categories.count) / 5.0)))
-                var rows: [[ContentCell?]] = Array(
-                    repeating: Array(repeating: nil, count: cols), count: bands * 2)
-                for (i, category) in categories.enumerated() {
-                    rows[(i / 5) * 2][(i % 5) * 2] = ContentCell(
-                        .toWords(i), category.name, colSpan: 2, rowSpan: 2)
-                }
-                return rows
-            } else if wordBoardMaxRows == 8 {
-                // Phone: five tiles across in full-height bands, same rule.
-                let categories = allCategories()
-                let bands = max(2, Int(ceil(Double(categories.count) / 5.0)))
-                var rows: [[ContentCell?]] = Array(
-                    repeating: Array(repeating: nil, count: cols), count: bands * 4)
-                for (i, category) in categories.enumerated() {
-                    rows[(i / 5) * 4][i % 5] = ContentCell(.toWords(i), category.name, rowSpan: 4)
-                }
-                return rows
-            } else {
-                // iPad compact (floating / Split View): plain single cells.
-                let categories = allCategories()
-                let cells: [ContentCell?] = categories.enumerated().map { (i, category) in
-                    ContentCell(.toWords(i), category.name)
-                }
-                return chunk(cells, into: cols)
+            var cells = [ContentCell(.toCategories, "Categories"),
+                         ContentCell(.toLetters, "abc")]
+            // EN/MS only needs a board cell when the globe has taken the
+            // pinned language slot; otherwise it IS the pinned slot, and a
+            // second copy here would be two keys for one job.
+            if needsInputModeSwitchKey {
+                cells.append(ContentCell(.language, lang == .en ? "EN" : "MS"))
             }
+            cells += plan.reshaped(BoardPlan.homeWords, after: contextBefore()).map(wordCell)
+            return board(cells)
+        case .categories:
+            // Wide, short tiles rather than the old 2x2 blocks: now that
+            // four grid slots belong to Enter, ⌄ and →, a 2x2 tiling no
+            // longer fits eleven categories into four rows — and a category
+            // that needs a taller keyboard to reach is one he won't find.
+            let span = contentColumns >= 10 ? 2 : 1
+            return board(allCategories().enumerated().map {
+                ContentCell(.toWords($0.offset), $0.element.name, colSpan: span)
+            })
         case .words(let index):
             let categories = allCategories()
             let words = index < categories.count ? categories[index].words : []
-            if words.isEmpty {
-                // Mine's empty state isn't Recents' "used often" story —
-                // same English hint in both languages (invariant 8: no new
-                // Malay strings). Mine is always the last category
-                // allCategories() appends, so that's the robust way to
-                // detect it — never a name string match.
-                let isMine = index == categories.count - 1
-                let hint = isMine
-                    ? "Add words in the Typikey app"
-                    : (lang == .ms
-                        ? "Perkataan yang kerap digunakan akan muncul di sini"
-                        : "Words you use often will appear here")
-                // Recents' hint jumps to Core (toWords(1)) since its text
-                // points there; Mine's hint has nowhere in particular to
-                // jump to, so it just backs out to the category picker.
-                let hintAction: KeyAction = isMine ? .toCategories : .toWords(1)
-                var rows: [[ContentCell?]] = Array(repeating: Array(repeating: nil, count: cols), count: 4)
-                rows[0][0] = ContentCell(hintAction, hint, colSpan: cols)
-                return rows
+            guard !words.isEmpty else {
+                return board([emptyHint(forCategoryAt: index, of: categories.count)])
             }
-            let cells: [ContentCell?] = words.map { Optional(wordCell($0)) }
-            return chunk(cells, into: cols, maxRows: wordBoardMaxRows)
+            return board(plan.reshaped(words, after: contextBefore()).map(wordCell))
         case .letters:
             var rows: [[ContentCell?]] = [
                 "qwertyuiop".map { Optional(ContentCell(.char(String($0)), String($0))) },
                 "asdfghjkl".map { Optional(ContentCell(.char(String($0)), String($0))) } + [Optional(ContentCell(.shift, "⇧"))],
                 "zxcvbnm".map { Optional(ContentCell(.char(String($0)), String($0))) }
                     + [Optional(ContentCell(.char(","), ",")), Optional(ContentCell(.char("."), ".")), Optional(ContentCell(.char("?"), "?"))],
-                Array(repeating: nil, count: cols),
+                typingBottomRow(switchingTo: ContentCell(.toNumbers, "123", colSpan: 2)),
             ]
-            rows[3][0] = ContentCell(.space, "space", colSpan: 8)
-            rows[3][8] = ContentCell(.toNumbers, "123", colSpan: 2)
+            rows[2] += Array(repeating: nil, count: 10 - rows[2].count)
             return rows
         case .numbers:
             var rows: [[ContentCell?]] = [
                 "1234567890".map { Optional(ContentCell(.char(String($0)), String($0))) },
                 ["-", "/", ":", ";", "(", ")", "$", "&", "@", "\""].map { Optional(ContentCell(.char($0), $0)) },
                 [".", ",", "?", "!", "'"].map { Optional(ContentCell(.char($0), $0)) },
-                Array(repeating: nil, count: cols),
+                typingBottomRow(switchingTo: ContentCell(.toLetters, "abc", colSpan: 2)),
             ]
-            rows[2] += Array(repeating: nil, count: cols - rows[2].count)
-            rows[3][0] = ContentCell(.space, "space", colSpan: 8)
-            rows[3][8] = ContentCell(.toLetters, "abc", colSpan: 2)
+            rows[2] += Array(repeating: nil, count: 10 - rows[2].count)
             return rows
         }
     }
 
-    /// Pack cells row-major into at least 4 and at most `maxRows` rows of
-    /// `cols`, padding with nil. Word boards pass 8 on phones so ALL cells
-    /// stay reachable in the 5-column grid — a phone is not an occasional
-    /// squeeze like Split View, it's the whole device.
-    private func chunk(_ cells: [ContentCell?], into cols: Int, maxRows: Int = 4) -> [[ContentCell?]] {
-        var rows: [[ContentCell?]] = []
-        for start in stride(from: 0, to: cells.count, by: cols) {
-            rows.append(Array(cells[start..<min(start + cols, cells.count)]))
+    /// Mine's empty state isn't Recents' "used often" story — same English
+    /// hint in both languages (invariant 8: no new Malay strings). Mine is
+    /// always the last category `allCategories()` appends, so that's the
+    /// robust way to detect it — never a name string match. Recents' hint
+    /// jumps to Core (toWords(1)) since its text points there; Mine's hint
+    /// has nowhere in particular to go, so it backs out to the picker.
+    private func emptyHint(forCategoryAt index: Int, of count: Int) -> ContentCell {
+        let isMine = index == count - 1
+        let hint = isMine
+            ? "Add words in the Typikey app"
+            : (lang == .ms
+                ? "Perkataan yang kerap digunakan akan muncul di sini"
+                : "Words you use often will appear here")
+        return ContentCell(isMine ? .toCategories : .toWords(1), hint, colSpan: contentColumns)
+    }
+
+    /// The controls the design places inside the content grid: Enter at
+    /// double width on the second row, and the two keys in the bottom-right
+    /// corner. Nothing else — the board carries the design's controls and
+    /// no others, so tense is read from the sentence's own time words
+    /// rather than from a key of its own.
+    ///
+    /// `board` lays these down before any word, so a word can never be
+    /// silently overwritten by one — which is how cells used to vanish.
+    private func gridControls(rows rowCount: Int) -> [(cell: ContentCell?, row: Int, col: Int)] {
+        let cols = contentColumns
+        return [
+            (ContentCell(.ret, goLabel(), colSpan: 2), 1, cols - 2),
+            (ContentCell(.dismiss, "Hide keyboard"), rowCount - 1, cols - 2),
+            (ContentCell(.cursorRight, "Cursor right"), rowCount - 1, cols - 1),
+        ]
+    }
+
+    /// How many word cells a board actually has, once the design's
+    /// controls have taken theirs. Derived from `gridControls` rather than
+    /// written down a second time, so moving a control can never leave a
+    /// stale number behind.
+    private var wordSlots: Int {
+        let reserved = gridControls(rows: wordBoardRows)
+            .reduce(0) { $0 + ($1.cell?.colSpan ?? 1) }
+        return max(0, wordBoardRows * contentColumns - reserved)
+    }
+
+    /// Packs cells row-major into a word board, around the fixed controls.
+    /// A cell that doesn't fit the free run where it lands slides right and
+    /// then down, so a wide cell never straddles a control.
+    private func board(_ cells: [ContentCell]) -> [[ContentCell?]] {
+        let cols = contentColumns
+        let rowCount = wordBoardRows
+        var rows: [[ContentCell?]] = Array(
+            repeating: Array(repeating: nil, count: cols), count: rowCount)
+        var taken = Set<Int>()
+
+        func place(_ cell: ContentCell, row: Int, col: Int) {
+            rows[row][col] = cell
+            for r in row..<min(row + cell.rowSpan, rowCount) {
+                for c in col..<min(col + cell.colSpan, cols) { taken.insert(r * cols + c) }
+            }
         }
-        while rows.count < 4 { rows.append([]) }
-        rows = Array(rows.prefix(maxRows))
-        for i in rows.indices where rows[i].count < cols {
-            rows[i] += Array(repeating: nil, count: cols - rows[i].count)
+        for control in gridControls(rows: rowCount) {
+            if let cell = control.cell {
+                place(cell, row: control.row, col: control.col)
+            } else {
+                taken.insert(control.row * cols + control.col) // reserved, undrawn
+            }
         }
+
+        var next = 0
+        for row in 0..<rowCount {
+            var col = 0
+            while col < cols, next < cells.count {
+                let span = min(cells[next].colSpan, cols)
+                let free = col + span <= cols
+                    && !(col..<(col + span)).contains { taken.contains(row * cols + $0) }
+                if free {
+                    place(cells[next], row: row, col: col)
+                    next += 1
+                    col += span
+                } else {
+                    col += 1
+                }
+            }
+        }
+        // A board with more cells than slots loses the overflow without a
+        // trace: no gap, no crash, the word simply is not there. Core grew
+        // to 54 words on a 36-cell board that way, and eleven of them
+        // existed on no board in the app at all.
+        //
+        // This used to exempt the narrow layouts, on the grounds that they
+        // could not hold everything — which was true, and was exactly how
+        // an iPad in Split View came to drop twenty of home's words without
+        // anyone noticing. Every layout holds 36 word cells now, so the
+        // check covers all of them. Anything that genuinely has to be cut
+        // is cut deliberately at the call site, as Mine and Recents are.
+        assert(next == cells.count,
+               "board dropped \(cells.count - next) cells with no way to reach them")
         return rows
     }
 
-    /// 8 content rows for word boards on a compact phone, 4 everywhere else.
-    private var wordBoardMaxRows: Int {
-        UIDevice.current.userInterfaceIdiom == .phone && isCompact ? 8 : 4
+    /// The typing levels keep their own bottom row. Enter cannot sit on row
+    /// 1 there without displacing a letter, and bottom-right is where every
+    /// keyboard puts it anyway.
+    ///
+    /// The two character-level tools the design drops from the word boards
+    /// live here, and only here: single-character delete and ←. A word board
+    /// produces whole words, so whole-word delete is the right unit there;
+    /// the moment you are spelling something out, one wrong letter is the
+    /// likeliest mistake and the cursor has to be able to go back to it.
+    private func typingBottomRow(switchingTo other: ContentCell) -> [ContentCell?] {
+        var row: [ContentCell?] = Array(repeating: nil, count: 10)
+        row[0] = ContentCell(.space, "space", colSpan: 2)
+        row[2] = other
+        row[4] = ContentCell(.delete, "⌫")
+        row[5] = ContentCell(.ret, goLabel(), colSpan: 2)
+        row[7] = ContentCell(.cursorLeft, "Cursor left")
+        row[8] = ContentCell(.dismiss, "Hide keyboard")
+        row[9] = ContentCell(.cursorRight, "Cursor right")
+        return row
+    }
+
+    /// Four rows, as drawn. The extra height at Large buys taller keys
+    /// rather than more of them — at 640pt a row is about 146pt, which is
+    /// the easiest target this board has ever had (team decision, 8 Aug).
+    ///
+    /// The cost is real and is paid in `homeSelection`: 33 word cells for
+    /// a 54-word Core, so home has to be curated rather than simply
+    /// holding everything.
+    ///
+    /// Any narrow layout gets 8 rows, not just a phone. Five columns over
+    /// four rows holds 16 word cells against home's 36, so an iPad in Split
+    /// View or Slide Over was dropping twenty words — silently, the same
+    /// way Core lost eleven. Height is the one thing a narrow layout still
+    /// has, so it pays with height. The phone has done this all along; the
+    /// restriction to `.phone` was the accident.
+    private var wordBoardRows: Int {
+        isCompact ? 8 : 4
     }
 
     // MARK: Building
+
+    /// The chips share the bar between however many there are.
+    ///
+    /// Fixed thirds wasted the bar whenever there were fewer than three,
+    /// and made a whole rephrased sentence unhittable — a third of the
+    /// width at 15pt is a target this user cannot reliably land on, which
+    /// is the entire problem the keyboard exists to solve. One suggestion
+    /// now spans the bar; two take half each.
+    ///
+    /// The bar is the one place in the keyboard where things are allowed
+    /// to move (invariant 6 puts prediction here precisely so the grid
+    /// never has to), but this does mean a chip's position depends on how
+    /// many there are. Worth raising with the team: bigger targets against
+    /// slightly less predictable ones.
+    private func layoutSuggestionBar(in bounds: CGRect, yOffset: CGFloat, inset: CGFloat) {
+        let shown = max(1, suggestionButtons.filter { !$0.isHidden }.count)
+        let slotWidth = (bounds.width - inset * 2) / CGFloat(shown)
+        for (i, button) in suggestionButtons.enumerated() {
+            button.frame = CGRect(
+                x: inset + CGFloat(i) * slotWidth + 3, y: yOffset + inset,
+                width: slotWidth - 6, height: topBarHeight - inset * 2)
+        }
+    }
 
     private func buildSuggestionBar() {
         for i in 0..<3 {
             let button = UIButton(type: .system)
             button.titleLabel?.font = .systemFont(ofSize: 23, weight: .semibold)
             button.titleLabel?.adjustsFontSizeToFitWidth = true
-            button.titleLabel?.minimumScaleFactor = 0.65
+            // Down to 12pt: a rephrasing is a sentence, not a word, and
+            // reading it is what makes accepting it a decision rather
+            // than a gamble.
+            button.titleLabel?.minimumScaleFactor = 0.52
             // Filled pill, not tinted text: a suggestion is a target to be
             // hit, so it has to look as tappable as a key.
             button.backgroundColor = Palette.suggestionFill
@@ -827,17 +1038,17 @@ final class KeyboardViewController: UIInputViewController {
         let context = contextBefore()
         verbForm = (lang == .en && smartGrammar) ? Grammar.verbForm(after: context) : .base
         verbSubject = (lang == .en && smartGrammar) ? Grammar.subject(before: context) : nil
+        boardSlot = SentenceShape.expected(after: context)
         inflectionBase.removeAll()
 
         let content = contentRows(for: level)
         contentRowCount = content.count
 
-        // Pinned columns are ALWAYS 4 rows (invariant 9) even when the
+        // The pinned column is ALWAYS 4 rows (invariant 9) even when the
         // content grid runs 8 rows on a phone — layoutKeys() gives the two
         // grids independent row heights.
-        for row in 0..<4 {
-            addKey(leftColumn[row], row: row, col: 0)
-            addKey(rightColumn[row], row: row, col: contentColumns + 1)
+        for (row, definition) in pinnedColumn.enumerated() {
+            if let definition { addKey(definition, row: row, col: 0) }
         }
         for (row, cells) in content.enumerated() {
             for (i, cell) in cells.enumerated() {
@@ -847,15 +1058,21 @@ final class KeyboardViewController: UIInputViewController {
             }
         }
 
-        // The globe lives in the top suggestion bar (same slot on every
-        // level and every device), never in the content grid — it used
-        // to overwrite the last home cell ("haha"), silently dropping it.
+        // The globe is the one key iOS insists on owning — a synthesised
+        // tap will not open the keyboard list — so it is a real button
+        // rather than a KeyView, dressed to match its neighbours. It fills
+        // the pinned column's bottom slot: the design's position, and the
+        // one every iOS keyboard uses.
         if needsInputModeSwitchKey {
             let globe = UIButton(type: .system)
             globe.setImage(UIImage(systemName: "globe"), for: .normal)
-            globe.tintColor = .label
-            globe.backgroundColor = .systemGray3
-            globe.layer.cornerRadius = 10
+            globe.tintColor = Palette.foreground(on: Palette.erase)
+            globe.backgroundColor = Palette.erase
+            globe.layer.cornerRadius = 16
+            globe.layer.cornerCurve = .continuous
+            globe.layer.borderWidth = 1
+            globe.layer.borderColor = Palette.erase.darkened(by: 0.16).cgColor
+            globe.accessibilityLabel = "Change keyboard"
             globe.addTarget(self, action: #selector(handleInputModeList(from:with:)), for: .allTouchEvents)
             trackingView.addSubview(globe)
             globeButton = globe
@@ -884,11 +1101,31 @@ final class KeyboardViewController: UIInputViewController {
         case .ret:
             return .action // Enter finishes the message; the design's one blue key
         case .home, .toCategories, .toWords, .toLetters, .toNumbers, .language,
-             .size, .shift, .cursorLeft, .cursorRight, .dismiss:
+             .shift, .cursorLeft, .cursorRight, .dismiss:
             return .navigate
         case .delete, .deleteWord, .clearAll:
             return .erase
         }
+    }
+
+    /// The controls the design draws as glyphs rather than words.
+    private func symbolName(for action: KeyAction) -> String? {
+        switch action {
+        case .home: return "house.fill"
+        case .toCategories: return "square.grid.2x2.fill"
+        case .dismiss: return "keyboard.chevron.compact.down"
+        case .cursorRight: return "arrow.right"
+        case .cursorLeft: return "arrow.left"
+        default: return nil
+        }
+    }
+
+    private func symbolImage(_ name: String, tint: UIColor) -> NSAttributedString {
+        let configuration = UIImage.SymbolConfiguration(pointSize: 26, weight: .semibold)
+        let attachment = NSTextAttachment()
+        attachment.image = UIImage(systemName: name, withConfiguration: configuration)?
+            .withTintColor(tint, renderingMode: .alwaysOriginal)
+        return NSAttributedString(attachment: attachment)
     }
 
     private func style(_ label: KeyView, action: KeyAction, label text: String, highlighted: Bool) {
@@ -896,14 +1133,16 @@ final class KeyboardViewController: UIInputViewController {
         switch role(of: action) {
         case .write:
             if case .word(let w) = action, let word = vocabIndex[w] ?? vocabIndex[inflectionBase[w] ?? w] {
-                background = word.wordClass.color
+                background = Palette.color(for: word.wordClass)
             } else if case .word = action {
-                background = WordClass.social.color // a word of the user's own
+                background = Palette.color(for: .social) // a word of the user's own
             } else {
                 background = Palette.paper
             }
         case .navigate:
-            background = Palette.navigate
+            // Home has no card in the design — it sits directly on the
+            // tray, in the tray's own colour, so only the glyph reads.
+            background = action == .home ? Palette.board : Palette.navigate
         case .action:
             background = Palette.action
         case .erase:
@@ -913,29 +1152,70 @@ final class KeyboardViewController: UIInputViewController {
         }
 
         let foreground = Palette.foreground(on: background)
-        label.paint(fill: background, focused: highlighted)
+        // Home is the one key the design draws with no card at all — it
+        // sits directly on the tray.
+        label.paint(fill: background, focused: highlighted, bordered: action != .home)
         label.textColor = foreground
-        label.lines = role(of: action) == .write ? 3 : 1
+        // Phrases have to be allowed to wrap; a control label is one word
+        // and should shrink rather than break across lines. Delete word is
+        // two, because that is how it is drawn.
+        label.lines = role(of: action) == .write ? 3 : (action == .deleteWord ? 2 : 1)
+        label.spokenLabel = nil
+
+        // Four controls are glyphs in the design. Drawing them as an image
+        // inside the same label keeps every key on one code path; the
+        // spoken label carries the name so VoiceOver and the tests read
+        // the board a sighted user sees.
+        if let symbol = symbolName(for: action) {
+            // Home is grey rather than blue: it is not one of the keys that
+            // send you somewhere new, it is the way back to where you were.
+            let tint = action == .home ? UIColor(white: 0.58, alpha: 1) : foreground
+            label.attributedText = symbolImage(symbol, tint: tint)
+            label.spokenLabel = text
+            return
+        }
 
         switch action {
         case .word(let w):
             if let word = vocabIndex[w] ?? vocabIndex[inflectionBase[w] ?? w], let emoji = word.emoji {
-                // The WORD is what gets typed, so it leads; the emoji is a
-                // recognition cue above it, deliberately smaller. It used to
-                // be the other way round, which made the label hard to read.
+                // Word on top, symbol underneath, as drawn: the word is
+                // what gets typed, and the symbol is the recognition cue.
                 let content = NSMutableAttributedString(
-                    string: emoji + "\n", attributes: [.font: UIFont.systemFont(ofSize: 17)])
-                content.append(NSAttributedString(
-                    string: text, attributes: [
+                    string: text + "\n", attributes: [
                         .font: UIFont.systemFont(ofSize: 19, weight: .semibold),
                         .foregroundColor: foreground,
-                    ]))
+                    ])
+                content.append(NSAttributedString(
+                    string: emoji, attributes: [.font: UIFont.systemFont(ofSize: 22)]))
                 label.attributedText = content
+                // The cell is called by its word. Without this a screen
+                // reader announces "want raised hands", and the symbol —
+                // which exists to be glanced at, not read — ends up being
+                // read aloud on every single key.
+                label.spokenLabel = text
             } else {
                 label.attributedText = nil
                 label.font = .systemFont(ofSize: 21, weight: .semibold)
                 label.text = text
             }
+        case .deleteWord:
+            // The strike falls on the second line only — it is the word
+            // that goes, and the red line is what says so.
+            let content = NSMutableAttributedString(
+                string: text, attributes: [
+                    .font: UIFont.systemFont(ofSize: 19, weight: .semibold),
+                    .foregroundColor: foreground,
+                ])
+            if let newline = text.range(of: "\n") {
+                let start = text.distance(from: text.startIndex, to: newline.upperBound)
+                content.addAttributes([
+                    .strikethroughStyle: NSUnderlineStyle.single.rawValue,
+                    .strikethroughColor: Palette.destructive,
+                ], range: NSRange(location: start, length: (text as NSString).length - start))
+            }
+            label.attributedText = content
+            // Two drawn lines, one spoken name.
+            label.spokenLabel = text.replacingOccurrences(of: "\n", with: " ")
         case .punct:
             label.attributedText = nil
             label.font = .systemFont(ofSize: 30, weight: .semibold)
@@ -944,7 +1224,7 @@ final class KeyboardViewController: UIInputViewController {
             label.attributedText = nil
             label.font = .systemFont(ofSize: 32, weight: .medium)
             label.text = level == .letters && shifted ? text.uppercased() : text
-        case .home, .toCategories, .toWords, .toLetters, .toNumbers, .language, .size, .shift:
+        case .home, .toCategories, .toWords, .toLetters, .toNumbers, .language, .shift:
             label.attributedText = nil
             label.font = .systemFont(ofSize: 18, weight: .semibold)
             label.text = text
@@ -976,7 +1256,7 @@ final class KeyboardViewController: UIInputViewController {
         // defensive floor for the transient frame before that lands, so
         // it targets the raw preset — not the (possibly inflated)
         // requested height — and converges to the designed size.
-        bounds.size.height = min(bounds.height, min(view.bounds.height > 0 ? view.bounds.height : sizePresets[sizeIndex], sizePresets[sizeIndex]))
+        bounds.size.height = min(bounds.height, min(view.bounds.height > 0 ? view.bounds.height : presetHeight, presetHeight))
         guard bounds.width > 0, !keys.isEmpty else { return }
         let yOffset = fullBounds.height - bounds.height
         layoutYOffset = yOffset
@@ -984,41 +1264,19 @@ final class KeyboardViewController: UIInputViewController {
             x: 0, y: yOffset, width: fullBounds.width, height: fullBounds.height - yOffset)
         let inset: CGFloat = 4
 
-        // The globe gets a fixed square slot at the right end of the top
-        // bar — same place on every level and device — instead of living
-        // inside the content grid, where it used to silently overwrite
-        // whatever cell was last in the bottom row.
-        let globeWidth: CGFloat = globeButton != nil ? (topBarHeight - inset * 2) : 0
-        let barWidth = bounds.width - inset * 2 - globeWidth
-        let slotWidth = barWidth / 3
-        for (i, button) in suggestionButtons.enumerated() {
-            button.frame = CGRect(
-                x: inset + CGFloat(i) * slotWidth + 3, y: yOffset + inset,
-                width: slotWidth - 6, height: topBarHeight - inset * 2)
-        }
-        if let globe = globeButton {
-            globe.frame = CGRect(
-                x: bounds.width - inset - globeWidth, y: yOffset + inset,
-                width: globeWidth, height: topBarHeight - inset * 2)
-        }
+        layoutSuggestionBar(in: bounds, yOffset: yOffset, inset: inset)
 
-        // Pinned columns are sized from bounds.width alone — never from
-        // contentColumns — so col 0 and the right pinned column land on
-        // the exact same frame whether the content grid is 5 columns
-        // (compact) or 10 (full width/typing levels). pinnedW is
-        // identical to the old uniform cell width (bounds.width / 12,
-        // since there are always 2 pinned columns + up to 10 content
-        // columns at full width); at contentColumns == 10 this makes
-        // contentW == pinnedW == bounds.width / 12 too, so the geometry
-        // below is numerically identical to the pre-fix single-cellW
-        // math at full width — only compact mode's content columns
-        // (still evenly split, just across 5 instead of 10) differ.
-        let pinnedW = bounds.width / 12
-        let contentW = (bounds.width - 2 * pinnedW) / CGFloat(contentColumns)
+        // The pinned column is sized from bounds.width alone — never from
+        // contentColumns — so col 0 lands on the exact same frame whether
+        // the content grid is 5 columns (compact) or 10 (full width and
+        // the typing levels). One pinned column plus ten content columns
+        // is eleven, so at full width every key is bounds.width / 11 wide.
+        let pinnedW = bounds.width / 11
+        let contentW = (bounds.width - pinnedW) / CGFloat(contentColumns)
         let gridTop = yOffset + topBarHeight
-        // Pinned columns always divide the band into 4 (invariant 9: their
-        // frames never depend on the content grid); the content grid rows
-        // can be 8 on a phone.
+        // The pinned column always divides the band into 4 (invariant 9:
+        // its frames never depend on the content grid); the content grid
+        // rows can be 8 on a phone.
         let pinnedRowH = (fullBounds.height - gridTop) / 4
         let contentRowH = (fullBounds.height - gridTop) / CGFloat(max(contentRowCount, 4))
         // A transient sub-topBarHeight container (before the height
@@ -1027,27 +1285,45 @@ final class KeyboardViewController: UIInputViewController {
         guard pinnedRowH > 0 else { return }
 
         for key in keys {
-            let x: CGFloat
-            let width: CGFloat
-            let rowH: CGFloat
-            if key.col == 0 {
-                x = 0
-                width = pinnedW
-                rowH = pinnedRowH
-            } else if key.col == contentColumns + 1 {
-                x = bounds.width - pinnedW
-                width = pinnedW
-                rowH = pinnedRowH
-            } else {
-                x = pinnedW + CGFloat(key.col - 1) * contentW
-                width = contentW * CGFloat(key.colSpan)
-                rowH = contentRowH
-            }
+            let pinned = key.col == 0
+            let x = pinned ? 0 : pinnedW + CGFloat(key.col - 1) * contentW
+            let width = pinned ? pinnedW : contentW * CGFloat(key.colSpan)
+            let rowH = pinned ? pinnedRowH : contentRowH
             key.view.frame = CGRect(
                 x: x + 3,
                 y: gridTop + CGFloat(key.row) * rowH + 3,
                 width: width - 6, height: rowH * CGFloat(key.rowSpan) - 6)
         }
+
+        // The globe is a real button rather than a Key, so it is placed by
+        // hand — on the pinned column's bottom slot, the same frame the
+        // EN/MS key would occupy if iOS were not asking for a switcher.
+        globeButton?.frame = CGRect(
+            x: 3, y: gridTop + 3 * pinnedRowH + 3,
+            width: pinnedW - 6, height: pinnedRowH - 6)
+
+        recordFit(rowHeight: contentRowH)
+    }
+
+    /// Publishes the height the system actually granted, so the app can say
+    /// whether the whole board fits. Only the extension can see this
+    /// number, and "is the bottom row cut off?" is otherwise a question
+    /// nobody can answer without photographing a screen.
+    ///
+    /// Written straight to the store rather than through `learn`: this is
+    /// geometry, not something he said, and private mode's promise is about
+    /// the latter. Recorded only when it changes, since layout runs often.
+    private func recordFit(rowHeight: CGFloat) {
+        let reading = KeyboardFit.Reading(
+            requested: requestedHeight,
+            granted: view.bounds.height,
+            rowHeight: rowHeight,
+            rows: contentRowCount,
+            slots: wordSlots)
+        let signature = "\(Int(reading.requested))|\(Int(reading.granted))|\(Int(reading.rowHeight))|\(reading.rows)|\(reading.slots)"
+        guard signature != lastFitSignature else { return }
+        lastFitSignature = signature
+        KeyboardFit.record(reading, in: store)
     }
 
     // MARK: Explore-then-commit (called by TrackingView)
@@ -1079,8 +1355,9 @@ final class KeyboardViewController: UIInputViewController {
     }
 
     /// No dead zones: any point below the suggestion bar maps to the
-    /// nearest key by center distance. The globe now lives in the top
-    /// bar, so this guard already excludes it — no separate check needed.
+    /// nearest key by center distance. The globe is a real button filling
+    /// its whole pinned slot, so it takes its own touches before this runs
+    /// and only the 3pt gutters around it fall through to a neighbour.
     private func keyIndex(at point: CGPoint) -> Int? {
         guard point.y > layoutYOffset + topBarHeight else { return nil } // suggestion buttons handle themselves
         var best: (index: Int, distance: CGFloat)?
@@ -1108,10 +1385,16 @@ final class KeyboardViewController: UIInputViewController {
 
         switch action {
         case .word(let w):
+            rephrasings = []
             insertWord(w)
         case .punct(let p):
             terminateToken()
+            // Read the sentence before the mark goes in: the proxy lags
+            // its own insertion, and this has to see the words rather than
+            // the punctuation.
+            let finished = contextBefore()
             insertPunctuation(p)
+            rephrasings = p == "?" ? Rephrase.questions(from: finished) : []
         case .char(let c):
             // An apostrophe is token-internal (so "don't" accumulates as
             // one token) even though it isn't a letter — terminateToken's
@@ -1131,9 +1414,11 @@ final class KeyboardViewController: UIInputViewController {
             // Deleting mid-word makes the accumulated token unreliable —
             // reset rather than count a partial/garbled word.
             typedToken = ""
+            rephrasings = []
             textDocumentProxy.deleteBackward()
         case .deleteWord:
             typedToken = ""
+            rephrasings = []
             deleteLastWord()
         case .home:
             typedToken = ""
@@ -1171,10 +1456,6 @@ final class KeyboardViewController: UIInputViewController {
         case .ret:
             terminateToken()
             textDocumentProxy.insertText("\n")
-        case .size:
-            sizeIndex = (sizeIndex + 1) % sizePresets.count
-            store.set(sizeIndex, forKey: "sizeIndex")
-            heightConstraint?.constant = requestedHeight
         case .dismiss:
             let signature = "\(textDocumentProxy.keyboardType?.rawValue ?? -1)|\(textDocumentProxy.returnKeyType?.rawValue ?? -1)"
             persistPendingRestore(signature: signature, level: level)
@@ -1188,6 +1469,14 @@ final class KeyboardViewController: UIInputViewController {
         }
         updateSuggestions()
         requestPhraseCompletion()
+        // The document proxy can lag its own insertion by a run loop, so a
+        // form change caused by THIS commit is not always visible to
+        // textDidChange when it fires. Re-check once the text has settled:
+        // that is what was leaving the board in the past tense after a full
+        // stop had already ended the sentence. refreshVerbForms rebuilds
+        // only when the board would actually read differently, so this
+        // costs nothing on the commits that change nothing.
+        DispatchQueue.main.async { [weak self] in self?.refreshVerbForms() }
     }
 
     /// Repeats are intentional for deletes and cursor movement; clear-all
@@ -1285,6 +1574,36 @@ final class KeyboardViewController: UIInputViewController {
         textDocumentProxy.insertText(p + " ")
     }
 
+    /// Swaps the sentence just finished for a rephrasing of it.
+    ///
+    /// Deletes back to wherever this sentence began — not a fixed number
+    /// of characters, because the question key writes a mark and a space
+    /// and the sentence before it may have ended in either. Anything in
+    /// front of it is a different sentence and is not touched, and the
+    /// space separating them is put back, so accepting a rephrasing in the
+    /// middle of a conversation does not run two sentences together.
+    private func replaceCurrentSentence(with replacement: String) {
+        let context = contextBefore()
+        guard !context.isEmpty else { return }
+
+        var end = context.endIndex
+        while end > context.startIndex,
+              " \n".contains(context[context.index(before: end)]) {
+            end = context.index(before: end)
+        }
+        if end > context.startIndex, ".!?".contains(context[context.index(before: end)]) {
+            end = context.index(before: end)
+        }
+        let start = context[..<end]
+            .lastIndex(where: { ".!?\n".contains($0) })
+            .map { context.index(after: $0) } ?? context.startIndex
+
+        let sentence = context[start...]
+        let separator = sentence.prefix { $0 == " " || $0 == "\n" }
+        for _ in 0..<sentence.count { textDocumentProxy.deleteBackward() }
+        textDocumentProxy.insertText(separator + replacement + " ")
+    }
+
     private func deleteLastWord() {
         var context = contextBefore()
         guard !context.isEmpty else { return }
@@ -1322,7 +1641,10 @@ final class KeyboardViewController: UIInputViewController {
         }
         var counts = (store.dictionary(forKey: "captureCounts") as? [String: Int]) ?? [:]
         counts[token, default: 0] += 1
-        learn(counts, forKey: "captureCounts")
+        // Bounded like the screen-learning stores. This one is written on
+        // every space, and the words that would make it big are the ones
+        // that never reached three sightings — typos and fragments.
+        learn(WordCounts.trimmed(counts), forKey: "captureCounts")
     }
 
     /// Case-insensitive check against myWords and the built-in vocabulary
@@ -1436,23 +1758,7 @@ final class KeyboardViewController: UIInputViewController {
     /// per language. Predictions appear in the suggestion bar so grid
     /// positions stay stable.
     private func predictNextWords() -> [String] {
-        let prev = atSentenceStart() ? "" : lastWord().lowercased()
-        var scores: [String: Int] = [:]
-
-        let prefix = "\(prev)|"
-        for (key, count) in learnedBigrams where key.hasPrefix(prefix) {
-            scores[String(key.dropFirst(prefix.count)), default: 0] += count * 10
-        }
-        for (i, word) in (seedBigrams[lang]?[prev] ?? []).enumerated() {
-            scores[word, default: 0] += 3 - i
-        }
-        // Screen context: words the user is looking at right now are
-        // likely in the reply. Weighted above the generic seeds but below
-        // any real learned bigram, so personal learning always wins.
-        for (word, count) in screenWords.sorted(by: { $0.value > $1.value }).prefix(15) {
-            scores[word, default: 0] += min(count, 4)
-        }
-        return scores.sorted { $0.value > $1.value }.prefix(3).map(\.key)
+        plan.predictions(after: atSentenceStart() ? "" : contextBefore())
     }
 
     private func topVocabulary() -> [String] {
@@ -1494,7 +1800,13 @@ final class KeyboardViewController: UIInputViewController {
 
     private func updateSuggestions() {
         let titles: [String]
-        if isWordLevel {
+        if !rephrasings.isEmpty {
+            // A whole sentence per chip rather than a word. He pressed the
+            // question key, which is a deliberate act with one meaning,
+            // and until he does something else this is the only thing the
+            // bar has worth saying.
+            titles = rephrasings
+        } else if isWordLevel {
             if !completionWords.isEmpty {
                 // Two chips, no symbols to decode: the short one is the next
                 // word, the long one is the whole continuation. Since the
@@ -1547,11 +1859,21 @@ final class KeyboardViewController: UIInputViewController {
                 button.isHidden = true
             }
         }
+        // A whole sentence needs room a single word does not, and the
+        // chips have just changed how many of them there are.
+        view.setNeedsLayout()
     }
 
     @objc private func suggestionTapped(_ sender: UIButton) {
         guard let title = sender.title(for: .normal) else { return }
         haptics.commit()
+        if rephrasings.contains(title) {
+            replaceCurrentSentence(with: title)
+            rephrasings = []
+            updateSuggestions()
+            refreshVerbForms()
+            return
+        }
         if isWordLevel, !completionWords.isEmpty {
             if title == completionWords[0] {
                 insertWord(completionWords[0])

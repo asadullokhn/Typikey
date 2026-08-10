@@ -1,18 +1,29 @@
 import XCTest
 
-// The redesign's new invariant: control keys occupy identical frames on
-// every level. Keys are plain UILabels, so they surface as staticTexts.
+// Invariant 9, in the form the team's design left it: ONE pinned column,
+// on the left, occupying identical frames on every level. Enter, ⌄ and →
+// moved into the content grid, so they are no longer part of this promise
+// — what is asserted about them instead is that they exist on the word
+// boards, which is `testGridControlsPresentOnWordBoards`.
+// Keys are plain UILabels, so they surface as staticTexts.
 // PRECONDITION (same as KeyboardHeightTests): Typikey enabled on the
 // simulator and Connect Hardware Keyboard OFF.
 final class PinnedFrameTests: XCTestCase {
 
+    // The language slot is deliberately absent: it holds the system globe
+    // (a real UIButton, not a staticText) whenever iOS asks for a keyboard
+    // switcher, which is every configuration with a second keyboard
+    // installed — i.e. every real device.
+    private let pinnedLabels = ["Home", "Clear", "Delete word"]
+
     func testPinnedKeysIdenticalAcrossLevels() {
         let app = launchToTypikey()
 
-        let pinned = ["Home", "Clear all", "⌫ word", "←", "⌫", "→", "⌄"]
-        let baseline = frames(of: pinned, in: app)
+        let baseline = frames(of: pinnedLabels, in: app)
         for (label, frame) in baseline {
             XCTAssertFalse(frame.isEmpty, "\(label) missing on home level")
+            XCTAssertLessThan(frame.midX, app.frame.width / 2,
+                              "\(label) belongs to the LEFT pinned column")
         }
 
         app.staticTexts["Categories"].tap()
@@ -27,6 +38,33 @@ final class PinnedFrameTests: XCTestCase {
 
         app.staticTexts["123"].tap()
         assertFrames(baseline, in: app, level: "numbers")
+    }
+
+    // Enter, hide-keyboard and cursor-right now live inside the grid. They
+    // are placed before any word is packed, so this also proves the packer
+    // never lets a word overwrite one of them.
+    func testGridControlsPresentOnWordBoards() {
+        let app = launchToTypikey()
+        for level in ["home", "categories"] {
+            XCTAssertTrue(app.staticTexts["Hide keyboard"].exists, "hide-keyboard missing on \(level)")
+            XCTAssertTrue(app.staticTexts["Cursor right"].exists, "cursor-right missing on \(level)")
+            XCTAssertTrue(app.staticTexts["return"].exists || app.staticTexts["Done"].exists
+                            || app.staticTexts["Go"].exists || app.staticTexts["Send"].exists
+                            || app.staticTexts["Search"].exists,
+                          "Enter missing on \(level)")
+            if level == "home" { app.staticTexts["Categories"].tap() }
+        }
+    }
+
+    // Character-level repair belongs to the levels where characters are
+    // typed: the word boards have no ⌫ or ←, the letters level has both.
+    func testCharacterToolsLiveOnTheTypingLevels() {
+        let app = launchToTypikey()
+        XCTAssertFalse(app.staticTexts["Cursor left"].exists, "no cursor-left on a word board")
+        app.staticTexts["abc"].tap()
+        XCTAssertTrue(app.staticTexts["q"].waitForExistence(timeout: 3), "letters level did not open")
+        XCTAssertTrue(app.staticTexts["⌫"].exists, "single-character delete missing on letters")
+        XCTAssertTrue(app.staticTexts["Cursor left"].exists, "cursor-left missing on letters")
     }
 
     func testHomeWordTapInsertsWord() {
@@ -44,7 +82,7 @@ final class PinnedFrameTests: XCTestCase {
         var value = practiceField(in: app).value as? String ?? ""
         XCTAssertTrue(value.contains("Want"), "setup: word not inserted")
 
-        app.staticTexts["Clear all"].tap()
+        app.staticTexts["Clear"].tap()
         value = practiceField(in: app).value as? String ?? ""
         XCTAssertTrue(value.contains("Want"), "first tap must only arm, not clear")
         XCTAssertTrue(app.staticTexts["tap again"].waitForExistence(timeout: 2),
@@ -59,7 +97,7 @@ final class PinnedFrameTests: XCTestCase {
         let app = launchToTypikey()
         app.staticTexts["abc"].tap()
         XCTAssertTrue(app.staticTexts["q"].waitForExistence(timeout: 3), "letters level did not open")
-        app.staticTexts["⌄"].tap() // dismiss keyboard
+        app.staticTexts["Hide keyboard"].tap()
         practiceField(in: app).tap() // same field, same signature
         XCTAssertTrue(app.staticTexts["q"].waitForExistence(timeout: 5),
                       "manual level was reset on re-show — intent mapping must not refire for an unchanged field signature")
@@ -70,15 +108,23 @@ final class PinnedFrameTests: XCTestCase {
     // before the completion feature existed.
     func testDegradedCompletionKeepsBarWorking() {
         let app = launchToTypikey()
-        app.staticTexts["want"].tap()
+        // Subject then verb, in that order. This used to tap "want" and
+        // then "I", which stopped working the day the board started
+        // following the sentence: nothing in English reads "want I", so
+        // the `I` cell is deliberately spent after a transitive verb and
+        // carries a noun instead. The test was asserting that typing
+        // survives a degraded completion engine and happened to pick a
+        // word pair the board now refuses to offer.
+        //
         // .firstMatch: once this pair has run before, the learned-bigram
         // suggestion bar (existing feature, unrelated to completion) also
-        // offers "I" after "want", so the plain label is ambiguous. Both
+        // offers "want" after "I", so the plain label is ambiguous. Both
         // the grid cell and the suggestion button route through the same
         // insertWord(_:), so either match proves the same thing.
         app.staticTexts["I"].firstMatch.tap()
+        app.staticTexts["want"].firstMatch.tap()
         let value = practiceField(in: app).value as? String ?? ""
-        XCTAssertTrue(value.contains("Want") && value.contains("I"),
+        XCTAssertTrue(value.contains("I") && value.lowercased().contains("want"),
                       "typing must work while the completion engine is degraded, got: \(value)")
         XCTAssertTrue(app.staticTexts["Home"].exists, "keyboard frame must be intact")
     }

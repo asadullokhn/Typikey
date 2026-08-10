@@ -27,6 +27,14 @@ final class KeyView: UIView {
         set { label.attributedText = newValue }
     }
 
+    /// What the key is called, for VoiceOver and for the UI tests, when
+    /// what it *draws* is a glyph. The design draws Home, Categories, the
+    /// hide-keyboard key and the arrow as symbols; they still have names.
+    var spokenLabel: String? {
+        get { label.accessibilityLabel }
+        set { label.accessibilityLabel = newValue }
+    }
+
     /// The size the label would like to be. What it actually gets is
     /// whatever also fits the key's height — see `fitFont`.
     private var baseFont: UIFont = .systemFont(ofSize: 21, weight: .semibold)
@@ -123,10 +131,13 @@ final class KeyView: UIView {
     ///   - fill: the key's own colour, which survives the focus state
     ///     because it is what the user is aiming by.
     ///   - focused: the finger is on this key but has not committed.
-    func paint(fill: UIColor, focused: Bool) {
+    ///   - bordered: false for a key the design draws with no card at all —
+    ///     Home sits directly on the tray. The focus ring still appears,
+    ///     because explore-then-commit needs it on every key.
+    func paint(fill: UIColor, focused: Bool, bordered: Bool = true) {
         let base = focused ? fill.shifted(by: 0.18) : fill
         gradient.colors = base.keyGradient
-        layer.borderWidth = focused ? 4 : 1
+        layer.borderWidth = focused ? 4 : (bordered ? 1 : 0)
         layer.borderColor = (focused ? Palette.focus : base.darkened(by: 0.16)).cgColor
     }
 }

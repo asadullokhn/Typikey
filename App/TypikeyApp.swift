@@ -10,146 +10,7 @@ import FoundationModels
 struct TypikeyApp: App {
     var body: some Scene {
         WindowGroup {
-            SetupView()
-        }
-    }
-}
-
-struct SetupView: View {
-    @State private var practiceText = ""
-
-    var body: some View {
-        NavigationStack {
-            ScrollView {
-                // Ordered by what someone actually needs, in order: prove it
-                // works, turn it on, make it yours, teach it, learn how it
-                // behaves — and only then the engine diagnostics, which used
-                // to sit at the very top above everything the user does.
-                VStack(alignment: .leading, spacing: 20) {
-                    HeroHeader()
-
-                    TryItCard(practiceText: $practiceText)
-
-                    DisclosureGroup {
-                        VStack(alignment: .leading, spacing: 14) {
-                            VStack(alignment: .leading, spacing: 10) {
-                                step(1, "Open Settings")
-                                step(2, "General → Keyboard → Keyboards")
-                                step(3, "Add New Keyboard…")
-                                step(4, "Select Typikey")
-                                step(5, "Tap Typikey again and turn on Allow Full Access — this is what lets your own words and screen learning reach the keyboard")
-                            }
-                            VStack(alignment: .leading, spacing: 10) {
-                                Text("Use it")
-                                    .font(.subheadline.weight(.semibold))
-                                    .foregroundStyle(.secondary)
-                                step(1, "Open any app with a text field (Notes, Messages)")
-                                step(2, "Tap the text field, then hold the globe key")
-                                step(3, "Select Typikey")
-                            }
-                        }
-                        .padding(.top, 10)
-                    } label: {
-                        Label("Turn on Typikey", systemImage: "gearshape")
-                            .font(.headline)
-                            .foregroundStyle(.primary)
-                    }
-                    .tint(.primary)
-                    .homeCardStyle()
-
-                    NavigationLink {
-                        MyWordsView()
-                    } label: {
-                        MyWordsNavCard()
-                    }
-                    .buttonStyle(.plain)
-
-                    PrivateModeCard()
-
-                    ScreenLearningCard()
-
-                    NavigationLink {
-                        ConversationDemoView()
-                    } label: {
-                        HStack(spacing: 16) {
-                            Image(systemName: "bubble.left.and.text.bubble.right")
-                                .font(.title)
-                                .foregroundStyle(Color.accentColor)
-                                .frame(width: 44, height: 44)
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text("Practice conversation")
-                                    .font(.title3.weight(.semibold))
-                                Text("See screen learning work on a pretend chat — nothing is recorded")
-                                    .font(.subheadline)
-                                    .foregroundStyle(.secondary)
-                            }
-                            Spacer(minLength: 0)
-                            Image(systemName: "chevron.right")
-                                .font(.subheadline.weight(.semibold))
-                                .foregroundStyle(.tertiary)
-                        }
-                        .homeCardStyle()
-                        .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-                    }
-                    .buttonStyle(.plain)
-
-                    VStack(spacing: 12) {
-                        DisclosureGroup {
-                            VStack(alignment: .leading, spacing: 12) {
-                                Label("A word grid, like TouchChat: one tap inserts one whole word. Categories switch pages at the top.", systemImage: "square.grid.3x3")
-                                Label("Light keys write. Dark keys move you around the board or fix what you wrote.", systemImage: "circle.lefthalf.filled")
-                                Label("abc opens the letter keyboard — the fallback for words not in the grid, just like TouchChat's own.", systemImage: "keyboard")
-                                Label("Slide your finger across the keys — nothing happens until you lift. The key under your finger gets a blue ring.", systemImage: "hand.draw")
-                                Label("Accidental double-taps are ignored for half a second.", systemImage: "clock")
-                            }
-                            .padding(.top, 10)
-                        } label: {
-                            Label("How it types", systemImage: "questionmark.circle")
-                                .font(.headline)
-                                .foregroundStyle(.primary)
-                        }
-                        .tint(.primary)
-                        .homeCardStyle()
-
-                        DisclosureGroup {
-                            VStack(alignment: .leading, spacing: 18) {
-                                EngineStatusSection()
-                                ScreenReaderDiagnostics()
-                            }
-                            .padding(.top, 10)
-                        } label: {
-                            Label("Diagnostics", systemImage: "stethoscope")
-                                .font(.headline)
-                                .foregroundStyle(.primary)
-                        }
-                        .tint(.primary)
-                        .homeCardStyle()
-                    }
-                }
-                .padding(.horizontal, 16)
-                .padding(.top, 12)
-                .padding(.bottom, 24)
-            }
-            .background(Color(.systemGroupedBackground))
-            .navigationBarTitleDisplayMode(.inline)
-        }
-        // Siri, Shortcuts and Back Tap land here: raise the broadcast sheet
-        // so a training session is one confirming tap away. The short delay
-        // lets the card's picker mount before it is asked to present.
-        .onReceive(NotificationCenter.default.publisher(for: .startScreenLearning)) { _ in
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
-                BroadcastLauncher.shared.presentSheet()
-            }
-        }
-    }
-
-    private func step(_ n: Int, _ text: String) -> some View {
-        HStack(alignment: .firstTextBaseline, spacing: 12) {
-            Text("\(n)")
-                .font(.headline)
-                .frame(width: 28, height: 28)
-                .background(Circle().fill(Color.accentColor.opacity(0.15)))
-            Text(text)
+            HomeView()
         }
     }
 }
@@ -171,7 +32,7 @@ extension View {
 /// App identity: the icon's 2x2 key-tile motif inline next to the name,
 /// compact enough to sit at the top of the scroll view without pushing
 /// the status card below the fold.
-private struct HeroHeader: View {
+struct HeroHeader: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .center, spacing: 14) {
@@ -224,7 +85,7 @@ private struct KeyTileMotif: View {
     }
 }
 
-private struct TryItCard: View {
+struct TryItCard: View {
     @Binding var practiceText: String
 
     var body: some View {
@@ -238,7 +99,7 @@ private struct TryItCard: View {
     }
 }
 
-private struct MyWordsNavCard: View {
+struct MyWordsNavCard: View {
     var body: some View {
         HStack(spacing: 16) {
             Image(systemName: "text.badge.plus")
@@ -269,7 +130,7 @@ private struct MyWordsNavCard: View {
 /// extension OCRs throttled frames on-device and merges words into the
 /// app group's `screenWords`; the keyboard biases its suggestions toward
 /// them. Nothing ever leaves the device.
-private struct ScreenLearningCard: View {
+struct ScreenLearningCard: View {
     private let store: UserDefaults =
         UserDefaults(suiteName: ScreenWords.suiteName) ?? .standard
 
@@ -342,7 +203,7 @@ private struct ScreenLearningCard: View {
 /// on the card: each stage of the pipeline reports for itself, so a silent
 /// failure names which link broke instead of just doing nothing. Daily use
 /// never needs this; a bad session does.
-private struct ScreenReaderDiagnostics: View {
+struct ScreenReaderDiagnostics: View {
     private let store: UserDefaults =
         UserDefaults(suiteName: ScreenWords.suiteName) ?? .standard
 
@@ -351,6 +212,7 @@ private struct ScreenReaderDiagnostics: View {
     @State private var framesSeen = false
     @State private var keyboardReady = false
     @State private var selfTest: String?
+    @State private var fit: KeyboardFit.Reading?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -364,6 +226,26 @@ private struct ScreenReaderDiagnostics: View {
             status("\(learnedCount) words learned", ok: learnedCount > 0, noText: "No words yet")
             status("Keyboard can read them", ok: keyboardReady,
                    noText: "Turn on Allow Full Access: Settings → General → Keyboard → Keyboards → Typikey")
+
+            Divider()
+
+            Text("Keyboard fit")
+                .font(.headline)
+            if let fit {
+                status("Whole board visible", ok: fit.fits,
+                       noText: "The bottom row is cut off by \(Int((fit.rowHeight * CGFloat(fit.rows) + fit.barHeight) - fit.granted))pt")
+                Text("Asked iOS for \(Int(fit.requested))pt, got \(Int(fit.granted))pt — \(fit.rows) rows of \(Int(fit.rowHeight))pt."
+                     + (fit.shortfall > 0 ? " iOS reserves a band above third-party keyboards; Typikey adds \(Int(fit.shortfall))pt to its request to compensate." : ""))
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .accessibilityIdentifier("keyboardFitDetail")
+            } else {
+                Text("Open the keyboard once and come back — only the keyboard can see the height iOS gives it.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+
+            Divider()
 
             Button("Test the reader") { runSelfTest() }
                 .font(.subheadline.weight(.semibold))
@@ -396,6 +278,7 @@ private struct ScreenReaderDiagnostics: View {
         sessionStarted = store.double(forKey: "screenSessionStart") > 0
         framesSeen = store.double(forKey: "screenLastFrame") > 0
         keyboardReady = store.bool(forKey: ScreenWords.keyboardAccessKey)
+        fit = KeyboardFit.read(from: store)
     }
 
     /// Runs the exact OCR path the broadcast extension uses — same request,
@@ -500,6 +383,9 @@ struct MyWordsView: View {
     @State private var screenWords: [String: Int] = [:]
     @State private var skippedScreenWords: Set<String> = []
     @State private var armedWord: String?
+    /// How many cells the Mine page has, as last measured by the keyboard.
+    /// nil until the keyboard has been opened at least once.
+    @State private var boardSlots: Int?
     @State private var newWord = ""
 
     var body: some View {
@@ -515,6 +401,17 @@ struct MyWordsView: View {
                 if myWords.isEmpty {
                     Text("Words you add appear here, and on the keyboard's Mine page.")
                         .foregroundStyle(.secondary)
+                }
+                // The Mine page holds a fixed number of cells, and words
+                // past it stay in this list without appearing there. Said
+                // plainly, with the number, because the alternative is a
+                // word he added quietly never showing up.
+                if let slots = boardSlots, myWords.count > slots {
+                    Label("The Mine page fits \(slots) words. The \(myWords.count - slots) after that stay in this list and still show up in suggestions — remove a few to put them on the board.",
+                          systemImage: "exclamationmark.triangle")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .accessibilityIdentifier("myWordsOverflowNotice")
                 }
                 ForEach(myWords, id: \.self) { word in
                     HStack {
@@ -570,6 +467,7 @@ struct MyWordsView: View {
         captureCounts = freshCaptureCounts()
         screenWords = (store.dictionary(forKey: ScreenWords.countsKey) as? [String: Int]) ?? [:]
         skippedScreenWords = Set(store.array(forKey: "screenSkipped") as? [String] ?? [])
+        boardSlots = KeyboardFit.read(from: store).map(\.slots).flatMap { $0 > 0 ? $0 : nil }
     }
 
     /// Reads myWords straight from the shared suite — never from @State —
