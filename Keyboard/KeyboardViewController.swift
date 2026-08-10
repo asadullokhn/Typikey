@@ -70,10 +70,10 @@ final class KeyboardViewController: UIInputViewController {
     // (floating, Split View, Slide Over, Stage Manager) the grid drops to
     // compact mode instead of breaking. The phone numbers stay small
     // because an iPad preset would swallow an iPhone screen.
-    private var sizePresets: [CGFloat] {
-        UIDevice.current.userInterfaceIdiom == .phone ? [260, 310, 360] : [360, 500, 640]
+    private var size: KeyboardSize = .large
+    private var presetHeight: CGFloat {
+        size.height(phone: UIDevice.current.userInterfaceIdiom == .phone)
     }
-    private var sizeIndex = 2
     private var heightConstraint: NSLayoutConstraint?
     private var healAttempts = 0
     private var lastCompact = false
@@ -91,7 +91,7 @@ final class KeyboardViewController: UIInputViewController {
     private var heightDeficit: CGFloat = 0
     private var requestedHeight: CGFloat {
         let screenHeight = (view.window?.screen ?? UIScreen.main).bounds.height
-        return min(sizePresets[sizeIndex] + heightDeficit, screenHeight * 0.6)
+        return min(presetHeight + heightDeficit, screenHeight * 0.6)
     }
 
     private var isCompact: Bool {
@@ -249,7 +249,7 @@ final class KeyboardViewController: UIInputViewController {
         if let saved = store.string(forKey: "lang"), let restored = Lang(rawValue: saved) {
             lang = restored
         }
-        sizeIndex = min(max(Preferences.keyboardSize(in: store), 0), sizePresets.count - 1)
+        size = KeyboardSize.clamped(Preferences.keyboardSize(in: store))
 
         // Height lives on OUR content view, never on the root view. The
         // system derives the window height from content fitting; a height
@@ -260,7 +260,7 @@ final class KeyboardViewController: UIInputViewController {
         trackingView.isMultipleTouchEnabled = false
         trackingView.controller = self
         view.addSubview(trackingView)
-        let height = trackingView.heightAnchor.constraint(equalToConstant: sizePresets[sizeIndex])
+        let height = trackingView.heightAnchor.constraint(equalToConstant: presetHeight)
         NSLayoutConstraint.activate([
             trackingView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             trackingView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
@@ -277,6 +277,23 @@ final class KeyboardViewController: UIInputViewController {
 
         buildSuggestionBar()
         buildKeys()
+    }
+
+    /// Tears the height constraint down and builds a new one.
+    ///
+    /// Height lives on the content view, never the root view — a height
+    /// constraint on the root fights the system's cached window frame, and
+    /// the loser gets re-cached, which is the feedback loop that made the
+    /// keyboard grow on every open. Within that rule, replacing the
+    /// constraint is the strongest signal available that the size really
+    /// changed.
+    private func rebuildHeightConstraint() {
+        heightConstraint?.isActive = false
+        let height = trackingView.heightAnchor.constraint(equalToConstant: requestedHeight)
+        height.isActive = true
+        heightConstraint = height
+        view.setNeedsLayout()
+        view.layoutIfNeeded()
     }
 
     // Pointer support (trackpad, Apple Pencil hover, AssistiveTouch
@@ -303,9 +320,9 @@ final class KeyboardViewController: UIInputViewController {
         // Size is chosen in the app now, so it has to be re-read here —
         // otherwise the change would not land until the extension is next
         // restarted, which from the user's side looks like nothing happened.
-        let chosenSize = min(max(Preferences.keyboardSize(in: store), 0), sizePresets.count - 1)
-        if chosenSize != sizeIndex {
-            sizeIndex = chosenSize
+        let chosenSize = KeyboardSize.clamped(Preferences.keyboardSize(in: store))
+        if chosenSize != size {
+            size = chosenSize
             // heightDeficit is a shortfall MEASURED AGAINST ONE PRESET, and
             // it never decays. Carried across a size change it makes every
             // other size wrong, and a shrink wrong in a way that looks like
@@ -318,6 +335,14 @@ final class KeyboardViewController: UIInputViewController {
             // The self-heal shrinks an oversized window, and it gives up
             // after two tries. Those tries were spent on the old size.
             healAttempts = 0
+            // Replace the constraint rather than retune it. Changing
+            // `constant` asks the system to revisit a window height it has
+            // already cached — the same cache that caused the historic
+            // growth bug — and on a size change that request is quietly
+            // ignored often enough that the picker looked dead. A new
+            // constraint object is a change the layout engine cannot
+            // coalesce away.
+            rebuildHeightConstraint()
         }
         myWords = (store.array(forKey: "myWords") as? [String]) ?? []
         reloadScreenWords()
@@ -1225,7 +1250,7 @@ final class KeyboardViewController: UIInputViewController {
         // defensive floor for the transient frame before that lands, so
         // it targets the raw preset — not the (possibly inflated)
         // requested height — and converges to the designed size.
-        bounds.size.height = min(bounds.height, min(view.bounds.height > 0 ? view.bounds.height : sizePresets[sizeIndex], sizePresets[sizeIndex]))
+        bounds.size.height = min(bounds.height, min(view.bounds.height > 0 ? view.bounds.height : presetHeight, presetHeight))
         guard bounds.width > 0, !keys.isEmpty else { return }
         let yOffset = fullBounds.height - bounds.height
         layoutYOffset = yOffset

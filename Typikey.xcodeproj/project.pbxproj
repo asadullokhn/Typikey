@@ -20,6 +20,7 @@
 		393D7C914534B99903DD7842 /* Palette.swift in Sources */ = {isa = PBXBuildFile; fileRef = FCFF50D3F07126E8FD84E915 /* Palette.swift */; };
 		3CFD805A7C394D9A86940530 /* ScreenWords.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52ACB8836103B0ABB01D07BC /* ScreenWords.swift */; };
 		4373895640ABE3EB76CD2B6B /* WordCounts.swift in Sources */ = {isa = PBXBuildFile; fileRef = AEFE6601597E0E34BEC4EE89 /* WordCounts.swift */; };
+		443032F44EB4CC9C8B806841 /* KeyboardSizePicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D99732D3D59D3391FA4D6FC /* KeyboardSizePicker.swift */; };
 		4F2971AAB04CB45F9F3A0D2B /* KeyboardViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B324A924FE66DC05CD87923 /* KeyboardViewController.swift */; };
 		591312BBAA426D1DE2ABB2BE /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 238704140C8DFC7E10D738C7 /* Assets.xcassets */; };
 		591FC447EABCDC5BDC33DD29 /* ScreenWords.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52ACB8836103B0ABB01D07BC /* ScreenWords.swift */; };
@@ -27,6 +28,7 @@
 		68425C36066BCAAC9E485794 /* Vocabulary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B70CCE26AA8F46D69AB88E9 /* Vocabulary.swift */; };
 		74A557E66286A37B7352E59E /* WordCounts.swift in Sources */ = {isa = PBXBuildFile; fileRef = AEFE6601597E0E34BEC4EE89 /* WordCounts.swift */; };
 		7DD066AECBA51167DB0987C0 /* Preferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC0AA28FDABCFE29ADC640C4 /* Preferences.swift */; };
+		80BD4A4B725DB47900362502 /* KeyboardSize.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF40FA941FDAF9CD08E77E79 /* KeyboardSize.swift */; };
 		867DEE28BF0C8AE912495320 /* PlainTextField.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69B956A9B583D4897560968A /* PlainTextField.swift */; };
 		88CE9D5420FB39F79D63A53C /* GrammarTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0620AC89CD9C9348E302DDBC /* GrammarTests.swift */; };
 		8A3C1A8DA54A9460DFEA82A2 /* KeyboardFit.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30AE72E91A8C9C4399ABC7D3 /* KeyboardFit.swift */; };
@@ -36,6 +38,7 @@
 		9C862CD8CF1738B5038563A8 /* MyWordsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 167A2498198387A80DD85FC1 /* MyWordsTests.swift */; };
 		A870D89EC249EBF210079F8E /* KeyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6779423A582866E09D08DAC3 /* KeyView.swift */; };
 		AAB759FD06199BBA669FB03D /* TypikeyShare.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 9D0797993F06D05215ACAB68 /* TypikeyShare.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		AADA652B8858F6615D22C488 /* KeyboardSize.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF40FA941FDAF9CD08E77E79 /* KeyboardSize.swift */; };
 		ACD558D96C5C5BE41BD634B4 /* WordCounts.swift in Sources */ = {isa = PBXBuildFile; fileRef = AEFE6601597E0E34BEC4EE89 /* WordCounts.swift */; };
 		AFC2CF5F0BCA56C3F339F333 /* KeyboardFit.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30AE72E91A8C9C4399ABC7D3 /* KeyboardFit.swift */; };
 		B9274BDBCA7F7A765DA6CCD7 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = E6C422799418AAD787A25061 /* PrivacyInfo.xcprivacy */; };
@@ -43,6 +46,7 @@
 		BD7FFEE284ED5DFC50FA2351 /* SampleHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86125954B46BC2FC71586B57 /* SampleHandler.swift */; };
 		C25E2E8F1B21BAF96D75BFAD /* ScreenWords.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52ACB8836103B0ABB01D07BC /* ScreenWords.swift */; };
 		C5DE9CF6E675B6572A25B3F0 /* KeyboardHeightTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D977763A87F89006584A3902 /* KeyboardHeightTests.swift */; };
+		C6C591ABAB22F2C24343E130 /* KeyboardSize.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF40FA941FDAF9CD08E77E79 /* KeyboardSize.swift */; };
 		C9B01D5AA3ED72DD91E5B3C2 /* ConversationDemoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73C356DFA180B06CD6221686 /* ConversationDemoView.swift */; };
 		CD8296DC7EC95FD3D5823A4E /* KeyboardFit.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30AE72E91A8C9C4399ABC7D3 /* KeyboardFit.swift */; };
 		D9E87446DC34341E0FC20673 /* Preferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC0AA28FDABCFE29ADC640C4 /* Preferences.swift */; };
@@ -55,6 +59,7 @@
 		F358D447B20F9F451E7AF138 /* TypikeyApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FA3846751FF38D84B3414E5 /* TypikeyApp.swift */; };
 		F965E2D3B9C32AF172CF8F7C /* Preferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC0AA28FDABCFE29ADC640C4 /* Preferences.swift */; };
 		FB44BAC1AC5A3F6C433CD88D /* PinnedFrameTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F4B7442BDF523BAC5B0E4C2 /* PinnedFrameTests.swift */; };
+		FC2AF8C9E9E74838C9FFBA9D /* KeyboardSize.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF40FA941FDAF9CD08E77E79 /* KeyboardSize.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -129,9 +134,11 @@
 		86125954B46BC2FC71586B57 /* SampleHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleHandler.swift; sourceTree = "<group>"; };
 		8A0596DADB8E2918F9CB0FF9 /* Typikey.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Typikey.entitlements; sourceTree = "<group>"; };
 		8B324A924FE66DC05CD87923 /* KeyboardViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardViewController.swift; sourceTree = "<group>"; };
+		8D99732D3D59D3391FA4D6FC /* KeyboardSizePicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardSizePicker.swift; sourceTree = "<group>"; };
 		99C68D4951FDDA7ADA09E6C6 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		9D0797993F06D05215ACAB68 /* TypikeyShare.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = TypikeyShare.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		AEFE6601597E0E34BEC4EE89 /* WordCounts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordCounts.swift; sourceTree = "<group>"; };
+		AF40FA941FDAF9CD08E77E79 /* KeyboardSize.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardSize.swift; sourceTree = "<group>"; };
 		BE154DB166CA944192DDE2A3 /* CompletionEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompletionEngine.swift; sourceTree = "<group>"; };
 		CC0AA28FDABCFE29ADC640C4 /* Preferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Preferences.swift; sourceTree = "<group>"; };
 		D6755D1E733576488ACF9B75 /* TypikeyBroadcast.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = TypikeyBroadcast.entitlements; sourceTree = "<group>"; };
@@ -156,6 +163,7 @@
 			children = (
 				E79FDBE127D71069003D5477 /* Grammar.swift */,
 				30AE72E91A8C9C4399ABC7D3 /* KeyboardFit.swift */,
+				AF40FA941FDAF9CD08E77E79 /* KeyboardSize.swift */,
 				CC0AA28FDABCFE29ADC640C4 /* Preferences.swift */,
 				52ACB8836103B0ABB01D07BC /* ScreenWords.swift */,
 				AEFE6601597E0E34BEC4EE89 /* WordCounts.swift */,
@@ -205,6 +213,7 @@
 				73C356DFA180B06CD6221686 /* ConversationDemoView.swift */,
 				531B6ED481B356C4A57CD534 /* HomeView.swift */,
 				F14E0151DBA04E506C934CB8 /* Info.plist */,
+				8D99732D3D59D3391FA4D6FC /* KeyboardSizePicker.swift */,
 				69B956A9B583D4897560968A /* PlainTextField.swift */,
 				E6C422799418AAD787A25061 /* PrivacyInfo.xcprivacy */,
 				187356BE0502A777FA4C52FC /* ReadinessCard.swift */,
@@ -435,6 +444,8 @@
 				8B3E5C87F8CD95C8B0A51B23 /* Grammar.swift in Sources */,
 				2947D257A3EFFB110EA21328 /* HomeView.swift in Sources */,
 				8A3C1A8DA54A9460DFEA82A2 /* KeyboardFit.swift in Sources */,
+				AADA652B8858F6615D22C488 /* KeyboardSize.swift in Sources */,
+				443032F44EB4CC9C8B806841 /* KeyboardSizePicker.swift in Sources */,
 				867DEE28BF0C8AE912495320 /* PlainTextField.swift in Sources */,
 				7DD066AECBA51167DB0987C0 /* Preferences.swift in Sources */,
 				DC9285EF1A9BD001BD8A37DF /* ReadinessCard.swift in Sources */,
@@ -452,6 +463,7 @@
 			files = (
 				32D2413983CFEF011F699077 /* Grammar.swift in Sources */,
 				AFC2CF5F0BCA56C3F339F333 /* KeyboardFit.swift in Sources */,
+				FC2AF8C9E9E74838C9FFBA9D /* KeyboardSize.swift in Sources */,
 				F965E2D3B9C32AF172CF8F7C /* Preferences.swift in Sources */,
 				BD7FFEE284ED5DFC50FA2351 /* SampleHandler.swift in Sources */,
 				591FC447EABCDC5BDC33DD29 /* ScreenWords.swift in Sources */,
@@ -468,6 +480,7 @@
 				E820A7A844F23E314B585C09 /* Haptics.swift in Sources */,
 				A870D89EC249EBF210079F8E /* KeyView.swift in Sources */,
 				CD8296DC7EC95FD3D5823A4E /* KeyboardFit.swift in Sources */,
+				C6C591ABAB22F2C24343E130 /* KeyboardSize.swift in Sources */,
 				4F2971AAB04CB45F9F3A0D2B /* KeyboardViewController.swift in Sources */,
 				393D7C914534B99903DD7842 /* Palette.swift in Sources */,
 				D9E87446DC34341E0FC20673 /* Preferences.swift in Sources */,
@@ -483,6 +496,7 @@
 			files = (
 				0AD5BB91E827345C96676010 /* Grammar.swift in Sources */,
 				14DE37B187A93DF5D4C5F08E /* KeyboardFit.swift in Sources */,
+				80BD4A4B725DB47900362502 /* KeyboardSize.swift in Sources */,
 				20E5A46D92D05BB8947EB632 /* Preferences.swift in Sources */,
 				C25E2E8F1B21BAF96D75BFAD /* ScreenWords.swift in Sources */,
 				ECDE3A72B866932E3A8BF759 /* ShareViewController.swift in Sources */,
@@ -629,7 +643,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 28;
+				CURRENT_PROJECT_VERSION = 29;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = Y7ZZ5G2T3Y;
 				ENABLE_NS_ASSERTIONS = NO;
@@ -709,7 +723,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 28;
+				CURRENT_PROJECT_VERSION = 29;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = Y7ZZ5G2T3Y;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;

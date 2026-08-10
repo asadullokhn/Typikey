@@ -18,8 +18,10 @@ struct SettingsCard: View {
     @State private var grammarOn = Preferences.smartGrammar
     @State private var size = Preferences.keyboardSize
 
-    private static let sizeNames = ["Small", "Medium", "Large"]
-    private static let sizeKeys = ["small keys", "medium keys", "the biggest keys"]
+    @State private var fit: KeyboardFit.Reading?
+
+    private let store: UserDefaults =
+        UserDefaults(suiteName: ScreenWords.suiteName) ?? .standard
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -63,22 +65,13 @@ struct SettingsCard: View {
 
             Divider()
 
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: 10) {
                 Text("Keyboard size")
                     .font(.title3.weight(.semibold))
-                Picker("Keyboard size", selection: $size) {
-                    ForEach(0..<Self.sizeNames.count, id: \.self) { index in
-                        Text(Self.sizeNames[index]).tag(index)
+                KeyboardSizePicker(selection: $size, measured: fit)
+                    .onChange(of: size) { _, newValue in
+                        Preferences.keyboardSize = newValue
                     }
-                }
-                .pickerStyle(.segmented)
-                .accessibilityIdentifier("keyboardSizePicker")
-                .onChange(of: size) { _, newValue in
-                    Preferences.keyboardSize = newValue
-                }
-                Text("The board is always four rows, exactly as designed — the size changes how big each key is, not how many there are. Large gives \(Self.sizeKeys[size]), which is what makes them easy to hit; smaller leaves more of the app you are typing in visible. Takes effect the next time the keyboard opens.")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
             }
         }
         .homeCardStyle()
@@ -86,6 +79,7 @@ struct SettingsCard: View {
             isOn = Preferences.privateMode
             grammarOn = Preferences.smartGrammar
             size = Preferences.keyboardSize
+            fit = KeyboardFit.read(from: store)
         }
     }
 }
