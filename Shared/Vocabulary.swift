@@ -106,6 +106,19 @@ let vocabulary: [Category] = [
         // tap-cost corpus. Malay unverified.
         VocabWord("see", ms: "lihat", emoji: "👁️", .verb),
         VocabWord("understand", ms: "faham", .verb),
+        // Measured against 200 sentences: every word below was being
+        // spelled a letter at a time. Malay unverified.
+        VocabWord("take", ms: "ambil", .verb), VocabWord("buy", ms: "beli", emoji: "🛍️", .verb),
+        VocabWord("borrow", ms: "pinjam", .verb), VocabWord("find", ms: "cari", .verb),
+        VocabWord("try", ms: "cuba", .verb), VocabWord("sleep", ms: "tidur", emoji: "😴", .verb),
+        VocabWord("stay", ms: "tinggal", .verb), VocabWord("work", ms: "kerja", .verb),
+        VocabWord("turn", ms: "pusing", .verb),
+        // Third measured pass, 200 sentences. Malay unverified.
+        VocabWord("love", ms: "sayang", emoji: "❤️", .verb),
+        VocabWord("win", ms: "menang", emoji: "🏆", .verb),
+        VocabWord("forget", ms: "lupa", .verb), VocabWord("remember", ms: "ingat", .verb),
+        VocabWord("miss", ms: "rindu", .verb),
+        VocabWord("finish", ms: "habis", .verb), VocabWord("start", ms: "mula", .verb),
         VocabWord("need", ms: "perlu", .verb),
     ]),
     Category(en: "Feelings", ms: "Perasaan", words: [
@@ -121,6 +134,17 @@ let vocabulary: [Category] = [
         VocabWord("head", ms: "kepala", emoji: "🧠", .noun),
         VocabWord("tummy", ms: "perut", .noun),
         VocabWord("very", ms: "sangat", .descriptor),
+        // Measured against 200 sentences: every word below was being
+        // spelled a letter at a time. Malay unverified.
+        VocabWord("better", ms: "lebih baik", .descriptor), VocabWord("well", ms: "sihat", .descriptor),
+        VocabWord("fine", ms: "baik", .descriptor), VocabWord("proud", ms: "bangga", emoji: "🥹", .descriptor),
+        VocabWord("alone", ms: "sendiri", .descriptor), VocabWord("hard", ms: "susah", .descriptor),
+        VocabWord("easy", ms: "senang", .descriptor), VocabWord("ready", ms: "sedia", .descriptor),
+        // Third measured pass, 200 sentences. Malay unverified.
+        VocabWord("loud", ms: "kuat", emoji: "🔊", .descriptor), VocabWord("fair", ms: "adil", .descriptor),
+        VocabWord("free", ms: "lapang", .descriptor), VocabWord("fast", ms: "laju", .descriptor),
+        VocabWord("short", ms: "pendek", .descriptor), VocabWord("maybe", ms: "mungkin", .descriptor),
+        VocabWord("late", ms: "lewat", .descriptor), VocabWord("sorry", ms: "maaf", .social),
         VocabWord("feel", ms: "rasa", .verb),
     ]),
     Category(en: "Food", ms: "Makanan", words: [
@@ -136,6 +160,14 @@ let vocabulary: [Category] = [
         VocabWord("breakfast", ms: "sarapan", emoji: "🥐", .noun),
         VocabWord("lunch", ms: "makan tengah hari", emoji: "🍱", .noun),
         VocabWord("dinner", ms: "makan malam", emoji: "🍲", .noun),
+        // Measured against 200 sentences. `food` is the one this category
+        // was named after and did not contain.
+        VocabWord("food", ms: "makanan", emoji: "🍽️", .noun),
+        VocabWord("snack", ms: "snek", emoji: "🍪", .noun),
+        VocabWord("egg", ms: "telur", emoji: "🥚", .noun),
+        VocabWord("fish", ms: "ikan", emoji: "🐟", .noun),
+        VocabWord("cake", ms: "kek", emoji: "🍰", .noun),
+        VocabWord("ice cream", ms: "aiskrim", emoji: "🍦", .noun),
     ]),
     Category(en: "Places", ms: "Tempat", words: [
         VocabWord("home", ms: "rumah", emoji: "🏠", .noun), VocabWord("school", ms: "sekolah", emoji: "🏫", .noun),
@@ -143,6 +175,8 @@ let vocabulary: [Category] = [
         VocabWord("park", ms: "taman", emoji: "🏞️", .noun), VocabWord("bus", ms: "bas", emoji: "🚌", .noun),
         VocabWord("MRT", emoji: "🚇", .noun), VocabWord("restaurant", ms: "restoran", emoji: "🍔", .noun),
         VocabWord("hospital", emoji: "🏥", .noun), VocabWord("toilet", ms: "tandas", emoji: "🚻", .noun),
+        VocabWord("bed", ms: "katil", emoji: "🛏️", .noun), VocabWord("room", ms: "bilik", .noun),
+        VocabWord("nurse", ms: "jururawat", emoji: "🧑‍⚕️", .noun),
         VocabWord("here", ms: "sini", .descriptor), VocabWord("there", ms: "sana", .descriptor),
     ]),
     Category(en: "Art", ms: "Seni", words: [
@@ -154,6 +188,11 @@ let vocabulary: [Category] = [
         VocabWord("finished", ms: "siap", emoji: "🏁", .descriptor), VocabWord("show you", ms: "tunjuk", emoji: "👀", .social),
         VocabWord("story", ms: "cerita", emoji: "📖", .noun),
         VocabWord("song", ms: "lagu", emoji: "🎶", .noun),
+        VocabWord("book", ms: "buku", emoji: "📕", .noun), VocabWord("pen", ms: "pen", emoji: "🖊️", .noun),
+        VocabWord("paper", ms: "kertas", emoji: "📄", .noun), VocabWord("dragon", ms: "naga", emoji: "🐉", .noun),
+        VocabWord("hug", ms: "peluk", emoji: "🤗", .noun), VocabWord("rain", ms: "hujan", emoji: "🌧️", .noun),
+        VocabWord("space", ms: "angkasa", emoji: "🚀", .noun),
+        VocabWord("drawing", ms: "lukisan", .noun),
         VocabWord("homework", ms: "kerja rumah", emoji: "📓", .noun),
     ]),
     // Browsing is its own vocabulary: the words that move you around a page
@@ -172,6 +211,11 @@ let vocabulary: [Category] = [
         VocabWord("www.", .noun), VocabWord(".com", .noun),
         VocabWord("how to", ms: "bagaimana", .question), VocabWord("what is", ms: "apa itu", .question),
         VocabWord("computer", ms: "komputer", emoji: "💻", .noun),
+        VocabWord("answer", ms: "jawapan", .noun), VocabWord("question", ms: "soalan", emoji: "❓", .noun),
+        // Third measured pass, 200 sentences. Malay unverified.
+        VocabWord("name", ms: "nama", .noun), VocabWord("day", ms: "hari", .noun),
+        VocabWord("thing", ms: "benda", .noun), VocabWord("joke", ms: "jenaka", emoji: "😄", .noun),
+        VocabWord("weather", ms: "cuaca", emoji: "🌤️", .noun), VocabWord("birthday", ms: "hari jadi", emoji: "🎂", .noun),
         VocabWord("photo", ms: "gambar", emoji: "📷", .noun),
     ]),
     Category(en: "Chat", ms: "Sembang", words: [
@@ -181,6 +225,18 @@ let vocabulary: [Category] = [
         VocabWord("I'm good", ms: "khabar baik", .social), VocabWord("wait a moment", ms: "tunggu sekejap", emoji: "⏳", .social),
         VocabWord("nice to meet you", ms: "selamat berkenalan", .social), VocabWord("see you later", ms: "jumpa lagi", .social),
         VocabWord("I use this to talk", ms: "Saya guna ini untuk bercakap", emoji: "💬", .social),
+        VocabWord("good morning", ms: "selamat pagi", emoji: "🌅", .social),
+        VocabWord("good night", ms: "selamat malam", emoji: "🌙", .social),
+        // The talking verbs live with the talking, which is both where
+        // they belong and what keeps Actions inside one page. Actions had
+        // grown to 44 words on a board that shows 35, and the nine over
+        // the line would have vanished without a gap or a crash — the
+        // failure mode that cost us the `be` key for a whole build.
+        VocabWord("say", ms: "kata", .verb), VocabWord("speak", ms: "cakap", .verb),
+        VocabWord("tell", ms: "beritahu", .verb), VocabWord("ask", ms: "tanya", .verb),
+        VocabWord("hear", ms: "dengar", .verb), VocabWord("talk", ms: "bercakap", emoji: "💬", .verb),
+        VocabWord("explain", ms: "terangkan", .verb), VocabWord("send", ms: "hantar", emoji: "📤", .verb),
+        VocabWord("show", ms: "tunjuk", .verb),
         VocabWord("haha", emoji: "😂", .social),
     ]),
     // The closed classes, on a board of their own.
@@ -222,6 +278,14 @@ let vocabulary: [Category] = [
         // exactly one free cell and `today` earned it. Malay unverified.
         VocabWord("about", ms: "tentang", .function),
         VocabWord("how", ms: "bagaimana", .question),
+        // Measured against 200 sentences: every word below was being
+        // spelled a letter at a time. Malay unverified.
+        VocabWord("much", ms: "banyak", .descriptor), VocabWord("some", ms: "sedikit", .function),
+        VocabWord("too", ms: "terlalu", .descriptor), VocabWord("long", ms: "lama", .descriptor),
+        // Third measured pass, 200 sentences. Malay unverified.
+        VocabWord("many", ms: "berapa banyak", .descriptor), VocabWord("a lot", ms: "banyak", .descriptor),
+        VocabWord("yet", ms: "lagi", .descriptor), VocabWord("one", ms: "satu", .descriptor),
+        VocabWord("so", ms: "sangat", .descriptor), VocabWord("until", ms: "sehingga", .function),
         VocabWord("your", ms: "awak punya", .pronoun),
     ]),
 ]
@@ -274,6 +338,22 @@ let canonicalSpelling: [String: String] = {
         }
     }
     return spelling
+}()
+
+/// The words that describe rather than name, lowercased. The copula is
+/// what English demands between a subject and one of these, and it is the
+/// word an AAC user drops first — "I hungry", "that funny". Knowing which
+/// words are descriptors is what lets a rephrasing put it back without
+/// guessing at words it does not recognise.
+let descriptorWords: Set<String> = {
+    var described: Set<String> = []
+    for category in vocabulary {
+        for word in category.words where word.wordClass == .descriptor {
+            described.insert(word.en.lowercased())
+            described.insert(word.ms.lowercased())
+        }
+    }
+    return described
 }()
 
 /// The places you can go to, which is the one case where the missing

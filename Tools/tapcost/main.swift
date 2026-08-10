@@ -125,11 +125,29 @@ struct Keyboard {
             return charge(cost, word, via: "page \(categories[index].en)")
         }
 
+        // Two keys, written together. The board has no "cannot" cell and
+        // never will — it has `can` and `not`, and that is how he writes
+        // it. Charging eight taps to spell a word he can tap twice
+        // measured a keyboard nobody uses.
+        for split in 2..<max(2, target.count - 1) {
+            let head = String(target.prefix(split)), tail = String(target.dropFirst(split))
+            guard reachable(head), reachable(tail) else { continue }
+            let cost = (level == .home ? 0 : 1) + 2
+            level = .home
+            return charge(cost, word, via: "\(head) + \(tail)")
+        }
+
         // Nowhere. abc, one key per letter, then back home.
         spelled.append(word)
         let cost = goHome + 1 + word.count + 1
         level = .home
         return charge(cost, word, via: "spelled")
+    }
+
+    /// Whether a word is one tap from home, without moving anything.
+    private func reachable(_ word: String) -> Bool {
+        Set(plan.reshaped(BoardPlan.homeWords, after: text)
+            .map { plan.label(for: $0, after: text).text.lowercased() }).contains(word)
     }
 
     private mutating func charge(_ cost: Int, _ word: String, via route: String) -> String {
@@ -211,7 +229,10 @@ func requestedSentences() -> [(who: String, text: String)] {
 
 let verbose = CommandLine.arguments.contains("--verbose")
 let sentences = requestedSentences()
-let ownSentences = sentences.count != corpus.count
+/// Word-by-word traces are worth reading for a handful of sentences and
+/// unreadable for two hundred. A few of your own get them automatically;
+/// a corpus gets the summary unless you ask.
+let tracing = verbose || (sentences.count != corpus.count && sentences.count <= 5)
 var totalTaps = 0
 var totalLetters = 0
 var allSpelled: [String: Int] = [:]
@@ -234,7 +255,7 @@ for entry in sentences {
     lines.append(String(format: "%4d  %-52@  (to %@)%@",
                         keyboard.taps, entry.text as NSString,
                         entry.who as NSString, spelledNote as NSString))
-    if verbose || ownSentences {
+    if tracing {
         lines.append(trace.map { "        \($0)" }.joined(separator: "\n"))
         // What pressing `?` would put in the suggestion bar. A sentence
         // that costs eight taps and comes out ungrammatical is not a
@@ -246,6 +267,15 @@ for entry in sentences {
         }
         lines.append("")
     }
+}
+
+// A word board shows 35 cells. A category with more than that loses the
+// overflow silently — no gap, no crash, the packer just closes up behind
+// it — so this is checked on every run rather than noticed a build later.
+let pageCapacity = 35
+for category in vocabulary where category.words.count > pageCapacity {
+    print("WARNING  \(category.en) has \(category.words.count) words on a \(pageCapacity)-cell page — "
+          + "\(category.words.count - pageCapacity) will not appear")
 }
 
 print("\nTaps per sentence\n")

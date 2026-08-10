@@ -100,9 +100,20 @@ enum Rephrase {
         // the whole noun phrase being asked about — "where IS MY Dad", not
         // "where my is Dad" — so the insertion point is the phrase's
         // determiner rather than its noun.
-        guard let noun = rest.lastIndex(where: { nounWords.contains($0) || demonstratives.contains($0) })
-        else { return [] }
-        let copula = Grammar.inflect("be", as: .base, subject: rest[noun])
+        // "how long IS the ride": the thing being asked about is whatever
+        // the last determiner introduces, even when the noun after it is a
+        // word the keyboard has never seen.
+        guard let noun = rest.lastIndex(where: {
+            nounWords.contains($0) || demonstratives.contains($0) || SentenceShape.nounCallers.contains($0)
+        }) else { return [] }
+        // Agree with the noun, not with its article: "the" tells you
+        // nothing about number, and asking it gave "How long be the ride?".
+        // An unknown noun after a determiner is singular by default, which
+        // is right far more often than it is wrong.
+        let agreesWith = SentenceShape.nounCallers.contains(rest[noun])
+            ? (noun + 1 < rest.count && plurals.contains(rest[noun + 1]) ? "they" : "it")
+            : rest[noun]
+        let copula = Grammar.inflect("be", as: .base, subject: agreesWith)
         var built = rest
         built.insert(copula, at: subjectStart(rest, subjectAt: noun))
         return [finished([words[0]] + built)]
@@ -117,7 +128,14 @@ enum Rephrase {
             // that insists on a copula here, which is exactly why it is
             // the word an AAC user drops first.
             let rest = Array(words[(subject + 1)...])
-            guard !rest.isEmpty else { return [] }
+            // Only in front of something a copula can actually precede. A
+            // word this keyboard does not recognise is far more likely to
+            // be a verb it has not been taught than an adjective, and
+            // guessing gave "Are you finish the homework?".
+            guard let next = rest.first(where: { $0 != "not" }),
+                  descriptorWords.contains(next) || nounWords.contains(next)
+                    || SentenceShape.nounCallers.contains(next)
+            else { return [] }
             let copula = Grammar.inflect("be", as: .base, subject: words[subject])
             return [finished([copula] + Array(words[subjectStart(words, subjectAt: subject)...subject]) + rest)]
         }
@@ -227,6 +245,11 @@ enum Rephrase {
         ["i", "you", "he", "she", "it", "we", "they"].contains(word) || nounWords.contains(word)
     }
 
+    /// Plural markers a bare noun cannot show. Only the ones the board can
+    /// write, because a rule that guessed at plurals would get "the fish
+    /// are" and "the news are" wrong in the same breath.
+    private static let plurals: Set<String> = ["they", "these", "those", "people", "days", "ideas"]
+
     /// "who that", "what this" — pronouns standing in for a noun, and the
     /// copula has to agree with something.
     private static let demonstratives: Set<String> = ["this", "that", "these", "those", "it"]
@@ -269,6 +292,7 @@ enum Rephrase {
     private static func subjectIndex(_ words: [String]) -> Int? {
         words.firstIndex { ["i", "you", "he", "she", "it", "we", "they"].contains($0) }
             ?? words.firstIndex(where: isSubjectForm)
+            ?? words.firstIndex { demonstratives.contains($0) }
     }
 
     /// The first word from `start` that the board could have made as a
