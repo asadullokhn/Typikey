@@ -49,6 +49,34 @@ final class GrammarTests: XCTestCase {
                        "the copula key moved — grid positions must never change")
     }
 
+    // An inverted question hands the tense to the auxiliary, so the verb
+    // answers to that and not to the subject beside it. The board used to
+    // agree with the subject and ignore the word in front of it, which
+    // produced "can you are" and "can he goes" — wrong in every question
+    // anyone would actually ask.
+    func testQuestionsDoNotAgreeWithTheSubject() {
+        let app = launchToKeyboard()
+
+        gridKey(app, "can")?.tap()
+        gridKey(app, "you")?.tap()
+        XCTAssertTrue(app.staticTexts["be"].waitForExistence(timeout: 5),
+                      "after 'Can you' the copula must read 'be' — 'can you are' is not English")
+        XCTAssertFalse(app.staticTexts["are"].exists,
+                       "'are' has no place after a modal")
+
+        gridKey(app, "Clear")?.tap()
+        if app.staticTexts["tap again"].waitForExistence(timeout: 2) {
+            app.staticTexts["tap again"].tap()
+        }
+
+        gridKey(app, "can")?.tap()
+        gridKey(app, "he")?.tap()
+        XCTAssertTrue(app.staticTexts["go"].waitForExistence(timeout: 5),
+                      "after 'Can he' the verb keys must read 'go' — 'can he goes' is not English")
+        XCTAssertFalse(app.staticTexts["goes"].exists,
+                       "third-person agreement does not survive a modal")
+    }
+
     // Tense comes from the sentence's own time words, because the board
     // carries the design's keys and no others. "Yesterday" is an ordinary
     // word cell that also happens to place the whole sentence.

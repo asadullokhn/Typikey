@@ -200,7 +200,34 @@ enum Grammar {
     /// Only the copula needs this; every other English verb collapses
     /// person into a single form.
     static func subject(before context: String) -> String? {
-        words(in: context).last.flatMap { copula[.base]?[$0] != nil ? $0 : nil }
+        let words = words(in: currentSentence(context))
+        guard let last = words.last, copula[.base]?[last] != nil else { return nil }
+        // A governed subject does not inflect the copula: "can you be",
+        // never "can you are". The modal has already taken the tense.
+        guard governor(of: last, in: words) == nil else { return nil }
+        return last
+    }
+
+    /// Every subject the board can put in front of a verb.
+    private static let subjects: Set<String> =
+        ["i", "you", "he", "she", "it", "we", "they", "mum", "dad", "everyone", "who"]
+
+    /// The auxiliary or modal governing the subject, when the sentence has
+    /// inverted into a question: "can you", "is he", "have they".
+    ///
+    /// English hands the tense to the auxiliary and leaves the verb alone
+    /// — "can he go", never "can he goes"; "can you be", never "can you
+    /// are". Without this the board agreed with the subject and ignored
+    /// the word in front of it, which is wrong in every question anyone
+    /// would actually ask.
+    private static func governor(of subject: String, in words: [String]) -> String? {
+        guard words.count >= 2, subjects.contains(subject) else { return nil }
+        let before = words[words.count - 2]
+        guard baseTriggers.contains(before)
+                || progressiveAuxiliaries.contains(before)
+                || perfectAuxiliaries.contains(before)
+        else { return nil }
+        return before
     }
 
     private static func words(in context: String) -> [String] {
@@ -232,6 +259,16 @@ enum Grammar {
         if progressiveAuxiliaries.contains(effective) { return .progressive }
         if perfectAuxiliaries.contains(effective) { return .pastParticiple }
         if baseTriggers.contains(effective) { return .base }
+
+        // An inverted question puts the auxiliary in front of the subject,
+        // and the auxiliary is what the verb answers to — not the subject
+        // standing next to it. "Can he go", never "can he goes". "Is he
+        // going". "Have they gone".
+        if let governor = governor(of: effective, in: words) {
+            if progressiveAuxiliaries.contains(governor) { return .progressive }
+            if perfectAuxiliaries.contains(governor) { return .pastParticiple }
+            return .base
+        }
         return form(for: tense, thirdPerson: thirdPersonSubjects.contains(effective))
     }
 
