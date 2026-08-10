@@ -35,6 +35,19 @@ enum Palette {
     /// "light writes" holds for all of them.
     static let paper = UIColor.white
 
+    static func color(for wordClass: WordClass) -> UIColor {
+        switch wordClass {
+        case .pronoun:    return pronoun
+        case .verb:       return verb
+        case .descriptor: return descriptor
+        case .noun:       return noun
+        case .social:     return social
+        case .question:   return question
+        case .function:   return function
+        case .punct:      return paper
+        }
+    }
+
     // MARK: Roles
 
     /// Moves you somewhere: Home, Categories, abc/123, EN/MS, size, cursors,

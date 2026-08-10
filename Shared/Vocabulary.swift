@@ -1,4 +1,4 @@
-import UIKit
+import Foundation
 
 enum Lang: String {
     case en, ms // English, Malay (Bahasa Melayu) — Singapore's context
@@ -16,19 +16,6 @@ enum Lang: String {
 
 enum WordClass {
     case pronoun, verb, descriptor, noun, social, question, function, punct
-
-    var color: UIColor {
-        switch self {
-        case .pronoun:    return Palette.pronoun
-        case .verb:       return Palette.verb
-        case .descriptor: return Palette.descriptor
-        case .noun:       return Palette.noun
-        case .social:     return Palette.social
-        case .question:   return Palette.question
-        case .function:   return Palette.function
-        case .punct:      return Palette.paper
-        }
-    }
 }
 
 /// A cell is one concept with one grid position; language only changes
@@ -96,6 +83,7 @@ let vocabulary: [Category] = [
         VocabWord("time", ms: "masa", emoji: "🕐", .noun),
         VocabWord("yesterday", ms: "semalam", .descriptor),
         VocabWord("tomorrow", ms: "esok", .descriptor),
+        VocabWord("today", ms: "hari ini", .descriptor),
     ]),
     Category(en: "People", ms: "Orang", words: [
         VocabWord("I", ms: "saya", emoji: "🙋", .pronoun), VocabWord("you", ms: "awak", emoji: "👉", .pronoun),
@@ -114,6 +102,11 @@ let vocabulary: [Category] = [
         VocabWord("give", ms: "beri", .verb), VocabWord("get", ms: "dapat", .verb),
         VocabWord("come", ms: "datang", .verb), VocabWord("look", ms: "tengok", emoji: "👀", .verb),
         VocabWord("listen", ms: "dengar", emoji: "👂", .verb), VocabWord("wait", ms: "tunggu", emoji: "⏳", .verb),
+        // Measured: every word below was spelled letter by letter in the
+        // tap-cost corpus. Malay unverified.
+        VocabWord("see", ms: "lihat", emoji: "👁️", .verb),
+        VocabWord("understand", ms: "faham", .verb),
+        VocabWord("need", ms: "perlu", .verb),
     ]),
     Category(en: "Feelings", ms: "Perasaan", words: [
         VocabWord("happy", ms: "gembira", emoji: "😊", .descriptor), VocabWord("sad", ms: "sedih", emoji: "😢", .descriptor),
@@ -122,6 +115,13 @@ let vocabulary: [Category] = [
         VocabWord("bored", ms: "bosan", emoji: "🥱", .descriptor), VocabWord("sick", ms: "sakit", emoji: "🤒", .descriptor),
         VocabWord("hungry", ms: "lapar", emoji: "😋", .descriptor), VocabWord("thirsty", ms: "haus", emoji: "🥵", .descriptor),
         VocabWord("okay", ms: "okay", emoji: "🙆", .descriptor), VocabWord("great", ms: "hebat", emoji: "🌟", .descriptor),
+        // "my head hurts" had to be spelled a letter at a time, which is
+        // sixteen taps to report pain. Malay unverified.
+        VocabWord("hurt", ms: "sakit", emoji: "🤕", .verb),
+        VocabWord("head", ms: "kepala", emoji: "🧠", .noun),
+        VocabWord("tummy", ms: "perut", .noun),
+        VocabWord("very", ms: "sangat", .descriptor),
+        VocabWord("feel", ms: "rasa", .verb),
     ]),
     Category(en: "Food", ms: "Makanan", words: [
         VocabWord("water", ms: "air", emoji: "💧", .noun), VocabWord("rice", ms: "nasi", emoji: "🍚", .noun),
@@ -171,6 +171,8 @@ let vocabulary: [Category] = [
         VocabWord("share", ms: "kongsi", emoji: "📤", .verb), VocabWord("download", ms: "muat turun", emoji: "⬇️", .verb),
         VocabWord("www.", .noun), VocabWord(".com", .noun),
         VocabWord("how to", ms: "bagaimana", .question), VocabWord("what is", ms: "apa itu", .question),
+        VocabWord("computer", ms: "komputer", emoji: "💻", .noun),
+        VocabWord("photo", ms: "gambar", emoji: "📷", .noun),
     ]),
     Category(en: "Chat", ms: "Sembang", words: [
         VocabWord("hello", ms: "hai", emoji: "👋", .social), VocabWord("bye", emoji: "👋", .social),
@@ -213,6 +215,14 @@ let vocabulary: [Category] = [
         VocabWord("my", ms: "saya", .pronoun), VocabWord("me", ms: "saya", .pronoun),
         VocabWord("we", ms: "kami", .pronoun), VocabWord("they", ms: "mereka", .pronoun),
         VocabWord("again", ms: "lagi", emoji: "🔁", .descriptor),
+        // `about` was the most frequently spelled word in the whole
+        // tap-cost corpus — "a story about a monster", "videos about
+        // space" — and it was in no category at all. `how` completes the
+        // question words; it is here rather than in Core because Core has
+        // exactly one free cell and `today` earned it. Malay unverified.
+        VocabWord("about", ms: "tentang", .function),
+        VocabWord("how", ms: "bagaimana", .question),
+        VocabWord("your", ms: "awak punya", .pronoun),
     ]),
 ]
 
@@ -227,6 +237,26 @@ let vocabIndex: [String: VocabWord] = {
         }
     }
     return index
+}()
+
+/// The nouns the board can produce, lowercased and in both languages.
+///
+/// Grammar reads this to answer a question no suffix rule can: is the word
+/// in front of the verb a subject? "my head ___" and "what time ___" both
+/// want third-person singular agreement — `hurts`, `is` — and both were
+/// falling through to the base form because the only subjects Grammar
+/// recognised were the seven pronouns and four names written into it by
+/// hand. Reading the vocabulary instead means every noun added to a
+/// category can be a sentence's subject the moment it exists.
+let nounWords: Set<String> = {
+    var nouns: Set<String> = []
+    for category in vocabulary {
+        for word in category.words where word.wordClass == .noun {
+            nouns.insert(word.en.lowercased())
+            nouns.insert(word.ms.lowercased())
+        }
+    }
+    return nouns
 }()
 
 /// Seed bigrams per language so prediction is useful before any learning.

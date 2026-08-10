@@ -758,165 +758,23 @@ final class KeyboardViewController: UIInputViewController {
         }
     }
 
-    /// The home board, named word by word.
-    ///
-    /// Four rows leave 33 word cells and Core is 54 words, so home cannot
-    /// simply be "all of Core" — it has to be chosen. What earns a cell
-    /// here is what a sentence cannot be built without: every pronoun, the
-    /// auxiliaries, the few verbs that combine with everything, and the
-    /// closed classes. "I am waiting" is a dead end without `for`, which
-    /// is why `for` is here and `where` is not.
-    ///
-    /// Every word named here is defined once, in the Core category. This
-    /// list only decides what is one tap away instead of two.
-    /// `yesterday` and `tomorrow` are here in place of `a` and `the`, and
-    /// that swap is deliberate. Time words are the whole tense mechanism —
-    /// without one on this board, past tense costs three taps through
-    /// Categories and nobody will pay it, which makes the feature
-    /// decorative. Dropping an article costs "I want the book" becoming "I
-    /// want book": telegraphic, and understood. Dropping tense costs "I go"
-    /// when he meant "I went", which is simply the wrong thing said. Both
-    /// articles are still one tap away on Core.
-    private static let homeSelection = [
-        "I", "you", "he", "she", "it", "we", "they",
-        "be", "do", "have", "can", "will",
-        "want", "like", "go", "help", "stop",
-        "not", "more",
-        "to", "for", "with", "in", "on",
-        "and", "my", "yesterday", "tomorrow",
-        "what", "yes", "no", ".", "?",
-    ]
-
-    /// Re-offers the cells the sentence has no use for.
-    ///
-    /// After "can you", nothing can read "can you I", so the seven
-    /// subject-pronoun cells are the board's only spare capacity. They
-    /// carry verbs instead — his most-used first, skipping anything
-    /// already on the board.
-    ///
-    /// A swapped cell arrives in the verb colour, green where yellow was,
-    /// so it announces itself without anything being added to the board.
-    /// Gilbert's rule: let it configure itself, but visibly.
-    ///
-    /// Nothing is stored. The shape is recomputed from the text on every
-    /// rebuild, which is what makes delete-word and clear-all rewind it
-    /// for free — there is no state to unwind, so going back a word puts
-    /// the pronouns back exactly where they were.
-    private func reshaped(_ words: [VocabWord]) -> [VocabWord] {
-        guard boardFollowsSentence, lang == .en else { return words }
-        let slot = SentenceShape.expected(after: contextBefore())
-        guard slot != .any else { return words }
-
-        var taken = Set(words.map { $0.en.lowercased() })
-        var pool = candidates(for: slot).filter { !taken.contains($0.en.lowercased()) }
-        guard !pool.isEmpty else { return words }
-
-        return words.map { word in
-            guard word.wordClass == .pronoun,
-                  SentenceShape.subjectPronouns.contains(word.en.lowercased()),
-                  !pool.isEmpty
-            else { return word }
-            let replacement = pool.removeFirst()
-            taken.insert(replacement.en.lowercased())
-            return replacement
-        }
+    /// How the board decides what to show, and the only place that
+    /// decision lives. Rebuilt per use rather than cached: it is four
+    /// dictionaries by reference, and a stale copy would mean the board
+    /// answering from learning the keyboard has already moved past.
+    private var plan: BoardPlan {
+        BoardPlan(
+            lang: lang,
+            learning: .init(usage: usageCounts, bigrams: learnedBigrams,
+                            screen: screenWords, mine: myWords),
+            followsSentence: boardFollowsSentence,
+            smartGrammar: smartGrammar)
     }
 
-    /// What to offer in a spare cell, his most-used first. Read off the
-    /// boards rather than kept as a second list, so a word added anywhere
-    /// is a word available here.
-    ///
-    /// His own words come first among the nouns: after "my ___" the
-    /// likeliest word in the world is a name he added himself, and those
-    /// are the words no dictionary or category page will ever hold.
-    private func candidates(for slot: SentenceShape.Slot) -> [VocabWord] {
-        let wanted: WordClass = slot == .verb ? .verb : .noun
-        var seen = Set<String>()
-        let fromBoards = vocabulary
-            .flatMap(\.words)
-            .filter { $0.wordClass == wanted && seen.insert($0.en.lowercased()).inserted }
-            .sorted { (usageCounts[$0.en] ?? 0) > (usageCounts[$1.en] ?? 0) }
-        let pool: [VocabWord]
-        if wanted == .noun {
-            let mine = myWords
-                .filter { seen.insert($0.lowercased()).inserted }
-                .map { VocabWord($0, .social) }
-            pool = mine + fromBoards
-        } else {
-            pool = fromBoards
-        }
-
-        // Ranked by the same evidence the suggestion bar uses, not by raw
-        // usage. Usage is all zeros on a fresh install, and measuring six
-        // real sentences showed what that produces: seven spare cells
-        // offering time, Mum, Dad, brother, sister, friend, teacher, while
-        // the words those sentences actually needed — story, monster,
-        // video, park — sat 24th to 43rd and never appeared at all.
-        //
-        // The anchor is the last word that is not a determiner, because
-        // "watch a ___" is answered by what follows "watch", not by what
-        // follows "a".
-        let scores = bigramScores(after: anchorWord())
-        guard !scores.isEmpty else { return pool }
-        return pool.sorted { (scores[$0.en.lowercased()] ?? 0) > (scores[$1.en.lowercased()] ?? 0) }
-    }
-
-    /// The last word carrying meaning: determiners are skipped, since they
-    /// predict nothing on their own.
-    private func anchorWord() -> String {
-        let determiners: Set<String> = ["a", "an", "the", "my", "your", "his", "her", "our", "their", "some", "any"]
-        let words = contextBefore()
-            .lowercased()
-            .components(separatedBy: CharacterSet.alphanumerics.inverted)
-            .filter { !$0.isEmpty }
-        return words.reversed().first { !determiners.contains($0) } ?? ""
-    }
-
-    /// What tends to follow a word, from learned pairs first and the
-    /// shipped seeds behind them. Shared with the suggestion bar's own
-    /// ranking so both answer from the same evidence.
-    private func bigramScores(after previous: String) -> [String: Int] {
-        var scores: [String: Int] = [:]
-        let prefix = "\(previous)|"
-        for (key, count) in learnedBigrams where key.hasPrefix(prefix) {
-            scores[String(key.dropFirst(prefix.count)).lowercased(), default: 0] += count * 10
-        }
-        for (i, word) in (seedBigrams[lang]?[previous] ?? []).enumerated() {
-            scores[word.lowercased(), default: 0] += 3 - i
-        }
-        for (word, count) in screenWords {
-            scores[word.lowercased(), default: 0] += min(count, 3)
-        }
-        return scores
-    }
-
-    private var homeWords: [VocabWord] {
-        // Looked up across the whole vocabulary rather than in one
-        // category: home draws on Core and Little words both, and which
-        // board a word is filed under is not home's business.
-        let words = Self.homeSelection.compactMap { vocabIndex[$0] }
-        // A name that stops matching a Core word would simply vanish from
-        // the board — silently, with no crash and no gap, because the
-        // packer closes up behind it. That is exactly the class of bug
-        // that cost us the `be` key for a whole build.
-        assert(words.count == Self.homeSelection.count,
-               "homeSelection names a word that is not in Core")
-        return words
-    }
 
     private func wordCell(_ word: VocabWord) -> ContentCell {
-        var text = word.text(lang)
-        // Verb keys follow the sentence: after "I am", `go` reads `going`.
-        // The cell does not move — this is the same relabel-in-place
-        // mechanism as the language switch (invariants 1 and 7). English
-        // only; Malay marks tense with particles, not inflection.
-        if word.wordClass == .verb, lang == .en, smartGrammar {
-            let inflected = Grammar.inflect(text, as: verbForm, subject: verbSubject)
-            if inflected != text {
-                inflectionBase[inflected] = text
-                text = inflected
-            }
-        }
+        let (text, base) = plan.label(for: word, after: contextBefore())
+        if text != base { inflectionBase[text] = base }
         return ContentCell(word.wordClass == .punct ? .punct(text) : .word(text), text)
     }
 
@@ -931,7 +789,7 @@ final class KeyboardViewController: UIInputViewController {
             if needsInputModeSwitchKey {
                 cells.append(ContentCell(.language, lang == .en ? "EN" : "MS"))
             }
-            cells += reshaped(homeWords).map(wordCell)
+            cells += plan.reshaped(BoardPlan.homeWords, after: contextBefore()).map(wordCell)
             return board(cells)
         case .categories:
             // Wide, short tiles rather than the old 2x2 blocks: now that
@@ -948,7 +806,7 @@ final class KeyboardViewController: UIInputViewController {
             guard !words.isEmpty else {
                 return board([emptyHint(forCategoryAt: index, of: categories.count)])
             }
-            return board(reshaped(words).map(wordCell))
+            return board(plan.reshaped(words, after: contextBefore()).map(wordCell))
         case .letters:
             var rows: [[ContentCell?]] = [
                 "qwertyuiop".map { Optional(ContentCell(.char(String($0)), String($0))) },
@@ -1243,9 +1101,9 @@ final class KeyboardViewController: UIInputViewController {
         switch role(of: action) {
         case .write:
             if case .word(let w) = action, let word = vocabIndex[w] ?? vocabIndex[inflectionBase[w] ?? w] {
-                background = word.wordClass.color
+                background = Palette.color(for: word.wordClass)
             } else if case .word = action {
-                background = WordClass.social.color // a word of the user's own
+                background = Palette.color(for: .social) // a word of the user's own
             } else {
                 background = Palette.paper
             }
@@ -1837,23 +1695,7 @@ final class KeyboardViewController: UIInputViewController {
     /// per language. Predictions appear in the suggestion bar so grid
     /// positions stay stable.
     private func predictNextWords() -> [String] {
-        let prev = atSentenceStart() ? "" : lastWord().lowercased()
-        var scores: [String: Int] = [:]
-
-        let prefix = "\(prev)|"
-        for (key, count) in learnedBigrams where key.hasPrefix(prefix) {
-            scores[String(key.dropFirst(prefix.count)), default: 0] += count * 10
-        }
-        for (i, word) in (seedBigrams[lang]?[prev] ?? []).enumerated() {
-            scores[word, default: 0] += 3 - i
-        }
-        // Screen context: words the user is looking at right now are
-        // likely in the reply. Weighted above the generic seeds but below
-        // any real learned bigram, so personal learning always wins.
-        for (word, count) in screenWords.sorted(by: { $0.value > $1.value }).prefix(15) {
-            scores[word, default: 0] += min(count, 4)
-        }
-        return scores.sorted { $0.value > $1.value }.prefix(3).map(\.key)
+        plan.predictions(after: atSentenceStart() ? "" : contextBefore())
     }
 
     private func topVocabulary() -> [String] {

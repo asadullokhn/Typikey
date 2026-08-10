@@ -109,7 +109,11 @@ enum Grammar {
         return .present
     }
 
-    private static func currentSentence(_ context: String) -> String {
+    /// The sentence in progress, not everything in the field. Shared with
+    /// SentenceShape and BoardPlan: a second copy of this drifted from
+    /// this one once already, and the board spent a build disagreeing with
+    /// itself about what "do you" meant.
+    static func currentSentence(_ context: String) -> String {
         guard let end = context.lastIndex(where: { ".!?\n".contains($0) }) else { return context }
         return String(context[context.index(after: end)...])
     }
@@ -154,7 +158,25 @@ enum Grammar {
 
     /// Subjects that take the -s form. Subjects say who, never when, so
     /// after one of these the selected tense decides the form.
-    private static let thirdPersonSubjects: Set<String> = ["he", "she", "it", "mum", "dad", "everyone", "who"]
+    private static let thirdPersonPronouns: Set<String> = ["he", "she", "it", "who"]
+
+    /// A common noun standing where a subject goes is third-person
+    /// singular. Read off the vocabulary rather than listed here, so a
+    /// noun added to any category is a noun a sentence can be about.
+    ///
+    /// Standing where a subject goes is the whole difficulty. Most nouns
+    /// in most sentences are objects — "I drew a picture" — and treating
+    /// one as a subject turns the next verb third-person, so the board
+    /// offered "picture does" and the sentence needed "picture do". A
+    /// clause has one subject, so a noun is only it when nothing else has
+    /// claimed the role: "my head hurts" and "what time is dinner" have no
+    /// pronoun in front of the noun, and "I drew a picture" does.
+    private static func isThirdPerson(_ word: String, in words: [String]) -> Bool {
+        if thirdPersonPronouns.contains(word) { return true }
+        guard nounWords.contains(word) else { return false }
+        let before = words.dropLast()
+        return !before.contains { copula[.base]?[$0] != nil || nounWords.contains($0) }
+    }
 
     /// Auxiliaries that call for the past participle.
     private static let perfectAuxiliaries: Set<String> = ["have", "has", "had", "i've", "you've", "we've", "they've"]
@@ -170,6 +192,13 @@ enum Grammar {
         .pastSimple: ["i": "was", "he": "was", "she": "was", "it": "was",
                       "you": "were", "we": "were", "they": "were"],
     ]
+
+    /// Which of the copula's six people a subject counts as. Keeps the
+    /// table six entries long instead of trying to name every noun in
+    /// English: "dinner" agrees exactly as "it" does.
+    private static func person(of subject: String) -> String {
+        copula[.base]?[subject] != nil ? subject : (nounWords.contains(subject) ? "it" : subject)
+    }
 
     private static let copulaForms: Set<String> =
         ["be", "am", "is", "are", "was", "were", "been", "being"]
@@ -216,7 +245,7 @@ enum Grammar {
     /// person into a single form.
     static func subject(before context: String) -> String? {
         let words = words(in: currentSentence(context))
-        guard let last = words.last, copula[.base]?[last] != nil else { return nil }
+        guard let last = words.last, isSubject(last, in: words) else { return nil }
         // A governed subject does not inflect the copula: "can you be",
         // never "can you are". The modal has already taken the tense.
         guard governor(of: last, in: words) == nil else { return nil }
@@ -224,8 +253,9 @@ enum Grammar {
     }
 
     /// Every subject the board can put in front of a verb.
-    private static let subjects: Set<String> =
-        ["i", "you", "he", "she", "it", "we", "they", "mum", "dad", "everyone", "who"]
+    private static func isSubject(_ word: String, in words: [String]) -> Bool {
+        copula[.base]?[word] != nil || isThirdPerson(word, in: words)
+    }
 
     /// The auxiliary or modal governing the subject, when the sentence has
     /// inverted into a question: "can you", "is he", "have they".
@@ -236,13 +266,13 @@ enum Grammar {
     /// the word in front of it, which is wrong in every question anyone
     /// would actually ask.
     private static func governor(of subject: String, in words: [String]) -> String? {
-        guard words.count >= 2, subjects.contains(subject) else { return nil }
+        guard words.count >= 2, isSubject(subject, in: words) else { return nil }
         let before = words[words.count - 2]
         guard verbGovernors.contains(before) else { return nil }
         return before
     }
 
-    private static func words(in context: String) -> [String] {
+    static func words(in context: String) -> [String] {
         context
             .lowercased()
             .components(separatedBy: CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "'")).inverted)
@@ -281,7 +311,7 @@ enum Grammar {
             if perfectAuxiliaries.contains(governor) { return .pastParticiple }
             return .base
         }
-        return form(for: tense, thirdPerson: thirdPersonSubjects.contains(effective))
+        return form(for: tense, thirdPerson: isThirdPerson(effective, in: words))
     }
 
     private static func form(for tense: Tense, thirdPerson: Bool) -> VerbForm {
@@ -308,9 +338,9 @@ enum Grammar {
             case .pastParticiple: return "been"
             case .future: return "will be"
             case .pastSimple:
-                return subject.flatMap { copula[.pastSimple]?[$0] } ?? "was"
+                return subject.flatMap { copula[.pastSimple]?[person(of: $0)] } ?? "was"
             case .base, .thirdPerson:
-                return subject.flatMap { copula[.base]?[$0] } ?? "be"
+                return subject.flatMap { copula[.base]?[person(of: $0)] } ?? "be"
             }
         }
 
