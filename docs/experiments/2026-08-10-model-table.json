@@ -1,0 +1,459 @@
+{
+  "" : [
+    "hello",
+    "how are you"
+  ],
+  "a" : [
+    "hello",
+    "friend",
+    "teacher"
+  ],
+  "about" : [
+    "i",
+    "you",
+    "and"
+  ],
+  "and" : [
+    "hello",
+    "friend",
+    "teacher"
+  ],
+  "ask" : [
+    "thank you",
+    "please",
+    "help",
+    "yes"
+  ],
+  "at" : [
+    "hello"
+  ],
+  "be" : [
+    "yes",
+    "please",
+    "you",
+    "want"
+  ],
+  "because" : [
+    "because",
+    "and",
+    "the",
+    "of",
+    "to"
+  ],
+  "borrow" : [
+    "please",
+    "thank you",
+    "yes",
+    "can"
+  ],
+  "but" : [
+    "yes",
+    "please"
+  ],
+  "buy" : [
+    "hello"
+  ],
+  "close" : [
+    "close",
+    "room"
+  ],
+  "come" : [
+    "yes"
+  ],
+  "do" : [
+    "yes",
+    "no",
+    "help",
+    "you"
+  ],
+  "draw" : [
+    "write",
+    "draw",
+    "next"
+  ],
+  "drink" : [
+    "water",
+    "juice",
+    "tea"
+  ],
+  "eat" : [
+    "eat",
+    "drink",
+    "sleep",
+    "you"
+  ],
+  "explain" : [
+    "i",
+    "understand",
+    "please",
+    "help"
+  ],
+  "feel" : [
+    "feel",
+    "happy",
+    "friend",
+    "good"
+  ],
+  "find" : [
+    "help",
+    "me",
+    "please",
+    "find"
+  ],
+  "finish" : [
+    "work"
+  ],
+  "for" : [
+    "please",
+    "help",
+    "you",
+    "me",
+    "what"
+  ],
+  "forget" : [
+    "go",
+    "home",
+    "eat",
+    "sleep",
+    "stop"
+  ],
+  "get" : [
+    "get",
+    "help",
+    "you",
+    "please",
+    "answer"
+  ],
+  "give" : [
+    "help",
+    "me",
+    "please",
+    "you",
+    "i"
+  ],
+  "go" : [
+    "go",
+    "home",
+    "stop",
+    "please",
+    "help"
+  ],
+  "have" : [
+    "hello"
+  ],
+  "he" : [
+    "he",
+    "a",
+    "the",
+    "of",
+    "and"
+  ],
+  "hear" : [
+    "help",
+    "please",
+    "you",
+    "can"
+  ],
+  "how" : [
+    "i",
+    "sorry",
+    "please"
+  ],
+  "hurt" : [
+    "hurt",
+    "please",
+    "help",
+    "i",
+    "feel"
+  ],
+  "i" : [
+    "hello",
+    "friend",
+    "teacher"
+  ],
+  "in" : [
+    "hello"
+  ],
+  "like" : [
+    "i",
+    "you",
+    "that",
+    "the",
+    "and"
+  ],
+  "listen" : [
+    "hello",
+    "friend",
+    "teacher"
+  ],
+  "look" : [
+    "i",
+    "want",
+    "to",
+    "say",
+    "hello"
+  ],
+  "love" : [
+    "you",
+    "me",
+    "happy",
+    "friend"
+  ],
+  "make" : [
+    "help",
+    "you",
+    "have",
+    "a",
+    "friend"
+  ],
+  "me" : [
+    "i",
+    "with",
+    "you",
+    "and"
+  ],
+  "need" : [
+    "hello",
+    "friend",
+    "teacher"
+  ],
+  "of" : [
+    "hello",
+    "love"
+  ],
+  "on" : [
+    "on",
+    "the",
+    "of",
+    "to",
+    "and"
+  ],
+  "open" : [
+    "please",
+    "help",
+    "me",
+    "understand",
+    "what"
+  ],
+  "or" : [
+    "hello"
+  ],
+  "out" : [
+    "out",
+    "of",
+    "the",
+    "and",
+    "to"
+  ],
+  "paint" : [
+    "paint"
+  ],
+  "play" : [
+    "play",
+    "stop"
+  ],
+  "read" : [
+    "write",
+    "again",
+    "please",
+    "and"
+  ],
+  "remember" : [
+    "please",
+    "help",
+    "you",
+    "like",
+    "me"
+  ],
+  "say" : [
+    "hello",
+    "friend",
+    "teacher"
+  ],
+  "search" : [
+    "help",
+    "please",
+    "find",
+    "answer"
+  ],
+  "see" : [
+    "hello"
+  ],
+  "share" : [
+    "friend"
+  ],
+  "she" : [
+    "i",
+    "you",
+    "me"
+  ],
+  "show" : [
+    "hello",
+    "friend",
+    "teacher"
+  ],
+  "some" : [
+    "hello",
+    "friend",
+    "teacher"
+  ],
+  "start" : [
+    "hello",
+    "please"
+  ],
+  "stay" : [
+    "stop",
+    "please",
+    "here",
+    "help",
+    "and"
+  ],
+  "take" : [
+    "please",
+    "help",
+    "me",
+    "you",
+    "now"
+  ],
+  "talk" : [
+    "i",
+    "you",
+    "with",
+    "need"
+  ],
+  "tell" : [
+    "write",
+    "to",
+    "say",
+    "please"
+  ],
+  "they" : [
+    "they",
+    "and",
+    "in",
+    "with"
+  ],
+  "this" : [
+    "here",
+    "with",
+    "of",
+    "and"
+  ],
+  "to" : [
+    "hello",
+    "friend",
+    "teacher"
+  ],
+  "try" : [
+    "try",
+    "to",
+    "have",
+    "be",
+    "you"
+  ],
+  "turn" : [
+    "yes",
+    "please",
+    "you",
+    "me"
+  ],
+  "until" : [
+    "until",
+    "me",
+    "of",
+    "at",
+    "and"
+  ],
+  "up" : [
+    "i",
+    "want",
+    "to",
+    "what"
+  ],
+  "wait" : [
+    "i",
+    "want",
+    "to",
+    "see",
+    "you"
+  ],
+  "want" : [
+    "hello",
+    "love"
+  ],
+  "watch" : [
+    "watch",
+    "eat",
+    "sleep",
+    "home"
+  ],
+  "we" : [
+    "i",
+    "you",
+    "and"
+  ],
+  "what" : [
+    "hello",
+    "friend",
+    "teacher"
+  ],
+  "when" : [
+    "here",
+    "you",
+    "the",
+    "a"
+  ],
+  "where" : [
+    "here",
+    "the",
+    "of",
+    "and"
+  ],
+  "who" : [
+    "me",
+    "the",
+    "and",
+    "a"
+  ],
+  "will" : [
+    "hello",
+    "friend",
+    "teacher"
+  ],
+  "win" : [
+    "win",
+    "you",
+    "the",
+    "of",
+    "and"
+  ],
+  "with" : [
+    "i",
+    "you",
+    "and"
+  ],
+  "work" : [
+    "work",
+    "home",
+    "school",
+    "day",
+    "yes"
+  ],
+  "write" : [
+    "write",
+    "to",
+    "the",
+    "a",
+    "and"
+  ],
+  "you" : [
+    "hello",
+    "friend",
+    "teacher"
+  ],
+  "your" : [
+    "love",
+    "friend",
+    "teacher"
+  ]
+}

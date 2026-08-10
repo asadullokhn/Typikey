@@ -96,6 +96,9 @@ First run on a new device needs Developer Mode enabled (Settings → Privacy & S
   `plutil -p ~/Library/Developer/CoreSimulator/Devices/<UDID>/data/Library/Preferences/.GlobalPreferences.plist | grep -A4 AppleKeyboards` — the extension's bundle id should be in the list. Writing that key directly does *not* work; the live input system ignores it.
 
   The tests were assumed unrunnable for most of this project's life and were never executed. They were runnable all along, and the first run found four real defects — including a VoiceOver regression and a feature that could not be reached at all. Run them.
+## Experiments
+
+- [Would a model on the app beat the keyboard's trigrams?](docs/experiments/2026-08-10-app-side-model.md) — no, not this way. An on-device model generating a next-word table scored 1879 taps against the shipped 1847, and was worse at every weight tried. It reproduces the hand-tuned seeds where they exist and adds noise where they do not. The tooling to retry it lives in `Tools/predict-table/`, and the table it produced is beside the report.
 
 ## Known limitations / not yet decided
 
