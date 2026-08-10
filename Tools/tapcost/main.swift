@@ -14,8 +14,13 @@ import Foundation
 // board, not the UI: what it cannot see is whether the key was reachable
 // on a real screen. Keep the UI tests for that.
 //
-//   swift Tools/tapcost/run.sh            the corpus, with a summary
-//   swift Tools/tapcost/run.sh --verbose  every sentence, word by word
+//   ./Tools/tapcost/run.sh                       the built-in corpus
+//   ./Tools/tapcost/run.sh --verbose             every word, and how it was reached
+//   ./Tools/tapcost/run.sh "can we go swimming"  one sentence of your own
+//   ./Tools/tapcost/run.sh --file mine.txt       a file, one sentence per line
+//
+// Any sentence given on the command line is measured word by word and,
+// if it could be a question, shown with what the `?` key would offer.
 
 // MARK: - The board, as a thing you tap
 
@@ -180,15 +185,39 @@ let corpus: [(who: String, text: String)] = [
     ("everyone", "thank you for the help"),
 ]
 
+// MARK: - What to measure
+
+/// Sentences from the command line, a file, or the built-in corpus.
+func requestedSentences() -> [(who: String, text: String)] {
+    var arguments = Array(CommandLine.arguments.dropFirst()).filter { $0 != "--verbose" }
+    if let flag = arguments.firstIndex(of: "--file") {
+        let path = flag + 1 < arguments.count ? arguments[flag + 1] : ""
+        guard let contents = try? String(contentsOfFile: path, encoding: .utf8) else {
+            print("cannot read \(path)")
+            exit(1)
+        }
+        return contents
+            .split(separator: "\n")
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty && !$0.hasPrefix("#") }
+            .map { (who: "you", text: $0) }
+    }
+    arguments = arguments.filter { !$0.hasPrefix("--") }
+    guard !arguments.isEmpty else { return corpus }
+    return arguments.map { (who: "you", text: $0) }
+}
+
 // MARK: - Run
 
 let verbose = CommandLine.arguments.contains("--verbose")
+let sentences = requestedSentences()
+let ownSentences = sentences.count != corpus.count
 var totalTaps = 0
 var totalLetters = 0
 var allSpelled: [String: Int] = [:]
 var lines: [String] = []
 
-for entry in corpus {
+for entry in sentences {
     var keyboard = Keyboard(plan: BoardPlan())
     var trace: [String] = []
     var words = entry.text.split(separator: " ").map(String.init)
@@ -205,17 +234,28 @@ for entry in corpus {
     lines.append(String(format: "%4d  %-52@  (to %@)%@",
                         keyboard.taps, entry.text as NSString,
                         entry.who as NSString, spelledNote as NSString))
-    if verbose { lines.append(trace.map { "        \($0)" }.joined(separator: "\n")) }
+    if verbose || ownSentences {
+        lines.append(trace.map { "        \($0)" }.joined(separator: "\n"))
+        // What pressing `?` would put in the suggestion bar. A sentence
+        // that costs eight taps and comes out ungrammatical is not a
+        // cheap sentence, and this is the repair.
+        let offered = Rephrase.questions(from: entry.text)
+        if !offered.isEmpty {
+            lines.append("        ? offers:")
+            lines.append(offered.map { "            \($0)" }.joined(separator: "\n"))
+        }
+        lines.append("")
+    }
 }
 
 print("\nTaps per sentence\n")
 print(lines.joined(separator: "\n"))
 
-let words = corpus.reduce(0) { $0 + $1.text.split(separator: " ").count }
+let words = sentences.reduce(0) { $0 + $1.text.split(separator: " ").count }
 print("""
 
 Totals
-  \(corpus.count) sentences, \(words) words
+  \(sentences.count) sentences, \(words) words
   \(totalTaps) taps against \(totalLetters) typing every letter
   \(String(format: "%.2f", Double(totalTaps) / Double(words))) taps per word
   \(allSpelled.values.reduce(0, +)) words spelled letter by letter\

@@ -259,6 +259,30 @@ let nounWords: Set<String> = {
     return nouns
 }()
 
+/// How each word is actually spelled, found from a lowercased one.
+///
+/// Analysis lowercases everything so "Mum" and "mum" are the same word;
+/// writing a sentence back out has to undo that, or the keyboard offers
+/// "Where is mum?" and "Does mrt go there?" — which is not what anyone
+/// would write, and looks like a machine wrote it.
+let canonicalSpelling: [String: String] = {
+    var spelling: [String: String] = [:]
+    for category in vocabulary {
+        for word in category.words {
+            spelling[word.en.lowercased()] = word.en
+            if spelling[word.ms.lowercased()] == nil { spelling[word.ms.lowercased()] = word.ms }
+        }
+    }
+    return spelling
+}()
+
+/// The places you can go to, which is the one case where the missing
+/// preposition is never in doubt: "I go park" means "go TO THE park".
+let placeWords: Set<String> = {
+    guard let places = vocabulary.first(where: { $0.en == "Places" }) else { return [] }
+    return Set(places.words.filter { $0.wordClass == .noun }.map { $0.en.lowercased() })
+}()
+
 /// Seed bigrams per language so prediction is useful before any learning.
 let seedBigrams: [Lang: [String: [String]]] = [
     .en: [

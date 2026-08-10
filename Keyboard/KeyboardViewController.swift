@@ -244,6 +244,12 @@ final class KeyboardViewController: UIInputViewController {
     private let completionEngine = CompletionEngine()
     private var completionWords: [String] = []
 
+    /// Ways of saying what the finished sentence seems to mean, offered
+    /// after the question key and cleared by anything else. Held here
+    /// rather than recomputed on every rebuild because it is an answer to
+    /// one deliberate act — pressing `?` — and not a running commentary.
+    private var rephrasings: [String] = []
+
     // MARK: Lifecycle
 
     override func viewDidLoad() {
@@ -969,12 +975,38 @@ final class KeyboardViewController: UIInputViewController {
 
     // MARK: Building
 
+    /// The chips share the bar between however many there are.
+    ///
+    /// Fixed thirds wasted the bar whenever there were fewer than three,
+    /// and made a whole rephrased sentence unhittable — a third of the
+    /// width at 15pt is a target this user cannot reliably land on, which
+    /// is the entire problem the keyboard exists to solve. One suggestion
+    /// now spans the bar; two take half each.
+    ///
+    /// The bar is the one place in the keyboard where things are allowed
+    /// to move (invariant 6 puts prediction here precisely so the grid
+    /// never has to), but this does mean a chip's position depends on how
+    /// many there are. Worth raising with the team: bigger targets against
+    /// slightly less predictable ones.
+    private func layoutSuggestionBar(in bounds: CGRect, yOffset: CGFloat, inset: CGFloat) {
+        let shown = max(1, suggestionButtons.filter { !$0.isHidden }.count)
+        let slotWidth = (bounds.width - inset * 2) / CGFloat(shown)
+        for (i, button) in suggestionButtons.enumerated() {
+            button.frame = CGRect(
+                x: inset + CGFloat(i) * slotWidth + 3, y: yOffset + inset,
+                width: slotWidth - 6, height: topBarHeight - inset * 2)
+        }
+    }
+
     private func buildSuggestionBar() {
         for i in 0..<3 {
             let button = UIButton(type: .system)
             button.titleLabel?.font = .systemFont(ofSize: 23, weight: .semibold)
             button.titleLabel?.adjustsFontSizeToFitWidth = true
-            button.titleLabel?.minimumScaleFactor = 0.65
+            // Down to 12pt: a rephrasing is a sentence, not a word, and
+            // reading it is what makes accepting it a decision rather
+            // than a gamble.
+            button.titleLabel?.minimumScaleFactor = 0.52
             // Filled pill, not tinted text: a suggestion is a target to be
             // hit, so it has to look as tappable as a key.
             button.backgroundColor = Palette.suggestionFill
@@ -1232,14 +1264,7 @@ final class KeyboardViewController: UIInputViewController {
             x: 0, y: yOffset, width: fullBounds.width, height: fullBounds.height - yOffset)
         let inset: CGFloat = 4
 
-        // The globe moved into the pinned column, so the suggestion bar
-        // gets the full width back for its three chips.
-        let slotWidth = (bounds.width - inset * 2) / 3
-        for (i, button) in suggestionButtons.enumerated() {
-            button.frame = CGRect(
-                x: inset + CGFloat(i) * slotWidth + 3, y: yOffset + inset,
-                width: slotWidth - 6, height: topBarHeight - inset * 2)
-        }
+        layoutSuggestionBar(in: bounds, yOffset: yOffset, inset: inset)
 
         // The pinned column is sized from bounds.width alone — never from
         // contentColumns — so col 0 lands on the exact same frame whether
@@ -1360,10 +1385,16 @@ final class KeyboardViewController: UIInputViewController {
 
         switch action {
         case .word(let w):
+            rephrasings = []
             insertWord(w)
         case .punct(let p):
             terminateToken()
+            // Read the sentence before the mark goes in: the proxy lags
+            // its own insertion, and this has to see the words rather than
+            // the punctuation.
+            let finished = contextBefore()
             insertPunctuation(p)
+            rephrasings = p == "?" ? Rephrase.questions(from: finished) : []
         case .char(let c):
             // An apostrophe is token-internal (so "don't" accumulates as
             // one token) even though it isn't a letter — terminateToken's
@@ -1383,9 +1414,11 @@ final class KeyboardViewController: UIInputViewController {
             // Deleting mid-word makes the accumulated token unreliable —
             // reset rather than count a partial/garbled word.
             typedToken = ""
+            rephrasings = []
             textDocumentProxy.deleteBackward()
         case .deleteWord:
             typedToken = ""
+            rephrasings = []
             deleteLastWord()
         case .home:
             typedToken = ""
@@ -1539,6 +1572,36 @@ final class KeyboardViewController: UIInputViewController {
             textDocumentProxy.deleteBackward()
         }
         textDocumentProxy.insertText(p + " ")
+    }
+
+    /// Swaps the sentence just finished for a rephrasing of it.
+    ///
+    /// Deletes back to wherever this sentence began — not a fixed number
+    /// of characters, because the question key writes a mark and a space
+    /// and the sentence before it may have ended in either. Anything in
+    /// front of it is a different sentence and is not touched, and the
+    /// space separating them is put back, so accepting a rephrasing in the
+    /// middle of a conversation does not run two sentences together.
+    private func replaceCurrentSentence(with replacement: String) {
+        let context = contextBefore()
+        guard !context.isEmpty else { return }
+
+        var end = context.endIndex
+        while end > context.startIndex,
+              " \n".contains(context[context.index(before: end)]) {
+            end = context.index(before: end)
+        }
+        if end > context.startIndex, ".!?".contains(context[context.index(before: end)]) {
+            end = context.index(before: end)
+        }
+        let start = context[..<end]
+            .lastIndex(where: { ".!?\n".contains($0) })
+            .map { context.index(after: $0) } ?? context.startIndex
+
+        let sentence = context[start...]
+        let separator = sentence.prefix { $0 == " " || $0 == "\n" }
+        for _ in 0..<sentence.count { textDocumentProxy.deleteBackward() }
+        textDocumentProxy.insertText(separator + replacement + " ")
     }
 
     private func deleteLastWord() {
@@ -1737,7 +1800,13 @@ final class KeyboardViewController: UIInputViewController {
 
     private func updateSuggestions() {
         let titles: [String]
-        if isWordLevel {
+        if !rephrasings.isEmpty {
+            // A whole sentence per chip rather than a word. He pressed the
+            // question key, which is a deliberate act with one meaning,
+            // and until he does something else this is the only thing the
+            // bar has worth saying.
+            titles = rephrasings
+        } else if isWordLevel {
             if !completionWords.isEmpty {
                 // Two chips, no symbols to decode: the short one is the next
                 // word, the long one is the whole continuation. Since the
@@ -1790,11 +1859,21 @@ final class KeyboardViewController: UIInputViewController {
                 button.isHidden = true
             }
         }
+        // A whole sentence needs room a single word does not, and the
+        // chips have just changed how many of them there are.
+        view.setNeedsLayout()
     }
 
     @objc private func suggestionTapped(_ sender: UIButton) {
         guard let title = sender.title(for: .normal) else { return }
         haptics.commit()
+        if rephrasings.contains(title) {
+            replaceCurrentSentence(with: title)
+            rephrasings = []
+            updateSuggestions()
+            refreshVerbForms()
+            return
+        }
         if isWordLevel, !completionWords.isEmpty {
             if title == completionWords[0] {
                 insertWord(completionWords[0])

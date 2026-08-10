@@ -187,9 +187,14 @@ enum Grammar {
     /// table because it inflects for person as well as tense — the only
     /// English verb that still does.
     private static let copula: [VerbForm: [String: String]] = [
+        // The demonstratives are here because they stand in for a noun and
+        // the copula still has to agree with something: "who IS that", not
+        // "who be that".
         .base: ["i": "am", "he": "is", "she": "is", "it": "is",
+                "this": "is", "that": "is", "these": "are", "those": "are",
                 "you": "are", "we": "are", "they": "are"],
         .pastSimple: ["i": "was", "he": "was", "she": "was", "it": "was",
+                      "this": "was", "that": "was", "these": "were", "those": "were",
                       "you": "were", "we": "were", "they": "were"],
     ]
 
@@ -321,6 +326,48 @@ enum Grammar {
         case .future: return .future
         }
     }
+
+    /// Whether a word takes third-person agreement on its own — a bare
+    /// subject with no sentence around it, which is what Rephrase has
+    /// when it is deciding between "do" and "does".
+    static func thirdPerson(_ word: String) -> Bool {
+        isThirdPerson(word.lowercased(), in: [word.lowercased()])
+    }
+
+    /// The dictionary form of a verb, or nil if this is not a verb the
+    /// board could have produced.
+    ///
+    /// Built by running every verb in the vocabulary through every form.
+    /// The board can only ever write a word it can make, so a table of
+    /// what it makes is a complete answer for anything it wrote — and
+    /// answering nil for everything else is what lets callers use this to
+    /// find the verb in a sentence at all.
+    static func baseForm(of word: String) -> String? { baseForms[word.lowercased()] }
+
+    private static let baseForms: [String: String] = {
+        var forms: [String: String] = [:]
+        let verbs = Set(vocabulary.flatMap(\.words)
+            .filter { $0.wordClass == .verb && !$0.en.contains(" ") }
+            .map { $0.en.lowercased() })
+            .union(irregular.keys)
+            .union(copulaForms)
+        for verb in verbs {
+            forms[verb] = copulaForms.contains(verb) ? "be" : verb
+            for form in [VerbForm.thirdPerson, .progressive, .pastSimple, .pastParticiple] {
+                let inflected = inflect(verb, as: form).lowercased()
+                // First writer wins: "read" is its own past tense, and
+                // "left" is the past of "leave" before it is anything
+                // else. A later verb must not steal a form already
+                // claimed by the verb that owns it outright.
+                if forms[inflected] == nil { forms[inflected] = copulaForms.contains(verb) ? "be" : verb }
+            }
+        }
+        for (subject, form) in (copula[.base] ?? [:]).merging(copula[.pastSimple] ?? [:], uniquingKeysWith: { a, _ in a }) {
+            _ = subject
+            forms[form] = "be"
+        }
+        return forms
+    }()
 
     /// The verb in the requested form. Falls back to the base word whenever
     /// a rule would be a guess — a wrong word in a fixed position is worse
