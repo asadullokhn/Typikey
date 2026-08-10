@@ -169,6 +169,66 @@ Reproduce any of it:
     --model-table table.json --model-weight 0.3
 ```
 
+## Re-checked after the grammar work
+
+Ali's response to the recommendation was to build the grammar and then
+ask the model again. The grammar landed — plurals relabelled in place,
+inverted auxiliaries offered in the bar, comparatives added as words —
+and took the corpus from 1847 to **1797 taps**, 30 spelled words to 16.
+
+The same table, against the better baseline:
+
+| model weight | taps |
+|---|---|
+| none (baseline) | **1797** |
+| 0.1 | 1799 |
+| 0.3 | 1803 |
+| 1.0 | 1811 |
+
+Still worse at every weight, and **the gap widened**. That is the
+expected direction and worth saying plainly: every rule added moves work
+out of the space a next-word model could have helped with. Improving the
+grammar does not make the model more useful, it makes it less.
+
+## Best model available, and what to point it at
+
+**Apple's on-device model, in the app, for phrases — not for words.**
+
+It is the only option that satisfies invariant 5 (no network from the
+keyboard, ever). It costs the extension no memory because inference runs
+out-of-process in a system daemon. It reports `.available` on current
+hardware. Any hosted model — GPT, Claude, Gemini — is disqualified before
+cost is even discussed: what he types IS his speech, he cannot audit
+where it goes, and consent would be given on his behalf forever.
+
+Do not point it at next-word prediction. Three rounds against two
+baselines agree, and the reason is structural rather than fixable by
+prompting: the model reproduces the hand-tuned seeds where they exist and
+guesses everywhere else.
+
+Point it at the two things a bigram table structurally cannot do:
+
+1. **Whole utterances.** "can I go to the toilet please" as one tap
+   rather than six. `tapcost` already measures phrase cells — they are
+   the cheapest thing on the board — so this is measurable the day it
+   exists.
+2. **His own sent messages.** The model was asked what people say. It has
+   never been shown what he says, and that is the only input it has that
+   the seeds do not.
+
+## What is left, and why it is not a model problem
+
+Nine of the sixteen remaining are past-tense forms: `was`, `did`,
+`does`, `drew`, `forgot`, `made`, `played`, `started`, `took`. They share
+one cause. English usually puts the time marker after the verb — "it
+started yesterday" — so when he taps `start` the sentence is still just
+"it" and the board has no way to know. Tapping `yesterday` first puts the
+whole board in the past correctly, which is what the tense mechanism was
+built for.
+
+That is word order, not a missing feature, and no model fixes it: the
+information genuinely is not there yet at the moment the key is pressed.
+
 ## The wider point
 
 Both failures here were invisible to inspection and obvious to

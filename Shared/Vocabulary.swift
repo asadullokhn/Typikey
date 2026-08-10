@@ -101,6 +101,7 @@ let vocabulary: [Category] = [
         VocabWord("forget", .verb), VocabWord("remember", .verb),
         VocabWord("miss", .verb),
         VocabWord("finish", .verb), VocabWord("start", .verb),
+        VocabWord("mind", .verb),
         VocabWord("need", .verb),
     ]),
     Category(name: "Feelings", words: [
@@ -124,6 +125,13 @@ let vocabulary: [Category] = [
         VocabWord("easy", .descriptor), VocabWord("ready", .descriptor),
         // Third measured pass, 200 sentences. Malay unverified.
         VocabWord("loud", emoji: "🔊", .descriptor), VocabWord("fair", .descriptor),
+        // Comparatives, added as words rather than derived. There is no
+        // reliable trigger for one: "make it short" and "make it shorter"
+        // are both English, and nothing before the word says which. A
+        // derivation that fired on a guess would put the wrong word in a
+        // fixed position; these three were measured being spelled.
+        VocabWord("easier", .descriptor), VocabWord("faster", .descriptor),
+        VocabWord("louder", .descriptor), VocabWord("shorter", .descriptor),
         VocabWord("free", .descriptor), VocabWord("fast", .descriptor),
         VocabWord("short", .descriptor), VocabWord("maybe", .descriptor),
         VocabWord("late", .descriptor), VocabWord("sorry", .social),

@@ -461,3 +461,102 @@ enum Grammar {
         "aeiou".contains(character)
     }
 }
+
+// MARK: - Nouns and adjectives
+
+extension Grammar {
+
+    /// Nouns English does not count, so they never take a plural. "some
+    /// water", never "some waters". Listed because no rule distinguishes
+    /// them — countability is a property of each word, and getting it
+    /// wrong puts a word on the board that nobody would write.
+    private static let massNouns: Set<String> = [
+        "water", "rice", "milk", "juice", "tea", "bread", "food", "homework",
+        "music", "news", "space", "time", "weather", "money", "help", "fun",
+        "chocolate", "art", "work", "sleep", "rain", "hair", "paper",
+    ]
+
+    private static let irregularPlurals: [String: String] = [
+        "child": "children", "person": "people", "man": "men", "woman": "women",
+        "foot": "feet", "tooth": "teeth", "mouse": "mice", "fish": "fish",
+        "sheep": "sheep", "photo": "photos", "video": "videos", "day": "days",
+    ]
+
+    /// The plural of a noun, or nil when it does not have one.
+    static func plural(of noun: String) -> String? {
+        let lower = noun.lowercased()
+        guard !massNouns.contains(lower), !noun.contains(" ") else { return nil }
+        if let irregular = irregularPlurals[lower] { return match(irregular, to: noun) }
+
+        let plural: String
+        if lower.hasSuffix("s") || lower.hasSuffix("sh") || lower.hasSuffix("ch")
+            || lower.hasSuffix("x") || lower.hasSuffix("z") {
+            plural = lower + "es"
+        } else if let last = lower.last, last == "y",
+                  let before = lower.dropLast().last, !isVowel(before) {
+            plural = lower.dropLast() + "ies"
+        } else {
+            plural = lower + "s"
+        }
+        return match(plural, to: noun)
+    }
+
+    /// Comparative form, for the adjectives that take one by suffix.
+    ///
+    /// English switches to "more" for longer words — "more excited", never
+    /// "excitedder" — and there is no reliable rule for where the switch
+    /// happens, so this answers only for the short ones and nil otherwise.
+    /// A `more` key already sits on the home board for the rest.
+    static func comparative(of adjective: String) -> String? {
+        let lower = adjective.lowercased()
+        guard !adjective.contains(" ") else { return nil }
+        if let irregular = ["good": "better", "bad": "worse", "far": "further",
+                            "well": "better", "many": "more", "much": "more"][lower] {
+            return match(irregular, to: adjective)
+        }
+        // Two syllables is the practical limit, approximated by length:
+        // beyond it English reaches for "more" and a suffix sounds wrong.
+        guard lower.count <= 6, lower.allSatisfy({ $0.isLetter }) else { return nil }
+        let comparative: String
+        if lower.hasSuffix("e") {
+            comparative = lower + "r"
+        } else if let last = lower.last, last == "y",
+                  let before = lower.dropLast().last, !isVowel(before) {
+            comparative = lower.dropLast() + "ier"
+        } else if shouldDoubleFinalConsonant(lower), let last = lower.last {
+            comparative = lower + String(last) + "er"
+        } else {
+            comparative = lower + "er"
+        }
+        return match(comparative, to: adjective)
+    }
+
+    /// Keeps the original's capitalisation, so a proper noun stays proper.
+    private static func match(_ produced: String, to original: String) -> String {
+        guard let first = original.first, first.isUppercase else { return produced }
+        return produced.prefix(1).uppercased() + produced.dropFirst()
+    }
+
+    /// Words after which a noun must be plural. Numbers are handled
+    /// separately because there are infinitely many of them and exactly
+    /// one of them ("one") does not count.
+    private static let pluralCallers: Set<String> = [
+        "many", "some", "these", "those", "few", "several", "lots", "both",
+        "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten",
+    ]
+
+    /// Whether the next noun has to be plural, from the words already
+    /// typed. "how many days", "some ideas", "two videos".
+    static func expectsPlural(after context: String) -> Bool {
+        let words = words(in: currentSentence(context))
+        guard let last = words.last else { return false }
+        if pluralCallers.contains(last) { return true }
+        // "a lot of ___" — the quantifier is three words long and the last
+        // of them is a preposition that means nothing on its own.
+        if last == "of", words.count >= 2, ["lot", "lots", "plenty"].contains(words[words.count - 2]) {
+            return true
+        }
+        if let number = Int(last), number > 1 { return true }
+        return false
+    }
+}

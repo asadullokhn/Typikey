@@ -51,11 +51,25 @@ struct BoardPlan {
     /// usage against the real word rather than against `went`.
     func label(for word: VocabWord, after context: String) -> (text: String, base: String) {
         let base = word.text
-        guard word.wordClass == .verb, smartGrammar else { return (base, base) }
-        let inflected = Grammar.inflect(base,
-                                        as: Grammar.verbForm(after: context),
-                                        subject: Grammar.subject(before: context))
-        return (inflected, base)
+        guard smartGrammar else { return (base, base) }
+        switch word.wordClass {
+        case .verb:
+            return (Grammar.inflect(base,
+                                    as: Grammar.verbForm(after: context),
+                                    subject: Grammar.subject(before: context)), base)
+        case .noun:
+            // "how many day" is not something anyone writes, and `days`
+            // was on no board at all — the plural of a word we already
+            // have is not new vocabulary, it is the same key reading
+            // correctly. Only where the grammar leaves no doubt: after a
+            // number or a quantifier, and never for the nouns English
+            // does not count.
+            guard Grammar.expectsPlural(after: context),
+                  let plural = Grammar.plural(of: base) else { return (base, base) }
+            return (plural, base)
+        default:
+            return (base, base)
+        }
     }
 
     // MARK: - Home
@@ -219,6 +233,14 @@ struct BoardPlan {
     func predictions(after context: String) -> [String] {
         let sentence = Grammar.currentSentence(context)
         let previous = Grammar.words(in: sentence).last ?? ""
+
+        // An inverted question puts the auxiliary before the subject, so
+        // at the moment he needs it the board cannot know which one it is
+        // — "when ARE you coming" and "how long IS the ride" differ only
+        // by a subject that has not been typed. The grid must not guess;
+        // one key cannot read both. The bar can show them side by side,
+        // which is what it is for (invariant 6), and either is one tap.
+        if let inverted = invertedAuxiliaries(after: sentence) { return inverted }
         var scores: [String: Int] = [:]
 
         let prefix = "\(previous)|"
@@ -245,6 +267,25 @@ struct BoardPlan {
             if !filtered.isEmpty { scores = filtered }
         }
         return scores.sorted { ($0.value, $1.key) > ($1.value, $0.key) }.prefix(3).map(\.key)
+    }
+
+    /// The auxiliaries an inverted question could take next, or nil when
+    /// the sentence is not one.
+    ///
+    /// Fires after a question word, before any verb has been written —
+    /// "what ___", "how long ___", "what time ___" — and at the very start
+    /// of a sentence, where "are you free today" begins.
+    private func invertedAuxiliaries(after sentence: String) -> [String]? {
+        let words = Grammar.words(in: sentence)
+        guard words.count <= 3 else { return nil }
+        let questionWords: Set<String> = ["what", "where", "when", "who", "why", "how"]
+        let opensAQuestion = words.first.map { questionWords.contains($0) } ?? false
+        guard opensAQuestion || words.isEmpty else { return nil }
+        // Nothing to offer once the sentence already has its verb.
+        guard !words.contains(where: { Grammar.baseForm(of: $0) != nil }) else { return nil }
+        // `are` first: most messages are addressed to somebody, and the
+        // subject of a question you send someone is usually them.
+        return words.isEmpty ? ["are", "can", "did"] : ["are", "is", "did"]
     }
 
     /// What tends to follow a word, from learned pairs first and the
