@@ -43,7 +43,7 @@ Every interaction decision traces to a specific research finding:
 - Letter keyboard (large-key QWERTY) and numbers layer as fallback, with system spell-checker word completions
 - Word-level delete (one tap removes the whole last word)
 - Punctuation cells that attach to the preceding word
-- Two grid languages: English and Malay (Bahasa Melayu), toggled by the EN/MS key. Language switching relabels cells in place — grid positions never move, so muscle memory survives the switch. Prediction seeds and category names follow the active language. Malay translations are drafts pending verification with Fadillah
+- English only. Malay (Bahasa Melayu) was drafted and then removed for the MVP (team decision, 10 Aug 2026): no native speaker had verified it, and an unverified word sitting in a fixed position is worse than no word — he cannot tell the board it is wrong. The drafts are in git history if the feature comes back. The EN/MS key went with it; that pinned slot now holds **Hide keyboard**
 - Typing follows the text, not the toggle: letters-level word completions detect the language of what's actually in the field (any language the system spell-checker knows) and complete in it; phrase completion answers in the language the sentence is written in; screen learning OCRs whatever language is on screen. No setting to flip — it just works
 - Three keyboard sizes, chosen in the app rather than on the board — a grid slot is a word, and size is set once and then never again. The board is always four rows of ten, exactly as designed; the size changes how big each key is, not how many there are. Large is 640pt, giving rows of roughly 146pt — the easiest targets this board has had
 - Dismiss key, like Apple's iPad keyboard
@@ -53,7 +53,7 @@ Every interaction decision traces to a specific research finding:
   - **Context-driven** — verb forms follow the sentence. After "I am" the `go` key reads `going`, after "he" it reads `goes`, after "have" it reads `gone`, and `be` reads `am` / `is` / `are` from the subject. Relabelled in place, never moved
   - **Tense from the sentence's own time words** — `yesterday` puts every verb key in the simple past (`go` → `went`, `be` → `was`/`were`), `tomorrow` and `will` put them in the future. No tense key: the board carries the design's controls and no others, so tense is read from words the user was going to tap anyway. That is also how English works — the verb ending is ambiguous and the adverb is what places the sentence. Scoped to the current sentence, so a full stop clears it
   - An auxiliary already in the text always wins over the tense key — "I will went" is not a sentence anyone wants
-  - English only. Malay marks tense with particles rather than by inflecting, so the tense slot is reserved but left empty there, which keeps every word cell on identical coordinates in both languages. Same when Smart Grammar is switched off in the app
+  - Turned off with Smart Grammar in the app, in which case every key shows its dictionary form
 - Responsive layout: word boards drop to a compact 5-column content grid when the system narrows the keyboard (floating, Split View, Slide Over) and take 8 rows instead of 4, so every word cell survives the squeeze — narrow layouts pay in height, which is the one thing they still have. The letters and numbers levels keep all 10 columns so no character goes missing. The pinned column never changes width or position, at any width
 - iPhone: the same keyboard, smaller — phone-sized height presets, and the same 8-row compact board every narrow layout gets (the pinned column keeps its 4-row frame)
 - Auto-filing (Gilbert build): a word added to My Words that is recognizably a person, place, or action ALSO appears at the end of that category's page, in Mine's pink so it always reads as "his word" — the board configures itself, visibly, so nobody hunts for a word. Detection is on-device NLTagger; ambiguous words stay Mine-only; the My Words screen says where each word was filed
@@ -96,10 +96,13 @@ First run on a new device needs Developer Mode enabled (Settings → Privacy & S
   `plutil -p ~/Library/Developer/CoreSimulator/Devices/<UDID>/data/Library/Preferences/.GlobalPreferences.plist | grep -A4 AppleKeyboards` — the extension's bundle id should be in the list. Writing that key directly does *not* work; the live input system ignores it.
 
   The tests were assumed unrunnable for most of this project's life and were never executed. They were runnable all along, and the first run found four real defects — including a VoiceOver regression and a feature that could not be reached at all. Run them.
+## Experiments
+
+- [Would a model on the app beat the keyboard's trigrams?](docs/experiments/2026-08-10-app-side-model.md) — no, not this way. An on-device model generating a next-word table scored 1879 taps against the shipped 1847, and was worse at every weight tried. It reproduces the hand-tuned seeds where they exist and adds noise where they do not. The tooling to retry it lives in `Tools/predict-table/`, and the table it produced is beside the report.
 
 ## Known limitations / not yet decided
 
-- Malay vocabulary was drafted by the team, not by a native-speaking AAC user — verify every word with Fadillah before testing with Sayfullah. Singaporean Malay has colloquial forms a dictionary translation misses.
+- Malay is gone for the MVP rather than fixed. If it returns, every word needs a native-speaking AAC user's read — Singaporean Malay has colloquial forms a dictionary translation misses — and Malay marks tense with particles rather than by inflecting, so the verb keys would need a different mechanism there, not a translated one.
 - Vocabulary is hardcoded. The App Group + Full Access groundwork for app-edited vocabulary landed 2026-08-05; the editing UI itself does not exist yet.
 - No speech output. Audio in keyboard extensions is gated behind Full Access (this is exactly what Keeble does: on-device prediction free, speech gated). Same deliberate decision needed.
 - Apple Foundation Models sentence completion is on the roadmap, deliberately not in the MVP. Open research question: extensions may be sandboxed away from the on-device model — needs a 5-minute empirical test (`SystemLanguageModel.availability` from inside the extension) before that feature is ever promised.

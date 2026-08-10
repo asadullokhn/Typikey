@@ -13,6 +13,7 @@
 		0E1E5BFDA0832C97BFB58840 /* Grammar.swift in Sources */ = {isa = PBXBuildFile; fileRef = E79FDBE127D71069003D5477 /* Grammar.swift */; };
 		14DE37B187A93DF5D4C5F08E /* KeyboardFit.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30AE72E91A8C9C4399ABC7D3 /* KeyboardFit.swift */; };
 		20E5A46D92D05BB8947EB632 /* Preferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC0AA28FDABCFE29ADC640C4 /* Preferences.swift */; };
+		23B15E76A12AEC0C2FD4AFF2 /* BoardLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = B29172B74D31F081C9F1BBF4 /* BoardLayout.swift */; };
 		2550B3EB76AFDD7A74CF49FB /* Rephrase.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2E7B80B851EBBC851622A8D /* Rephrase.swift */; };
 		279A952F2D8694A16DDE8465 /* ScreenLearningTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C34EE826A9C2E88FA6D179E /* ScreenLearningTests.swift */; };
 		2947D257A3EFFB110EA21328 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 531B6ED481B356C4A57CD534 /* HomeView.swift */; };
@@ -31,12 +32,15 @@
 		68CAFD07FB8E332187122C3C /* BoardPlan.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AB8AE5A7229F41BA740F9B5 /* BoardPlan.swift */; };
 		74A557E66286A37B7352E59E /* WordCounts.swift in Sources */ = {isa = PBXBuildFile; fileRef = AEFE6601597E0E34BEC4EE89 /* WordCounts.swift */; };
 		760070968178B8134335A5F0 /* SentenceShape.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99954A75E4A3461FE7370C40 /* SentenceShape.swift */; };
+		786F0CA8AA5C11E8F99ABE45 /* BoardLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = B29172B74D31F081C9F1BBF4 /* BoardLayout.swift */; };
 		78A985713FF92220A838AD75 /* Rephrase.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2E7B80B851EBBC851622A8D /* Rephrase.swift */; };
 		7DD066AECBA51167DB0987C0 /* Preferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC0AA28FDABCFE29ADC640C4 /* Preferences.swift */; };
 		7E40DDA02AAA9CE053A56FBD /* SpareKeysTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B6F6FA453ABBF1284665231 /* SpareKeysTests.swift */; };
 		7F8FE036464FCAF79F831A76 /* BoardPlan.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AB8AE5A7229F41BA740F9B5 /* BoardPlan.swift */; };
 		80BD4A4B725DB47900362502 /* KeyboardSize.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF40FA941FDAF9CD08E77E79 /* KeyboardSize.swift */; };
+		812FFC0EDD122006C47B764B /* PageStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE501B1C4F332883CF5A262B /* PageStore.swift */; };
 		81775C4406A29833465C9898 /* Vocabulary.swift in Sources */ = {isa = PBXBuildFile; fileRef = FECDE3085E7D6EF9AA9E45FC /* Vocabulary.swift */; };
+		83A24EBDC83C6A32C07C8AF0 /* BoardLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = B29172B74D31F081C9F1BBF4 /* BoardLayout.swift */; };
 		867DEE28BF0C8AE912495320 /* PlainTextField.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69B956A9B583D4897560968A /* PlainTextField.swift */; };
 		88CE9D5420FB39F79D63A53C /* GrammarTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0620AC89CD9C9348E302DDBC /* GrammarTests.swift */; };
 		8A3C1A8DA54A9460DFEA82A2 /* KeyboardFit.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30AE72E91A8C9C4399ABC7D3 /* KeyboardFit.swift */; };
@@ -47,6 +51,7 @@
 		99396FC77FA01B9D55E83B4A /* SettingsCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36CD9F9B0EFD527380AD5B60 /* SettingsCard.swift */; };
 		9B31A68D7D7AC436AD4BD1F3 /* RealSentencesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1DB53826162CA69123A28D6 /* RealSentencesTests.swift */; };
 		9C862CD8CF1738B5038563A8 /* MyWordsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 167A2498198387A80DD85FC1 /* MyWordsTests.swift */; };
+		A0C972FF9B4E57D2FBDCAF0B /* CustomPageTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D51DF503A4D6BCA3D787EE3 /* CustomPageTests.swift */; };
 		A253C341C35E51D2E7AB2B10 /* SentenceShape.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99954A75E4A3461FE7370C40 /* SentenceShape.swift */; };
 		A3632C1D64AF3FB0D0D9DF27 /* BoardPlan.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AB8AE5A7229F41BA740F9B5 /* BoardPlan.swift */; };
 		A3672A59EDE33FA656B148C3 /* Rephrase.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2E7B80B851EBBC851622A8D /* Rephrase.swift */; };
@@ -65,6 +70,7 @@
 		C8D0496DF3DDCFBC43FF53D8 /* Vocabulary.swift in Sources */ = {isa = PBXBuildFile; fileRef = FECDE3085E7D6EF9AA9E45FC /* Vocabulary.swift */; };
 		C9B01D5AA3ED72DD91E5B3C2 /* ConversationDemoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73C356DFA180B06CD6221686 /* ConversationDemoView.swift */; };
 		CD8296DC7EC95FD3D5823A4E /* KeyboardFit.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30AE72E91A8C9C4399ABC7D3 /* KeyboardFit.swift */; };
+		D2756984BC6F58385552282F /* BoardLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = B29172B74D31F081C9F1BBF4 /* BoardLayout.swift */; };
 		D9E87446DC34341E0FC20673 /* Preferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC0AA28FDABCFE29ADC640C4 /* Preferences.swift */; };
 		DC9285EF1A9BD001BD8A37DF /* ReadinessCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 187356BE0502A777FA4C52FC /* ReadinessCard.swift */; };
 		DE071B07D2A8FA05715A5ED8 /* TypikeyKeyboard.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = F83C0D6BAF2B10D4444DD9A7 /* TypikeyKeyboard.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -73,6 +79,7 @@
 		E874D9C73C6F3FA438850492 /* PrivateModeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C9F1F5FD052E4FFDD9A120E /* PrivateModeTests.swift */; };
 		ECDE3A72B866932E3A8BF759 /* ShareViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6741F21149078F294F6D357E /* ShareViewController.swift */; };
 		EED48B258A0595CE57451BAC /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = DBD94BC6DECDCB5E20AD5726 /* PrivacyInfo.xcprivacy */; };
+		F11689E834DB06E7AFFAA044 /* PagesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AE808EE2B3733E8C7520D3B /* PagesView.swift */; };
 		F358D447B20F9F451E7AF138 /* TypikeyApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FA3846751FF38D84B3414E5 /* TypikeyApp.swift */; };
 		F798AE3FE6A39DDC28E044D2 /* SentenceShape.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99954A75E4A3461FE7370C40 /* SentenceShape.swift */; };
 		F965E2D3B9C32AF172CF8F7C /* Preferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC0AA28FDABCFE29ADC640C4 /* Preferences.swift */; };
@@ -133,6 +140,7 @@
 		0B6F6FA453ABBF1284665231 /* SpareKeysTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpareKeysTests.swift; sourceTree = "<group>"; };
 		167A2498198387A80DD85FC1 /* MyWordsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MyWordsTests.swift; sourceTree = "<group>"; };
 		187356BE0502A777FA4C52FC /* ReadinessCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReadinessCard.swift; sourceTree = "<group>"; };
+		1AE808EE2B3733E8C7520D3B /* PagesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PagesView.swift; sourceTree = "<group>"; };
 		1C34EE826A9C2E88FA6D179E /* ScreenLearningTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenLearningTests.swift; sourceTree = "<group>"; };
 		238704140C8DFC7E10D738C7 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		2F4B7442BDF523BAC5B0E4C2 /* PinnedFrameTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PinnedFrameTests.swift; sourceTree = "<group>"; };
@@ -150,6 +158,7 @@
 		73C356DFA180B06CD6221686 /* ConversationDemoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConversationDemoView.swift; sourceTree = "<group>"; };
 		7C115AF6B614E4497E0B0685 /* Haptics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Haptics.swift; sourceTree = "<group>"; };
 		7C9F1F5FD052E4FFDD9A120E /* PrivateModeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivateModeTests.swift; sourceTree = "<group>"; };
+		7D51DF503A4D6BCA3D787EE3 /* CustomPageTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomPageTests.swift; sourceTree = "<group>"; };
 		7FA3846751FF38D84B3414E5 /* TypikeyApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TypikeyApp.swift; sourceTree = "<group>"; };
 		86125954B46BC2FC71586B57 /* SampleHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleHandler.swift; sourceTree = "<group>"; };
 		8A0596DADB8E2918F9CB0FF9 /* Typikey.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Typikey.entitlements; sourceTree = "<group>"; };
@@ -160,6 +169,7 @@
 		9D0797993F06D05215ACAB68 /* TypikeyShare.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = TypikeyShare.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		AEFE6601597E0E34BEC4EE89 /* WordCounts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordCounts.swift; sourceTree = "<group>"; };
 		AF40FA941FDAF9CD08E77E79 /* KeyboardSize.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardSize.swift; sourceTree = "<group>"; };
+		B29172B74D31F081C9F1BBF4 /* BoardLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardLayout.swift; sourceTree = "<group>"; };
 		B2E7B80B851EBBC851622A8D /* Rephrase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Rephrase.swift; sourceTree = "<group>"; };
 		BE154DB166CA944192DDE2A3 /* CompletionEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompletionEngine.swift; sourceTree = "<group>"; };
 		CC0AA28FDABCFE29ADC640C4 /* Preferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Preferences.swift; sourceTree = "<group>"; };
@@ -178,6 +188,7 @@
 		F83C0D6BAF2B10D4444DD9A7 /* TypikeyKeyboard.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = TypikeyKeyboard.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		FCCC334E9988B617A6DCEEFB /* TypikeyBroadcast.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = TypikeyBroadcast.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		FCFF50D3F07126E8FD84E915 /* Palette.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Palette.swift; sourceTree = "<group>"; };
+		FE501B1C4F332883CF5A262B /* PageStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageStore.swift; sourceTree = "<group>"; };
 		FECDE3085E7D6EF9AA9E45FC /* Vocabulary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Vocabulary.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -185,6 +196,7 @@
 		2039E81F54811E23AE83073C /* Shared */ = {
 			isa = PBXGroup;
 			children = (
+				B29172B74D31F081C9F1BBF4 /* BoardLayout.swift */,
 				3AB8AE5A7229F41BA740F9B5 /* BoardPlan.swift */,
 				E79FDBE127D71069003D5477 /* Grammar.swift */,
 				30AE72E91A8C9C4399ABC7D3 /* KeyboardFit.swift */,
@@ -242,6 +254,8 @@
 				531B6ED481B356C4A57CD534 /* HomeView.swift */,
 				F14E0151DBA04E506C934CB8 /* Info.plist */,
 				8D99732D3D59D3391FA4D6FC /* KeyboardSizePicker.swift */,
+				FE501B1C4F332883CF5A262B /* PageStore.swift */,
+				1AE808EE2B3733E8C7520D3B /* PagesView.swift */,
 				69B956A9B583D4897560968A /* PlainTextField.swift */,
 				E6C422799418AAD787A25061 /* PrivacyInfo.xcprivacy */,
 				187356BE0502A777FA4C52FC /* ReadinessCard.swift */,
@@ -267,6 +281,7 @@
 			isa = PBXGroup;
 			children = (
 				64B8468DA9967648A6BC8DD7 /* ConversationDemoTests.swift */,
+				7D51DF503A4D6BCA3D787EE3 /* CustomPageTests.swift */,
 				0620AC89CD9C9348E302DDBC /* GrammarTests.swift */,
 				D977763A87F89006584A3902 /* KeyboardHeightTests.swift */,
 				167A2498198387A80DD85FC1 /* MyWordsTests.swift */,
@@ -470,6 +485,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				23B15E76A12AEC0C2FD4AFF2 /* BoardLayout.swift in Sources */,
 				A3632C1D64AF3FB0D0D9DF27 /* BoardPlan.swift in Sources */,
 				C9B01D5AA3ED72DD91E5B3C2 /* ConversationDemoView.swift in Sources */,
 				8B3E5C87F8CD95C8B0A51B23 /* Grammar.swift in Sources */,
@@ -477,6 +493,8 @@
 				8A3C1A8DA54A9460DFEA82A2 /* KeyboardFit.swift in Sources */,
 				AADA652B8858F6615D22C488 /* KeyboardSize.swift in Sources */,
 				443032F44EB4CC9C8B806841 /* KeyboardSizePicker.swift in Sources */,
+				812FFC0EDD122006C47B764B /* PageStore.swift in Sources */,
+				F11689E834DB06E7AFFAA044 /* PagesView.swift in Sources */,
 				867DEE28BF0C8AE912495320 /* PlainTextField.swift in Sources */,
 				7DD066AECBA51167DB0987C0 /* Preferences.swift in Sources */,
 				DC9285EF1A9BD001BD8A37DF /* ReadinessCard.swift in Sources */,
@@ -495,6 +513,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				83A24EBDC83C6A32C07C8AF0 /* BoardLayout.swift in Sources */,
 				7F8FE036464FCAF79F831A76 /* BoardPlan.swift in Sources */,
 				32D2413983CFEF011F699077 /* Grammar.swift in Sources */,
 				AFC2CF5F0BCA56C3F339F333 /* KeyboardFit.swift in Sources */,
@@ -513,6 +532,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				786F0CA8AA5C11E8F99ABE45 /* BoardLayout.swift in Sources */,
 				94A8D1415258863B96D5C045 /* BoardPlan.swift in Sources */,
 				BD72207B7019C86BCF8699CE /* CompletionEngine.swift in Sources */,
 				0E1E5BFDA0832C97BFB58840 /* Grammar.swift in Sources */,
@@ -535,6 +555,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D2756984BC6F58385552282F /* BoardLayout.swift in Sources */,
 				68CAFD07FB8E332187122C3C /* BoardPlan.swift in Sources */,
 				0AD5BB91E827345C96676010 /* Grammar.swift in Sources */,
 				14DE37B187A93DF5D4C5F08E /* KeyboardFit.swift in Sources */,
@@ -554,6 +575,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				07263B60294FBF334BC5BBAE /* ConversationDemoTests.swift in Sources */,
+				A0C972FF9B4E57D2FBDCAF0B /* CustomPageTests.swift in Sources */,
 				88CE9D5420FB39F79D63A53C /* GrammarTests.swift in Sources */,
 				C5DE9CF6E675B6572A25B3F0 /* KeyboardHeightTests.swift in Sources */,
 				9C862CD8CF1738B5038563A8 /* MyWordsTests.swift in Sources */,
@@ -691,7 +713,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 36;
+				CURRENT_PROJECT_VERSION = 41;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = Y7ZZ5G2T3Y;
 				ENABLE_NS_ASSERTIONS = NO;
@@ -771,7 +793,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 36;
+				CURRENT_PROJECT_VERSION = 41;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = Y7ZZ5G2T3Y;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;

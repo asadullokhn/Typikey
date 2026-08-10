@@ -8,9 +8,36 @@ import FoundationModels
 
 @main
 struct TypikeyApp: App {
+    init() { Self.applyTestFixtureIfPresent() }
+
     var body: some Scene {
         WindowGroup {
             HomeView()
+        }
+    }
+
+    /// Lets a UI test put board pages in place before the keyboard reads
+    /// them.
+    ///
+    /// The test runner is its own app and has no App Group entitlement, so
+    /// it cannot write to the shared container at all — fixtures written
+    /// from a test silently went nowhere, and a test asserting on a word
+    /// that also exists in the vocabulary passed anyway, for the wrong
+    /// reason. The app can write there, so the test asks it to.
+    ///
+    /// Runs only when the argument is present, which nothing but a test
+    /// ever passes.
+    private static func applyTestFixtureIfPresent() {
+        let arguments = ProcessInfo.processInfo.arguments
+        guard let flag = arguments.firstIndex(of: "-uiTestPages"),
+              flag + 1 < arguments.count,
+              let store = UserDefaults(suiteName: "group.com.asadullokh.ch5.typikey")
+        else { return }
+        let value = arguments[flag + 1]
+        if value == "none" {
+            store.removeObject(forKey: BoardLayout.pagesKey)
+        } else {
+            store.set(Data(value.utf8), forKey: BoardLayout.pagesKey)
         }
     }
 }

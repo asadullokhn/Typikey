@@ -33,8 +33,8 @@ These come from the team's community research — breaking them breaks the produ
 4. **No dead zones** — every point maps to the nearest key.
 5. **Full Access requested as of 2026-08-05** (deliberate team decision) — solely for the app-group container. The keyboard must stay fully functional without the grant, and the keyboard makes no network calls, granted or not. Prediction stays on-device.
 6. **Prediction lives in the suggestion bar only** — never inside the grid.
-7. **Language switching relabels in place** — positions never move between languages.
-8. Malay strings are unverified drafts until checked with the community. Mark any new translation as unverified in your PR description.
+7. ~~**Language switching relabels in place.**~~ **Retired 10 Aug 2026**: Malay was removed for the MVP, so there is nothing to switch between. The mechanism survives and still matters — a verb key reading `went` instead of `go` must not move — so relabel in place remains the only way a cell is allowed to change.
+8. ~~Malay strings are unverified drafts.~~ **Retired 10 Aug 2026** with the removal. The principle behind it outlives the language: never ship a word into a fixed position that no one who speaks the language has checked. He cannot tell the board it is wrong.
 9. **The pinned control column renders identical frames on every level** (asserted by `PinnedFrameTests`). It is one column, on the left — Home, Clear all, word-delete, language. The team's design (2026-08-07) moved Enter, ⌄ and → into the content grid, which is why there is no longer a right-hand pinned column; the surviving guarantee is that the left one never derives its geometry from the content grid's column count.
 
 ## Memory budget

@@ -10,10 +10,13 @@ import XCTest
 // simulator and Connect Hardware Keyboard OFF.
 final class PinnedFrameTests: XCTestCase {
 
-    // The language slot is deliberately absent: it holds the system globe
-    // (a real UIButton, not a staticText) whenever iOS asks for a keyboard
-    // switcher, which is every configuration with a second keyboard
-    // installed — i.e. every real device.
+    // The fourth pinned slot is deliberately absent from this list. It
+    // held EN/MS until Malay came out of the MVP and now holds Hide
+    // keyboard — except that it holds the system globe (a real UIButton,
+    // not a staticText) whenever iOS asks for a keyboard switcher, which
+    // is every configuration with a second keyboard installed, i.e. every
+    // real device and this simulator. Asserting on it would be asserting
+    // on which keyboards happen to be installed.
     private let pinnedLabels = ["Home", "Clear", "Delete word"]
 
     func testPinnedKeysIdenticalAcrossLevels() {
@@ -40,13 +43,20 @@ final class PinnedFrameTests: XCTestCase {
         assertFrames(baseline, in: app, level: "numbers")
     }
 
-    // Enter, hide-keyboard and cursor-right now live inside the grid. They
-    // are placed before any word is packed, so this also proves the packer
-    // never lets a word overwrite one of them.
+    // Enter and cursor-right live inside the grid, placed before any word
+    // is packed, so this also proves the packer never lets a word overwrite
+    // one of them.
+    //
+    // Hide keyboard is in whichever place the globe left free: the pinned
+    // column normally, the grid when iOS took the pinned slot for its
+    // switcher. Either satisfies this — what matters is that there is
+    // exactly one way to put the keyboard away, on every board.
     func testGridControlsPresentOnWordBoards() {
         let app = launchToTypikey()
         for level in ["home", "categories"] {
-            XCTAssertTrue(app.staticTexts["Hide keyboard"].exists, "hide-keyboard missing on \(level)")
+            XCTAssertTrue(app.staticTexts["Hide keyboard"].exists
+                            || app.staticTexts["Hide\nkeyboard"].exists,
+                          "hide-keyboard missing on \(level)")
             XCTAssertTrue(app.staticTexts["Cursor right"].exists, "cursor-right missing on \(level)")
             XCTAssertTrue(app.staticTexts["return"].exists || app.staticTexts["Done"].exists
                             || app.staticTexts["Go"].exists || app.staticTexts["Send"].exists
@@ -97,7 +107,8 @@ final class PinnedFrameTests: XCTestCase {
         let app = launchToTypikey()
         app.staticTexts["abc"].tap()
         XCTAssertTrue(app.staticTexts["q"].waitForExistence(timeout: 3), "letters level did not open")
-        app.staticTexts["Hide keyboard"].tap()
+        (app.staticTexts["Hide keyboard"].exists
+            ? app.staticTexts["Hide keyboard"] : app.staticTexts["Hide\nkeyboard"]).tap()
         practiceField(in: app).tap() // same field, same signature
         XCTAssertTrue(app.staticTexts["q"].waitForExistence(timeout: 5),
                       "manual level was reset on re-show — intent mapping must not refire for an unchanged field signature")
