@@ -10,162 +10,7 @@ import FoundationModels
 struct TypikeyApp: App {
     var body: some Scene {
         WindowGroup {
-            SetupView()
-        }
-    }
-}
-
-struct SetupView: View {
-    @State private var practiceText = ""
-
-    var body: some View {
-        NavigationStack {
-            ScrollView {
-                // Ordered by what someone actually needs, in order: prove it
-                // works, turn it on, make it yours, teach it, learn how it
-                // behaves — and only then the engine diagnostics, which used
-                // to sit at the very top above everything the user does.
-                VStack(alignment: .leading, spacing: 20) {
-                    HeroHeader()
-
-                    TryItCard(practiceText: $practiceText)
-
-                    DisclosureGroup {
-                        VStack(alignment: .leading, spacing: 14) {
-                            VStack(alignment: .leading, spacing: 10) {
-                                step(1, "Open Settings")
-                                step(2, "General → Keyboard → Keyboards")
-                                step(3, "Add New Keyboard…")
-                                step(4, "Select Typikey")
-                                step(5, "Tap Typikey again and turn on Allow Full Access — this is what lets your own words and screen learning reach the keyboard")
-                            }
-                            VStack(alignment: .leading, spacing: 10) {
-                                Text("Use it")
-                                    .font(.subheadline.weight(.semibold))
-                                    .foregroundStyle(.secondary)
-                                step(1, "Open any app with a text field (Notes, Messages)")
-                                step(2, "Tap the text field, then hold the globe key")
-                                step(3, "Select Typikey")
-                            }
-                            // The strip of undo / copy / paste buttons above
-                            // the keyboard belongs to the app you are typing
-                            // in, not to Typikey — iOS gives a keyboard no
-                            // way to remove it from another app. Typikey
-                            // hides it in its own practice field; everywhere
-                            // else it takes this one system switch.
-                            VStack(alignment: .leading, spacing: 10) {
-                                Text("Hide the grey bar above the keyboard")
-                                    .font(.subheadline.weight(.semibold))
-                                    .foregroundStyle(.secondary)
-                                step(1, "Settings → General → Keyboard")
-                                step(2, "Turn off Shortcuts")
-                                Text("That strip of undo and paste buttons belongs to whichever app you are typing in, so no keyboard can remove it — this switch turns it off for every app at once, and gives Typikey back the height it was using.")
-                                    .font(.footnote)
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
-                        .padding(.top, 10)
-                    } label: {
-                        Label("Turn on Typikey", systemImage: "gearshape")
-                            .font(.headline)
-                            .foregroundStyle(.primary)
-                    }
-                    .tint(.primary)
-                    .homeCardStyle()
-
-                    NavigationLink {
-                        MyWordsView()
-                    } label: {
-                        MyWordsNavCard()
-                    }
-                    .buttonStyle(.plain)
-
-                    PrivateModeCard()
-
-                    ScreenLearningCard()
-
-                    NavigationLink {
-                        ConversationDemoView()
-                    } label: {
-                        HStack(spacing: 16) {
-                            Image(systemName: "bubble.left.and.text.bubble.right")
-                                .font(.title)
-                                .foregroundStyle(Color.accentColor)
-                                .frame(width: 44, height: 44)
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text("Practice conversation")
-                                    .font(.title3.weight(.semibold))
-                                Text("See screen learning work on a pretend chat — nothing is recorded")
-                                    .font(.subheadline)
-                                    .foregroundStyle(.secondary)
-                            }
-                            Spacer(minLength: 0)
-                            Image(systemName: "chevron.right")
-                                .font(.subheadline.weight(.semibold))
-                                .foregroundStyle(.tertiary)
-                        }
-                        .homeCardStyle()
-                        .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-                    }
-                    .buttonStyle(.plain)
-
-                    VStack(spacing: 12) {
-                        DisclosureGroup {
-                            VStack(alignment: .leading, spacing: 12) {
-                                Label("A word grid, like TouchChat: one tap inserts one whole word. Categories switch pages at the top.", systemImage: "square.grid.3x3")
-                                Label("Light keys write. Dark keys move you around the board or fix what you wrote.", systemImage: "circle.lefthalf.filled")
-                                Label("abc opens the letter keyboard — the fallback for words not in the grid, just like TouchChat's own.", systemImage: "keyboard")
-                                Label("Slide your finger across the keys — nothing happens until you lift. The key under your finger gets a blue ring.", systemImage: "hand.draw")
-                                Label("Accidental double-taps are ignored for half a second.", systemImage: "clock")
-                            }
-                            .padding(.top, 10)
-                        } label: {
-                            Label("How it types", systemImage: "questionmark.circle")
-                                .font(.headline)
-                                .foregroundStyle(.primary)
-                        }
-                        .tint(.primary)
-                        .homeCardStyle()
-
-                        DisclosureGroup {
-                            VStack(alignment: .leading, spacing: 18) {
-                                EngineStatusSection()
-                                ScreenReaderDiagnostics()
-                            }
-                            .padding(.top, 10)
-                        } label: {
-                            Label("Diagnostics", systemImage: "stethoscope")
-                                .font(.headline)
-                                .foregroundStyle(.primary)
-                        }
-                        .tint(.primary)
-                        .homeCardStyle()
-                    }
-                }
-                .padding(.horizontal, 16)
-                .padding(.top, 12)
-                .padding(.bottom, 24)
-            }
-            .background(Color(.systemGroupedBackground))
-            .navigationBarTitleDisplayMode(.inline)
-        }
-        // Siri, Shortcuts and Back Tap land here: raise the broadcast sheet
-        // so a training session is one confirming tap away. The short delay
-        // lets the card's picker mount before it is asked to present.
-        .onReceive(NotificationCenter.default.publisher(for: .startScreenLearning)) { _ in
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
-                BroadcastLauncher.shared.presentSheet()
-            }
-        }
-    }
-
-    private func step(_ n: Int, _ text: String) -> some View {
-        HStack(alignment: .firstTextBaseline, spacing: 12) {
-            Text("\(n)")
-                .font(.headline)
-                .frame(width: 28, height: 28)
-                .background(Circle().fill(Color.accentColor.opacity(0.15)))
-            Text(text)
+            HomeView()
         }
     }
 }
@@ -187,7 +32,7 @@ extension View {
 /// App identity: the icon's 2x2 key-tile motif inline next to the name,
 /// compact enough to sit at the top of the scroll view without pushing
 /// the status card below the fold.
-private struct HeroHeader: View {
+struct HeroHeader: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .center, spacing: 14) {
@@ -240,7 +85,7 @@ private struct KeyTileMotif: View {
     }
 }
 
-private struct TryItCard: View {
+struct TryItCard: View {
     @Binding var practiceText: String
 
     var body: some View {
@@ -254,7 +99,7 @@ private struct TryItCard: View {
     }
 }
 
-private struct MyWordsNavCard: View {
+struct MyWordsNavCard: View {
     var body: some View {
         HStack(spacing: 16) {
             Image(systemName: "text.badge.plus")
@@ -285,7 +130,7 @@ private struct MyWordsNavCard: View {
 /// extension OCRs throttled frames on-device and merges words into the
 /// app group's `screenWords`; the keyboard biases its suggestions toward
 /// them. Nothing ever leaves the device.
-private struct ScreenLearningCard: View {
+struct ScreenLearningCard: View {
     private let store: UserDefaults =
         UserDefaults(suiteName: ScreenWords.suiteName) ?? .standard
 
@@ -358,7 +203,7 @@ private struct ScreenLearningCard: View {
 /// on the card: each stage of the pipeline reports for itself, so a silent
 /// failure names which link broke instead of just doing nothing. Daily use
 /// never needs this; a bad session does.
-private struct ScreenReaderDiagnostics: View {
+struct ScreenReaderDiagnostics: View {
     private let store: UserDefaults =
         UserDefaults(suiteName: ScreenWords.suiteName) ?? .standard
 

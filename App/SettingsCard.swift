@@ -1,15 +1,19 @@
 import SwiftUI
 
-/// The settings a person may want before a conversation: whether Typikey
-/// remembers it, whether verb keys reshape themselves, and how big the
-/// board is.
+/// Every setting in one place: whether Typikey remembers a conversation,
+/// whether verb keys reshape themselves, and how big the board is.
+///
+/// All three cross from the app into the keyboard through the shared
+/// container, so all three need Allow Full Access to have any effect —
+/// which is what `ReadinessCard` says at the top of the screen, since a
+/// setting that silently does nothing is worse than one that is missing.
 ///
 /// Kept on the home screen rather than buried in Diagnostics, because it is
 /// something a person reaches for *before* a private conversation, not
 /// something they troubleshoot afterwards. The copy says exactly what stops
 /// and what does not, since a privacy control nobody understands is worse
 /// than none at all.
-struct PrivateModeCard: View {
+struct SettingsCard: View {
     @State private var isOn = Preferences.privateMode
     @State private var grammarOn = Preferences.smartGrammar
     @State private var size = Preferences.keyboardSize

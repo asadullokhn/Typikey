@@ -303,7 +303,22 @@ final class KeyboardViewController: UIInputViewController {
         // Size is chosen in the app now, so it has to be re-read here —
         // otherwise the change would not land until the extension is next
         // restarted, which from the user's side looks like nothing happened.
-        sizeIndex = min(max(Preferences.keyboardSize(in: store), 0), sizePresets.count - 1)
+        let chosenSize = min(max(Preferences.keyboardSize(in: store), 0), sizePresets.count - 1)
+        if chosenSize != sizeIndex {
+            sizeIndex = chosenSize
+            // heightDeficit is a shortfall MEASURED AGAINST ONE PRESET, and
+            // it never decays. Carried across a size change it makes every
+            // other size wrong, and a shrink wrong in a way that looks like
+            // nothing happened at all: the request stays
+            // (old preset + deficit) tall, the system keeps the window that
+            // tall, and only the drawn board gets smaller — leaving a band
+            // of dead space above it. Forget the measurement and take it
+            // again for the size actually chosen.
+            heightDeficit = 0
+            // The self-heal shrinks an oversized window, and it gives up
+            // after two tries. Those tries were spent on the old size.
+            healAttempts = 0
+        }
         myWords = (store.array(forKey: "myWords") as? [String]) ?? []
         reloadScreenWords()
         promoteFrequentWords()
