@@ -145,17 +145,13 @@ enum ScreenWords {
         for word in fresh {
             counts[word, default: 0] += 1
         }
-        if counts.count > 400 {
-            counts = Dictionary(
-                uniqueKeysWithValues: counts.sorted { $0.value > $1.value }.prefix(400).map { ($0.key, $0.value) })
-        }
-        suite.set(counts, forKey: countsKey)
+        suite.set(WordCounts.trimmed(counts), forKey: countsKey)
         suite.set(Date().timeIntervalSince1970, forKey: stampKey)
 
         if !names.isEmpty {
             var seen = Set(suite.array(forKey: capsKey) as? [String] ?? [])
             seen.formUnion(names)
-            suite.set(Array(seen.prefix(400)), forKey: capsKey)
+            suite.set(Array(seen.prefix(WordCounts.limit)), forKey: capsKey)
         }
     }
 }

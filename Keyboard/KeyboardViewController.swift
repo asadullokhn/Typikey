@@ -1564,7 +1564,10 @@ final class KeyboardViewController: UIInputViewController {
         }
         var counts = (store.dictionary(forKey: "captureCounts") as? [String: Int]) ?? [:]
         counts[token, default: 0] += 1
-        learn(counts, forKey: "captureCounts")
+        // Bounded like the screen-learning stores. This one is written on
+        // every space, and the words that would make it big are the ones
+        // that never reached three sightings — typos and fragments.
+        learn(WordCounts.trimmed(counts), forKey: "captureCounts")
     }
 
     /// Case-insensitive check against myWords and the built-in vocabulary

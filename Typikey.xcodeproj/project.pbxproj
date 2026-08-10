@@ -18,11 +18,14 @@
 		34DF27D384A8C18AD355C5F1 /* ScreenWords.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52ACB8836103B0ABB01D07BC /* ScreenWords.swift */; };
 		393D7C914534B99903DD7842 /* Palette.swift in Sources */ = {isa = PBXBuildFile; fileRef = FCFF50D3F07126E8FD84E915 /* Palette.swift */; };
 		3CFD805A7C394D9A86940530 /* ScreenWords.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52ACB8836103B0ABB01D07BC /* ScreenWords.swift */; };
+		4373895640ABE3EB76CD2B6B /* WordCounts.swift in Sources */ = {isa = PBXBuildFile; fileRef = AEFE6601597E0E34BEC4EE89 /* WordCounts.swift */; };
 		4AAD2837572B878AC943C5FA /* PrivateModeCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9E6ED8DC5AE9E078FA80DE3 /* PrivateModeCard.swift */; };
 		4F2971AAB04CB45F9F3A0D2B /* KeyboardViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B324A924FE66DC05CD87923 /* KeyboardViewController.swift */; };
 		591312BBAA426D1DE2ABB2BE /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 238704140C8DFC7E10D738C7 /* Assets.xcassets */; };
 		591FC447EABCDC5BDC33DD29 /* ScreenWords.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52ACB8836103B0ABB01D07BC /* ScreenWords.swift */; };
+		64A961B8AFCFB65520C38103 /* WordCounts.swift in Sources */ = {isa = PBXBuildFile; fileRef = AEFE6601597E0E34BEC4EE89 /* WordCounts.swift */; };
 		68425C36066BCAAC9E485794 /* Vocabulary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B70CCE26AA8F46D69AB88E9 /* Vocabulary.swift */; };
+		74A557E66286A37B7352E59E /* WordCounts.swift in Sources */ = {isa = PBXBuildFile; fileRef = AEFE6601597E0E34BEC4EE89 /* WordCounts.swift */; };
 		7DD066AECBA51167DB0987C0 /* Preferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC0AA28FDABCFE29ADC640C4 /* Preferences.swift */; };
 		867DEE28BF0C8AE912495320 /* PlainTextField.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69B956A9B583D4897560968A /* PlainTextField.swift */; };
 		88CE9D5420FB39F79D63A53C /* GrammarTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0620AC89CD9C9348E302DDBC /* GrammarTests.swift */; };
@@ -32,6 +35,7 @@
 		9C862CD8CF1738B5038563A8 /* MyWordsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 167A2498198387A80DD85FC1 /* MyWordsTests.swift */; };
 		A870D89EC249EBF210079F8E /* KeyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6779423A582866E09D08DAC3 /* KeyView.swift */; };
 		AAB759FD06199BBA669FB03D /* TypikeyShare.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 9D0797993F06D05215ACAB68 /* TypikeyShare.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		ACD558D96C5C5BE41BD634B4 /* WordCounts.swift in Sources */ = {isa = PBXBuildFile; fileRef = AEFE6601597E0E34BEC4EE89 /* WordCounts.swift */; };
 		AFC2CF5F0BCA56C3F339F333 /* KeyboardFit.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30AE72E91A8C9C4399ABC7D3 /* KeyboardFit.swift */; };
 		B9274BDBCA7F7A765DA6CCD7 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = E6C422799418AAD787A25061 /* PrivacyInfo.xcprivacy */; };
 		BD72207B7019C86BCF8699CE /* CompletionEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE154DB166CA944192DDE2A3 /* CompletionEngine.swift */; };
@@ -122,6 +126,7 @@
 		8B324A924FE66DC05CD87923 /* KeyboardViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardViewController.swift; sourceTree = "<group>"; };
 		99C68D4951FDDA7ADA09E6C6 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		9D0797993F06D05215ACAB68 /* TypikeyShare.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = TypikeyShare.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		AEFE6601597E0E34BEC4EE89 /* WordCounts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordCounts.swift; sourceTree = "<group>"; };
 		BE154DB166CA944192DDE2A3 /* CompletionEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompletionEngine.swift; sourceTree = "<group>"; };
 		CC0AA28FDABCFE29ADC640C4 /* Preferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Preferences.swift; sourceTree = "<group>"; };
 		D6755D1E733576488ACF9B75 /* TypikeyBroadcast.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = TypikeyBroadcast.entitlements; sourceTree = "<group>"; };
@@ -149,6 +154,7 @@
 				30AE72E91A8C9C4399ABC7D3 /* KeyboardFit.swift */,
 				CC0AA28FDABCFE29ADC640C4 /* Preferences.swift */,
 				52ACB8836103B0ABB01D07BC /* ScreenWords.swift */,
+				AEFE6601597E0E34BEC4EE89 /* WordCounts.swift */,
 			);
 			path = Shared;
 			sourceTree = "<group>";
@@ -428,6 +434,7 @@
 				0852A712CFD6797F18D57EC7 /* ScreenLearningIntent.swift in Sources */,
 				34DF27D384A8C18AD355C5F1 /* ScreenWords.swift in Sources */,
 				F358D447B20F9F451E7AF138 /* TypikeyApp.swift in Sources */,
+				4373895640ABE3EB76CD2B6B /* WordCounts.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -440,6 +447,7 @@
 				F965E2D3B9C32AF172CF8F7C /* Preferences.swift in Sources */,
 				BD7FFEE284ED5DFC50FA2351 /* SampleHandler.swift in Sources */,
 				591FC447EABCDC5BDC33DD29 /* ScreenWords.swift in Sources */,
+				74A557E66286A37B7352E59E /* WordCounts.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -457,6 +465,7 @@
 				D9E87446DC34341E0FC20673 /* Preferences.swift in Sources */,
 				3CFD805A7C394D9A86940530 /* ScreenWords.swift in Sources */,
 				68425C36066BCAAC9E485794 /* Vocabulary.swift in Sources */,
+				64A961B8AFCFB65520C38103 /* WordCounts.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -469,6 +478,7 @@
 				20E5A46D92D05BB8947EB632 /* Preferences.swift in Sources */,
 				C25E2E8F1B21BAF96D75BFAD /* ScreenWords.swift in Sources */,
 				ECDE3A72B866932E3A8BF759 /* ShareViewController.swift in Sources */,
+				ACD558D96C5C5BE41BD634B4 /* WordCounts.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -611,7 +621,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 26;
+				CURRENT_PROJECT_VERSION = 27;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = Y7ZZ5G2T3Y;
 				ENABLE_NS_ASSERTIONS = NO;
@@ -691,7 +701,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 26;
+				CURRENT_PROJECT_VERSION = 27;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = Y7ZZ5G2T3Y;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
