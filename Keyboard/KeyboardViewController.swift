@@ -902,10 +902,15 @@ final class KeyboardViewController: UIInputViewController {
         // A board with more cells than slots loses the overflow without a
         // trace: no gap, no crash, the word simply is not there. Core grew
         // to 54 words on a 36-cell board that way, and eleven of them
-        // existed on no board in the app at all. Narrow layouts genuinely
-        // cannot hold everything, so the check is for the full-width case,
-        // which is where a category is supposed to fit.
-        assert(isCompact || next == cells.count,
+        // existed on no board in the app at all.
+        //
+        // This used to exempt the narrow layouts, on the grounds that they
+        // could not hold everything — which was true, and was exactly how
+        // an iPad in Split View came to drop twenty of home's words without
+        // anyone noticing. Every layout holds 36 word cells now, so the
+        // check covers all of them. Anything that genuinely has to be cut
+        // is cut deliberately at the call site, as Mine and Recents are.
+        assert(next == cells.count,
                "board dropped \(cells.count - next) cells with no way to reach them")
         return rows
     }
@@ -939,11 +944,14 @@ final class KeyboardViewController: UIInputViewController {
     /// a 54-word Core, so home has to be curated rather than simply
     /// holding everything.
     ///
-    /// A compact phone keeps its 8 rows: it is not an occasional squeeze
-    /// like Split View, it's the whole device, so every cell has to stay
-    /// reachable in 5 columns.
+    /// Any narrow layout gets 8 rows, not just a phone. Five columns over
+    /// four rows holds 16 word cells against home's 36, so an iPad in Split
+    /// View or Slide Over was dropping twenty words — silently, the same
+    /// way Core lost eleven. Height is the one thing a narrow layout still
+    /// has, so it pays with height. The phone has done this all along; the
+    /// restriction to `.phone` was the accident.
     private var wordBoardRows: Int {
-        UIDevice.current.userInterfaceIdiom == .phone && isCompact ? 8 : 4
+        isCompact ? 8 : 4
     }
 
     // MARK: Building
