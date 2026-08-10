@@ -17,6 +17,10 @@ enum KeyboardFit {
         let granted: CGFloat
         let rowHeight: CGFloat
         let rows: Int
+        /// Word cells the board actually holds, once the controls have
+        /// taken theirs. The app needs it to say whether everything in My
+        /// Words still fits.
+        let slots: Int
 
         /// The board is drawn bottom-aligned inside whatever it is given,
         /// so it fits exactly when the rows plus the suggestion bar are no
@@ -32,6 +36,7 @@ enum KeyboardFit {
             "granted": Double(reading.granted),
             "rowHeight": Double(reading.rowHeight),
             "rows": reading.rows,
+            "slots": reading.slots,
         ], forKey: key)
     }
 
@@ -43,6 +48,7 @@ enum KeyboardFit {
               let rows = raw["rows"] as? Int
         else { return nil }
         return Reading(requested: CGFloat(requested), granted: CGFloat(granted),
-                       rowHeight: CGFloat(rowHeight), rows: rows)
+                       rowHeight: CGFloat(rowHeight), rows: rows,
+                       slots: raw["slots"] as? Int ?? 0)
     }
 }

@@ -538,6 +538,9 @@ struct MyWordsView: View {
     @State private var screenWords: [String: Int] = [:]
     @State private var skippedScreenWords: Set<String> = []
     @State private var armedWord: String?
+    /// How many cells the Mine page has, as last measured by the keyboard.
+    /// nil until the keyboard has been opened at least once.
+    @State private var boardSlots: Int?
     @State private var newWord = ""
 
     var body: some View {
@@ -553,6 +556,17 @@ struct MyWordsView: View {
                 if myWords.isEmpty {
                     Text("Words you add appear here, and on the keyboard's Mine page.")
                         .foregroundStyle(.secondary)
+                }
+                // The Mine page holds a fixed number of cells, and words
+                // past it stay in this list without appearing there. Said
+                // plainly, with the number, because the alternative is a
+                // word he added quietly never showing up.
+                if let slots = boardSlots, myWords.count > slots {
+                    Label("The Mine page fits \(slots) words. The \(myWords.count - slots) after that stay in this list and still show up in suggestions — remove a few to put them on the board.",
+                          systemImage: "exclamationmark.triangle")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .accessibilityIdentifier("myWordsOverflowNotice")
                 }
                 ForEach(myWords, id: \.self) { word in
                     HStack {
@@ -608,6 +622,7 @@ struct MyWordsView: View {
         captureCounts = freshCaptureCounts()
         screenWords = (store.dictionary(forKey: ScreenWords.countsKey) as? [String: Int]) ?? [:]
         skippedScreenWords = Set(store.array(forKey: "screenSkipped") as? [String] ?? [])
+        boardSlots = KeyboardFit.read(from: store).map(\.slots).flatMap { $0 > 0 ? $0 : nil }
     }
 
     /// Reads myWords straight from the shared suite — never from @State —

@@ -471,7 +471,19 @@ final class KeyboardViewController: UIInputViewController {
         // Mine appends after the built-in categories — never reorders them
         // (invariant 1). Plain-text cells built on the fly; myWords are
         // never added to vocabIndex (that stays the built-in lookup only).
-        let mineWords = myWords.map { VocabWord($0, .social) }
+        // Mine is the one board that grows on its own — promotion adds
+        // words whenever they earn it — so it is the one that can outgrow
+        // the grid. Capped deliberately here rather than left to the
+        // packer, which drops the overflow without saying so.
+        //
+        // Capped in insertion order, not by how often each word is used.
+        // Usage order would reshuffle the board under his fingers every
+        // time a count changed, which is the one thing invariant 1 exists
+        // to prevent. The cost is that a word past the cap does not appear
+        // on the board; it is still in My Words, still offered by
+        // prediction and completion, and the app now says how many are
+        // over so he can prune.
+        let mineWords = myWords.prefix(wordSlots).map { VocabWord($0, .social) }
         // Auto-filing (Gilbert: the board should quietly configure itself,
         // but visibly, so nobody hunts for a word): a user's word that is
         // recognizably a person, place, or action ALSO appears at the end
@@ -1259,8 +1271,9 @@ final class KeyboardViewController: UIInputViewController {
             requested: requestedHeight,
             granted: view.bounds.height,
             rowHeight: rowHeight,
-            rows: contentRowCount)
-        let signature = "\(Int(reading.requested))|\(Int(reading.granted))|\(Int(reading.rowHeight))|\(reading.rows)"
+            rows: contentRowCount,
+            slots: wordSlots)
+        let signature = "\(Int(reading.requested))|\(Int(reading.granted))|\(Int(reading.rowHeight))|\(reading.rows)|\(reading.slots)"
         guard signature != lastFitSignature else { return }
         lastFitSignature = signature
         KeyboardFit.record(reading, in: store)
