@@ -108,15 +108,23 @@ final class PinnedFrameTests: XCTestCase {
     // before the completion feature existed.
     func testDegradedCompletionKeepsBarWorking() {
         let app = launchToTypikey()
-        app.staticTexts["want"].tap()
+        // Subject then verb, in that order. This used to tap "want" and
+        // then "I", which stopped working the day the board started
+        // following the sentence: nothing in English reads "want I", so
+        // the `I` cell is deliberately spent after a transitive verb and
+        // carries a noun instead. The test was asserting that typing
+        // survives a degraded completion engine and happened to pick a
+        // word pair the board now refuses to offer.
+        //
         // .firstMatch: once this pair has run before, the learned-bigram
         // suggestion bar (existing feature, unrelated to completion) also
-        // offers "I" after "want", so the plain label is ambiguous. Both
+        // offers "want" after "I", so the plain label is ambiguous. Both
         // the grid cell and the suggestion button route through the same
         // insertWord(_:), so either match proves the same thing.
         app.staticTexts["I"].firstMatch.tap()
+        app.staticTexts["want"].firstMatch.tap()
         let value = practiceField(in: app).value as? String ?? ""
-        XCTAssertTrue(value.contains("Want") && value.contains("I"),
+        XCTAssertTrue(value.contains("I") && value.lowercased().contains("want"),
                       "typing must work while the completion engine is degraded, got: \(value)")
         XCTAssertTrue(app.staticTexts["Home"].exists, "keyboard frame must be intact")
     }
