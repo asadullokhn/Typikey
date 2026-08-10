@@ -347,8 +347,8 @@ enum Grammar {
     private static let baseForms: [String: String] = {
         var forms: [String: String] = [:]
         let verbs = Set(vocabulary.flatMap(\.words)
-            .filter { $0.wordClass == .verb && !$0.en.contains(" ") }
-            .map { $0.en.lowercased() })
+            .filter { $0.wordClass == .verb && !$0.text.contains(" ") }
+            .map { $0.text.lowercased() })
             .union(irregular.keys)
             .union(copulaForms)
         for verb in verbs {

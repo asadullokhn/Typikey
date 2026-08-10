@@ -36,7 +36,6 @@ struct BoardPlan {
         }
     }
 
-    var lang: Lang = .en
     var learning = Learning()
     var followsSentence = true
     var smartGrammar = true
@@ -45,15 +44,14 @@ struct BoardPlan {
     ///
     /// Verb keys follow the sentence: after "I am", `go` reads `going`.
     /// The cell does not move — this is the same relabel-in-place
-    /// mechanism as the language switch (invariants 1 and 7). English
-    /// only; Malay marks tense with particles, not inflection.
+    /// mechanism the language switch used to use (invariant 1).
     ///
     /// Returns the base form alongside, because a relabelled key has to
     /// be able to say what it started as: the keyboard needs it to record
     /// usage against the real word rather than against `went`.
     func label(for word: VocabWord, after context: String) -> (text: String, base: String) {
-        let base = word.text(lang)
-        guard word.wordClass == .verb, lang == .en, smartGrammar else { return (base, base) }
+        let base = word.text
+        guard word.wordClass == .verb, smartGrammar else { return (base, base) }
         let inflected = Grammar.inflect(base,
                                         as: Grammar.verbForm(after: context),
                                         subject: Grammar.subject(before: context))
@@ -97,6 +95,18 @@ struct BoardPlan {
         "to", "for", "with", "in",
         "and", "my", "a", "the", "yesterday",
         "what", "yes", "no", ".", "?",
+        // Appended, never inserted (invariant 1). Hide keyboard moving to
+        // the pinned column freed a grid cell, and this is what the
+        // corpus says to spend it on: `that` is the cheapest 30 taps in
+        // the list, ahead of `now` (24) and `me` (19), because "that is
+        // funny" and "I like that" are half of what anyone says.
+        //
+        // One word, not two. When iOS requires the globe it takes the
+        // pinned slot and Hide keyboard falls back into the grid, leaving
+        // 36 cells rather than 37 — so a 35th word would appear on most
+        // iPads and silently vanish on any device with a second keyboard
+        // installed. That failure has cost this project a build before.
+        "that",
     ]
 
     /// Looked up across the whole vocabulary rather than in one category:
@@ -134,20 +144,20 @@ struct BoardPlan {
     /// for free — there is no state to unwind, so going back a word puts
     /// the original cells back exactly where they were.
     func reshaped(_ words: [VocabWord], after context: String) -> [VocabWord] {
-        guard followsSentence, lang == .en else { return words }
+        guard followsSentence else { return words }
         let slot = SentenceShape.expected(after: context)
         guard slot != .any else { return words }
 
-        var taken = Set(words.map { $0.en.lowercased() })
+        var taken = Set(words.map { $0.text.lowercased() })
         var pool = candidates(for: slot, after: context)
-            .filter { !taken.contains($0.en.lowercased()) }
+            .filter { !taken.contains($0.text.lowercased()) }
         guard !pool.isEmpty else { return words }
 
         return words.map { word in
-            guard SentenceShape.cannotFollow(word.en, when: slot), !pool.isEmpty
+            guard SentenceShape.cannotFollow(word.text, when: slot), !pool.isEmpty
             else { return word }
             let replacement = pool.removeFirst()
-            taken.insert(replacement.en.lowercased())
+            taken.insert(replacement.text.lowercased())
             return replacement
         }
     }
@@ -164,8 +174,8 @@ struct BoardPlan {
         var seen = Set<String>()
         let fromBoards = vocabulary
             .flatMap(\.words)
-            .filter { $0.wordClass == wanted && seen.insert($0.en.lowercased()).inserted }
-            .sorted { (learning.usage[$0.en] ?? 0) > (learning.usage[$1.en] ?? 0) }
+            .filter { $0.wordClass == wanted && seen.insert($0.text.lowercased()).inserted }
+            .sorted { (learning.usage[$0.text] ?? 0) > (learning.usage[$1.text] ?? 0) }
         let pool: [VocabWord]
         if wanted == .noun {
             let mine = learning.mine
@@ -188,7 +198,7 @@ struct BoardPlan {
         // follows "a".
         let scores = bigramScores(after: Self.anchorWord(in: context))
         guard !scores.isEmpty else { return pool }
-        return pool.sorted { (scores[$0.en.lowercased()] ?? 0) > (scores[$1.en.lowercased()] ?? 0) }
+        return pool.sorted { (scores[$0.text.lowercased()] ?? 0) > (scores[$1.text.lowercased()] ?? 0) }
     }
 
     /// The last word carrying meaning: determiners are skipped, since they
@@ -215,7 +225,7 @@ struct BoardPlan {
         for (key, count) in learning.bigrams where key.hasPrefix(prefix) {
             scores[String(key.dropFirst(prefix.count)), default: 0] += count * 10
         }
-        for (i, word) in (seedBigrams[lang]?[previous] ?? []).enumerated() {
+        for (i, word) in (seedBigrams[previous] ?? []).enumerated() {
             scores[word, default: 0] += 3 - i
         }
         // Screen context: words the user is looking at right now are
@@ -230,7 +240,7 @@ struct BoardPlan {
         // of the sentence the grid uses, so the two never contradict.
         let slot = SentenceShape.expected(after: context)
         if slot != .any {
-            let fits = Set(candidates(for: slot, after: context).map { $0.en.lowercased() })
+            let fits = Set(candidates(for: slot, after: context).map { $0.text.lowercased() })
             let filtered = scores.filter { fits.contains($0.key.lowercased()) }
             if !filtered.isEmpty { scores = filtered }
         }
@@ -246,7 +256,7 @@ struct BoardPlan {
         for (key, count) in learning.bigrams where key.hasPrefix(prefix) {
             scores[String(key.dropFirst(prefix.count)).lowercased(), default: 0] += count * 10
         }
-        for (i, word) in (seedBigrams[lang]?[previous] ?? []).enumerated() {
+        for (i, word) in (seedBigrams[previous] ?? []).enumerated() {
             scores[word.lowercased(), default: 0] += 3 - i
         }
         for (word, count) in learning.screen {

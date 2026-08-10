@@ -18,8 +18,6 @@ import NaturalLanguage
 //    because motor planning depends on stable positions.
 // Word-class colors follow the Fitzgerald key convention AAC systems use.
 
-// MARK: - Language
-
 final class KeyboardViewController: UIInputViewController {
 
     private enum KeyAction: Equatable {
@@ -40,7 +38,6 @@ final class KeyboardViewController: UIInputViewController {
         case space
         case ret
         case dismiss
-        case language
     }
 
     private enum Level: Equatable {
@@ -169,7 +166,6 @@ final class KeyboardViewController: UIInputViewController {
         }
     }
     private var shifted = false
-    private var lang: Lang = .en
     private var lastCommit: (action: KeyAction, at: Date)?
 
     // Haptics are a no-op on iPads (no Taptic Engine) — wired anyway so an
@@ -262,9 +258,6 @@ final class KeyboardViewController: UIInputViewController {
         myWords = (store.array(forKey: "myWords") as? [String]) ?? []
         autoFileCache = (store.dictionary(forKey: "wordFiling") as? [String: String]) ?? [:]
         reloadScreenWords()
-        if let saved = store.string(forKey: "lang"), let restored = Lang(rawValue: saved) {
-            lang = restored
-        }
         size = KeyboardSize.clamped(Preferences.keyboardSize(in: store))
 
         // Height lives on OUR content view, never on the root view. The
@@ -497,7 +490,7 @@ final class KeyboardViewController: UIInputViewController {
     /// changing what `be` should read from "am" to "are". Comparing the
     /// form alone is why the board looked frozen.
     private func refreshVerbForms() {
-        guard lang == .en, smartGrammar, isWordLevel else { return }
+        guard smartGrammar, isWordLevel else { return }
         let context = contextBefore()
         guard Grammar.verbForm(after: context) != verbForm
                 || Grammar.subject(before: context) != verbSubject
@@ -507,7 +500,7 @@ final class KeyboardViewController: UIInputViewController {
 
     // MARK: Categories
 
-    /// Tab 0 is Recents — computed from usage across both languages.
+    /// Tab 0 is Recents — computed from usage.
     ///
     /// His own words count here too. They used to fall out: Recents looked
     /// every used word up in `vocabIndex`, which only knows the built-in
@@ -520,12 +513,12 @@ final class KeyboardViewController: UIInputViewController {
             .compactMap { vocabIndex[$0.key] ?? myWord(named: $0.key) }
         var seen = Set<String>()
         var unique: [VocabWord] = []
-        for word in recents where !seen.contains(word.en) {
-            seen.insert(word.en)
+        for word in recents where !seen.contains(word.text) {
+            seen.insert(word.text)
             unique.append(word)
             if unique.count == wordSlots { break }
         }
-        let recentsName = lang == .ms ? "Terkini" : "Recents"
+        let recentsName = "Recents"
         // Mine appends after the built-in categories — never reorders them
         // (invariant 1). Plain-text cells built on the fly; myWords are
         // never added to vocabIndex (that stays the built-in lookup only).
@@ -548,11 +541,11 @@ final class KeyboardViewController: UIInputViewController {
         // of that category's page (invariant 1: new words go at the end),
         // in Mine's pink so it always reads as "his word". Everything
         // still lives in Mine regardless; ambiguous words stay Mine-only.
-        var builtIn = vocabulary.map { (name: $0.name(lang), en: $0.en, words: $0.words) }
+        var builtIn = vocabulary.map { (name: $0.name, en: $0.name, words: $0.words) }
         for word in myWords {
             guard let target = autoCategory(for: word),
                   let i = builtIn.firstIndex(where: { $0.en == target }),
-                  !builtIn[i].words.contains(where: { $0.en.caseInsensitiveCompare(word) == .orderedSame })
+                  !builtIn[i].words.contains(where: { $0.text.caseInsensitiveCompare(word) == .orderedSame })
             else { continue }
             builtIn[i].words.append(VocabWord(word, .social))
         }
@@ -595,32 +588,42 @@ final class KeyboardViewController: UIInputViewController {
     // MARK: Frame (spec: the pinned column is identical on every level)
 
     /// The one pinned column, from the team's design: where you go, what
-    /// you undo, and what language you are in. The design replaced the old
-    /// right-hand control column with keys placed inside the grid — see
+    /// you undo, and how you put the keyboard away. The design replaced the
+    /// old right-hand control column with keys placed inside the grid — see
     /// `gridControls` — so this is now the only column whose geometry never
     /// depends on the content grid.
     ///
-    /// Row 3 is the language slot. iOS will not accept a synthesised tap on
-    /// the keyboard switcher, so when the system asks for one, a real globe
-    /// button takes that slot and Typikey's own EN/MS toggle keeps its cell
-    /// on the home board; when it doesn't, the EN/MS key takes the slot.
+    /// Row 3 belongs to the system when the system wants it. iOS will not
+    /// accept a synthesised tap on the keyboard switcher, so when it asks
+    /// for a globe, a real globe button takes that slot and Hide keyboard
+    /// keeps a cell in the grid instead.
     private var pinnedColumn: [(KeyAction, String)?] {
         [(.home, "Home"),
          (.clearAll, clearArmedAt == nil ? "Clear" : "tap again"),
          // Two lines with the second struck through in red, as drawn: the
          // word says what goes, and the strike says it goes away.
-         (.deleteWord, lang == .ms ? "Padam\nkata" : "Delete\nword"),
-         needsInputModeSwitchKey ? nil : (.language, lang == .en ? "EN" : "MS")]
+         (.deleteWord, "Delete\nword"),
+         // Was EN/MS until Malay came out of the MVP. Hide keyboard takes
+         // the slot rather than leaving it empty: it is the only other
+         // control that belongs to the whole keyboard rather than to the
+         // sentence, and putting it here means the four keys a user needs
+         // regardless of what is on the board are all in one column.
+         //
+         // Still nil when iOS requires the globe — that key is the system's
+         // and it takes this slot, exactly as it took the language slot
+         // before. Hide keyboard falls back into the grid when that
+         // happens, which is what `gridControls` handles.
+         needsInputModeSwitchKey ? nil : (.dismiss, "Hide\nkeyboard")]
     }
 
     /// allCategories() index of the Chat board (offset 1 for Recents).
     private var chatWordsIndex: Int {
-        (vocabulary.firstIndex { $0.en == "Chat" } ?? 0) + 1
+        (vocabulary.firstIndex { $0.name == "Chat" } ?? 0) + 1
     }
 
     /// allCategories() index of the Web board (offset 1 for Recents).
     private var webWordsIndex: Int {
-        (vocabulary.firstIndex { $0.en == "Web" } ?? 0) + 1
+        (vocabulary.firstIndex { $0.name == "Web" } ?? 0) + 1
     }
 
     /// Spec: applied once when the keyboard attaches to a field; never
@@ -770,7 +773,6 @@ final class KeyboardViewController: UIInputViewController {
     /// answering from learning the keyboard has already moved past.
     private var plan: BoardPlan {
         BoardPlan(
-            lang: lang,
             learning: .init(usage: usageCounts, bigrams: learnedBigrams,
                             screen: screenWords, mine: myWords),
             followsSentence: boardFollowsSentence,
@@ -789,12 +791,6 @@ final class KeyboardViewController: UIInputViewController {
         case .home:
             var cells = [ContentCell(.toCategories, "Categories"),
                          ContentCell(.toLetters, "abc")]
-            // EN/MS only needs a board cell when the globe has taken the
-            // pinned language slot; otherwise it IS the pinned slot, and a
-            // second copy here would be two keys for one job.
-            if needsInputModeSwitchKey {
-                cells.append(ContentCell(.language, lang == .en ? "EN" : "MS"))
-            }
             cells += plan.reshaped(BoardPlan.homeWords, after: contextBefore()).map(wordCell)
             return board(cells)
         case .categories:
@@ -835,8 +831,7 @@ final class KeyboardViewController: UIInputViewController {
         }
     }
 
-    /// Mine's empty state isn't Recents' "used often" story — same English
-    /// hint in both languages (invariant 8: no new Malay strings). Mine is
+    /// Mine's empty state isn't Recents' "used often" story. Mine is
     /// always the last category `allCategories()` appends, so that's the
     /// robust way to detect it — never a name string match. Recents' hint
     /// jumps to Core (toWords(1)) since its text points there; Mine's hint
@@ -845,9 +840,7 @@ final class KeyboardViewController: UIInputViewController {
         let isMine = index == count - 1
         let hint = isMine
             ? "Add words in the Typikey app"
-            : (lang == .ms
-                ? "Perkataan yang kerap digunakan akan muncul di sini"
-                : "Words you use often will appear here")
+            : "Words you use often will appear here"
         return ContentCell(isMine ? .toCategories : .toWords(1), hint, colSpan: contentColumns)
     }
 
@@ -863,7 +856,13 @@ final class KeyboardViewController: UIInputViewController {
         let cols = contentColumns
         return [
             (ContentCell(.ret, goLabel(), colSpan: 2), 1, cols - 2),
-            (ContentCell(.dismiss, "Hide keyboard"), rowCount - 1, cols - 2),
+            // Only when the globe has taken the pinned slot. Otherwise Hide
+            // keyboard lives in the pinned column and a second copy here
+            // would be two keys for one job — and would cost a word cell
+            // for nothing.
+            needsInputModeSwitchKey
+                ? (ContentCell(.dismiss, "Hide keyboard"), rowCount - 1, cols - 2)
+                : (nil, rowCount - 1, cols - 2),
             (ContentCell(.cursorRight, "Cursor right"), rowCount - 1, cols - 1),
         ]
     }
@@ -1036,8 +1035,8 @@ final class KeyboardViewController: UIInputViewController {
         // matter what caused it — a level change back from the letters
         // keyboard, a re-show, or the sentence simply moving on.
         let context = contextBefore()
-        verbForm = (lang == .en && smartGrammar) ? Grammar.verbForm(after: context) : .base
-        verbSubject = (lang == .en && smartGrammar) ? Grammar.subject(before: context) : nil
+        verbForm = smartGrammar ? Grammar.verbForm(after: context) : .base
+        verbSubject = smartGrammar ? Grammar.subject(before: context) : nil
         boardSlot = SentenceShape.expected(after: context)
         inflectionBase.removeAll()
 
@@ -1100,7 +1099,7 @@ final class KeyboardViewController: UIInputViewController {
             return .write
         case .ret:
             return .action // Enter finishes the message; the design's one blue key
-        case .home, .toCategories, .toWords, .toLetters, .toNumbers, .language,
+        case .home, .toCategories, .toWords, .toLetters, .toNumbers,
              .shift, .cursorLeft, .cursorRight, .dismiss:
             return .navigate
         case .delete, .deleteWord, .clearAll:
@@ -1224,7 +1223,7 @@ final class KeyboardViewController: UIInputViewController {
             label.attributedText = nil
             label.font = .systemFont(ofSize: 32, weight: .medium)
             label.text = level == .letters && shifted ? text.uppercased() : text
-        case .home, .toCategories, .toWords, .toLetters, .toNumbers, .language, .shift:
+        case .home, .toCategories, .toWords, .toLetters, .toNumbers, .shift:
             label.attributedText = nil
             label.font = .systemFont(ofSize: 18, weight: .semibold)
             label.text = text
@@ -1460,12 +1459,6 @@ final class KeyboardViewController: UIInputViewController {
             let signature = "\(textDocumentProxy.keyboardType?.rawValue ?? -1)|\(textDocumentProxy.returnKeyType?.rawValue ?? -1)"
             persistPendingRestore(signature: signature, level: level)
             dismissKeyboard()
-        case .language:
-            completionWords = []
-            // Same positions, new labels — muscle memory survives the switch.
-            lang = lang == .en ? .ms : .en
-            store.set(lang.rawValue, forKey: "lang")
-            buildKeys()
         }
         updateSuggestions()
         requestPhraseCompletion()
@@ -1661,18 +1654,20 @@ final class KeyboardViewController: UIInputViewController {
 
     /// The language the user is ACTUALLY typing, detected from the field's
     /// own text — completions follow the text, not a settings toggle
-    /// (Cotypist's "it just works in any language" feel). Falls back to
-    /// the manual EN/MS toggle on short or ambiguous context, so nothing
-    /// changes for a user who never leaves one language.
+    /// (Cotypist's "it just works in any language" feel). This outlived the
+    /// EN/MS toggle on purpose: the board is English, but the field he is
+    /// typing into might not be, and spell-check completions should follow
+    /// what is actually on screen. Falls back to English on short or
+    /// ambiguous context.
     private func completionLanguage() -> String {
         let sample = String((textDocumentProxy.documentContextBeforeInput ?? "").suffix(200))
-        guard sample.count >= 12 else { return lang.spellCheckCode }
+        guard sample.count >= 12 else { return "en_US" }
         let recognizer = NLLanguageRecognizer()
         recognizer.processString(sample)
         guard let detected = recognizer.dominantLanguage,
               (recognizer.languageHypotheses(withMaximum: 1)[detected] ?? 0) > 0.7,
               let match = Self.checkerLanguages.first(where: { $0.hasPrefix(detected.rawValue) })
-        else { return lang.spellCheckCode }
+        else { return "en_US" }
         return match
     }
 

@@ -28,8 +28,8 @@ The full list with reasoning lives in `CONTRIBUTING.md`. The short version:
 4. Every point on the keyboard maps to the nearest key — no dead zones.
 5. `RequestsOpenAccess` is `true` as of 2026-08-05 (team decision, Ali) to enable the app-group container powering app ↔ keyboard data. Two hard rules survive the flip: the keyboard must remain FULLY functional when Full Access is not granted (never gate typing, prediction, or learning-in-sandbox on the grant), and **no network calls from the keyboard, ever** — granted or not. The shared container is the only thing the permission is for.
 6. Prediction appears only in the suggestion bar, never by reordering the grid.
-7. Language switching relabels cells in place.
-8. Malay vocabulary is an unverified draft — flag any translation you add as unverified.
+7. ~~Language switching relabels cells in place.~~ **Retired 10 Aug 2026** — Malay was removed for the MVP (team decision). The relabel-in-place mechanism it protected is still load-bearing: verb keys change form with the sentence without moving. If a second language returns, this invariant returns with it.
+8. ~~Malay vocabulary is an unverified draft.~~ **Retired 10 Aug 2026** with the removal. The reasoning still binds anything that replaces it: an unverified word in a fixed position is worse than no word, because he cannot tell the board it is wrong.
 9. The pinned control column (one column, on the left: Home, Clear all, word-delete, language) renders identical frames on every level — never derive its geometry from the content grid's column count. Enter, ⌄ and → live inside the content grid, per the team's design.
 
 ## When unsure

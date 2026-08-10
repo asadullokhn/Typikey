@@ -85,7 +85,7 @@ struct Keyboard {
             if let index = categoryHolding(phrase.lowercased()) {
                 let cost = (level == .home ? 0 : 1) + 2 + 1
                 level = .category(index)
-                return (length, charge(cost, phrase, via: "page \(categories[index].en)"))
+                return (length, charge(cost, phrase, via: "page \(categories[index].name)"))
             }
         }
         return (1, say(one: remaining[0]))
@@ -122,7 +122,7 @@ struct Keyboard {
         if let index = categoryHolding(target) {
             let cost = goHome + 2 + 1
             level = .category(index)
-            return charge(cost, word, via: "page \(categories[index].en)")
+            return charge(cost, word, via: "page \(categories[index].name)")
         }
 
         // Two keys, written together. The board has no "cannot" cell and
@@ -269,13 +269,24 @@ for entry in sentences {
     }
 }
 
-// A word board shows 35 cells. A category with more than that loses the
-// overflow silently — no gap, no crash, the packer just closes up behind
-// it — so this is checked on every run rather than noticed a build later.
-let pageCapacity = 35
+// What fits, checked on every run rather than noticed a build later.
+// Overflow is lost silently — no gap, no crash, the packer just closes up
+// behind it — which is how the `be` key went missing for a whole build.
+//
+// A category page reserves Enter (2 cells) and the cursor key: 40 - 3.
+// Home spends two more on Categories and abc, and has to survive the
+// tighter of two layouts — when iOS requires the globe it takes the pinned
+// slot, Hide keyboard falls back into the grid, and a cell goes with it.
+let pageCapacity = 37
+let homeCapacity = 36 - 2
 for category in vocabulary where category.words.count > pageCapacity {
-    print("WARNING  \(category.en) has \(category.words.count) words on a \(pageCapacity)-cell page — "
+    print("WARNING  \(category.name) has \(category.words.count) words on a \(pageCapacity)-cell page — "
           + "\(category.words.count - pageCapacity) will not appear")
+}
+if BoardPlan.homeSelection.count > homeCapacity {
+    print("WARNING  home names \(BoardPlan.homeSelection.count) words but only \(homeCapacity) fit once the "
+          + "globe takes the pinned slot — \(BoardPlan.homeSelection.count - homeCapacity) would vanish on "
+          + "any device with a second keyboard installed")
 }
 
 print("\nTaps per sentence\n")
