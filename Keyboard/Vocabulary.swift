@@ -86,30 +86,6 @@ let vocabulary: [Category] = [
         VocabWord("he", ms: "dia", .pronoun), VocabWord("she", ms: "dia", .pronoun),
         VocabWord("it", ms: "ia", .pronoun), VocabWord("be", ms: "adalah", .verb),
         VocabWord("do", ms: "buat", .verb), VocabWord("have", ms: "ada", .verb),
-        // The closed classes. These are the words that turn a board of
-        // labels into sentences: "I am waiting" is a dead end without
-        // "for", and no amount of prediction fixes that — a preposition has
-        // to be in one known place, reachable in one tap, every time.
-        // Core word lists (Banajee, Boenisch & Soto) put them among the
-        // highest-frequency words in everything anyone says, and every
-        // published core board carries them permanently.
-        // Malay: unverified drafts, and weaker here than anywhere else.
-        // Malay preposition boundaries do not line up with English ones,
-        // possession is postposed ("kawan saya"), and Malay has no articles
-        // at all — "a" and "the" have no Malay cell and are left in English
-        // rather than invented. Needs Fadillah before it goes anywhere near
-        // Sayfullah.
-        VocabWord("to", ms: "ke", .function), VocabWord("for", ms: "untuk", .function),
-        VocabWord("with", ms: "dengan", .function), VocabWord("in", ms: "dalam", .function),
-        VocabWord("on", ms: "atas", .function), VocabWord("at", ms: "di", .function),
-        VocabWord("of", ms: "daripada", .function), VocabWord("from", ms: "dari", .function),
-        VocabWord("out", ms: "keluar", .function), VocabWord("up", ms: "naik", .function),
-        VocabWord("and", ms: "dan", .function), VocabWord("but", ms: "tetapi", .function),
-        VocabWord("or", ms: "atau", .function), VocabWord("because", ms: "kerana", .function),
-        VocabWord("a", .function), VocabWord("the", .function),
-        VocabWord("my", ms: "saya", .pronoun), VocabWord("me", ms: "saya", .pronoun),
-        VocabWord("we", ms: "kami", .pronoun), VocabWord("they", ms: "mereka", .pronoun),
-        VocabWord("again", ms: "lagi", emoji: "🔁", .descriptor),
         // Time words, and they do double duty: they are ordinary
         // vocabulary AND they are how the board knows what tense it is in.
         // The design has no tense control and gets no extra key, so
@@ -194,6 +170,39 @@ let vocabulary: [Category] = [
         VocabWord("nice to meet you", ms: "selamat berkenalan", .social), VocabWord("see you later", ms: "jumpa lagi", .social),
         VocabWord("I use this to talk", ms: "Saya guna ini untuk bercakap", emoji: "💬", .social),
         VocabWord("haha", emoji: "😂", .social),
+    ]),
+    // The closed classes, on a board of their own.
+    //
+    // They lived at the end of Core, where nothing could reach them: a
+    // four-row board shows 36 cells and Core had grown to 54, so the packer
+    // dropped the last 18 without a word. "of", "from", "out", "up", "but",
+    // "or", "because", "a", "the", "me" and "again" existed in the app and
+    // appeared on no board anywhere.
+    //
+    // These are the words that turn a board of labels into sentences — "I
+    // am waiting" is a dead end without "for" — so they get the space they
+    // need rather than the space that was left over. Core word lists
+    // (Banajee; Boenisch & Soto) rank them among the highest-frequency
+    // words in anything anyone says, and every published core board carries
+    // them permanently.
+    //
+    // Malay: unverified drafts, and weaker here than anywhere else. Malay
+    // preposition boundaries do not line up with English ones, possession
+    // is postposed ("kawan saya"), and Malay has no articles at all — "a"
+    // and "the" have no Malay cell and are left in English rather than
+    // invented. The category name is a draft too. Needs Fadillah.
+    Category(en: "Little words", ms: "Kata kecil", words: [
+        VocabWord("to", ms: "ke", .function), VocabWord("for", ms: "untuk", .function),
+        VocabWord("with", ms: "dengan", .function), VocabWord("in", ms: "dalam", .function),
+        VocabWord("on", ms: "atas", .function), VocabWord("at", ms: "di", .function),
+        VocabWord("of", ms: "daripada", .function), VocabWord("from", ms: "dari", .function),
+        VocabWord("out", ms: "keluar", .function), VocabWord("up", ms: "naik", .function),
+        VocabWord("and", ms: "dan", .function), VocabWord("but", ms: "tetapi", .function),
+        VocabWord("or", ms: "atau", .function), VocabWord("because", ms: "kerana", .function),
+        VocabWord("a", .function), VocabWord("the", .function),
+        VocabWord("my", ms: "saya", .pronoun), VocabWord("me", ms: "saya", .pronoun),
+        VocabWord("we", ms: "kami", .pronoun), VocabWord("they", ms: "mereka", .pronoun),
+        VocabWord("again", ms: "lagi", emoji: "🔁", .descriptor),
     ]),
 ]
 

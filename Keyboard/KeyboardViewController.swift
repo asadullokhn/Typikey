@@ -724,8 +724,10 @@ final class KeyboardViewController: UIInputViewController {
     ]
 
     private var homeWords: [VocabWord] {
-        let core = vocabulary.first { $0.en == "Core" }?.words ?? []
-        let words = Self.homeSelection.compactMap { name in core.first { $0.en == name } }
+        // Looked up across the whole vocabulary rather than in one
+        // category: home draws on Core and Little words both, and which
+        // board a word is filed under is not home's business.
+        let words = Self.homeSelection.compactMap { vocabIndex[$0] }
         // A name that stops matching a Core word would simply vanish from
         // the board — silently, with no crash and no gap, because the
         // packer closes up behind it. That is exactly the class of bug
@@ -885,6 +887,14 @@ final class KeyboardViewController: UIInputViewController {
                 }
             }
         }
+        // A board with more cells than slots loses the overflow without a
+        // trace: no gap, no crash, the word simply is not there. Core grew
+        // to 54 words on a 36-cell board that way, and eleven of them
+        // existed on no board in the app at all. Narrow layouts genuinely
+        // cannot hold everything, so the check is for the full-width case,
+        // which is where a category is supposed to fit.
+        assert(isCompact || next == cells.count,
+               "board dropped \(cells.count - next) cells with no way to reach them")
         return rows
     }
 
