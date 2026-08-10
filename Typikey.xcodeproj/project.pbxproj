@@ -27,15 +27,19 @@
 		64A961B8AFCFB65520C38103 /* WordCounts.swift in Sources */ = {isa = PBXBuildFile; fileRef = AEFE6601597E0E34BEC4EE89 /* WordCounts.swift */; };
 		68425C36066BCAAC9E485794 /* Vocabulary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B70CCE26AA8F46D69AB88E9 /* Vocabulary.swift */; };
 		74A557E66286A37B7352E59E /* WordCounts.swift in Sources */ = {isa = PBXBuildFile; fileRef = AEFE6601597E0E34BEC4EE89 /* WordCounts.swift */; };
+		760070968178B8134335A5F0 /* SentenceShape.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99954A75E4A3461FE7370C40 /* SentenceShape.swift */; };
 		7DD066AECBA51167DB0987C0 /* Preferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC0AA28FDABCFE29ADC640C4 /* Preferences.swift */; };
+		7E40DDA02AAA9CE053A56FBD /* SpareKeysTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B6F6FA453ABBF1284665231 /* SpareKeysTests.swift */; };
 		80BD4A4B725DB47900362502 /* KeyboardSize.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF40FA941FDAF9CD08E77E79 /* KeyboardSize.swift */; };
 		867DEE28BF0C8AE912495320 /* PlainTextField.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69B956A9B583D4897560968A /* PlainTextField.swift */; };
 		88CE9D5420FB39F79D63A53C /* GrammarTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0620AC89CD9C9348E302DDBC /* GrammarTests.swift */; };
 		8A3C1A8DA54A9460DFEA82A2 /* KeyboardFit.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30AE72E91A8C9C4399ABC7D3 /* KeyboardFit.swift */; };
 		8B3E5C87F8CD95C8B0A51B23 /* Grammar.swift in Sources */ = {isa = PBXBuildFile; fileRef = E79FDBE127D71069003D5477 /* Grammar.swift */; };
 		8DB6578CF757DE30411A8B1C /* TypikeyBroadcast.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = FCCC334E9988B617A6DCEEFB /* TypikeyBroadcast.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		8DCAB8AED145D552F0DE427A /* SentenceShape.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99954A75E4A3461FE7370C40 /* SentenceShape.swift */; };
 		99396FC77FA01B9D55E83B4A /* SettingsCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36CD9F9B0EFD527380AD5B60 /* SettingsCard.swift */; };
 		9C862CD8CF1738B5038563A8 /* MyWordsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 167A2498198387A80DD85FC1 /* MyWordsTests.swift */; };
+		A253C341C35E51D2E7AB2B10 /* SentenceShape.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99954A75E4A3461FE7370C40 /* SentenceShape.swift */; };
 		A870D89EC249EBF210079F8E /* KeyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6779423A582866E09D08DAC3 /* KeyView.swift */; };
 		AAB759FD06199BBA669FB03D /* TypikeyShare.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 9D0797993F06D05215ACAB68 /* TypikeyShare.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		AADA652B8858F6615D22C488 /* KeyboardSize.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF40FA941FDAF9CD08E77E79 /* KeyboardSize.swift */; };
@@ -57,6 +61,7 @@
 		ECDE3A72B866932E3A8BF759 /* ShareViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6741F21149078F294F6D357E /* ShareViewController.swift */; };
 		EED48B258A0595CE57451BAC /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = DBD94BC6DECDCB5E20AD5726 /* PrivacyInfo.xcprivacy */; };
 		F358D447B20F9F451E7AF138 /* TypikeyApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FA3846751FF38D84B3414E5 /* TypikeyApp.swift */; };
+		F798AE3FE6A39DDC28E044D2 /* SentenceShape.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99954A75E4A3461FE7370C40 /* SentenceShape.swift */; };
 		F965E2D3B9C32AF172CF8F7C /* Preferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC0AA28FDABCFE29ADC640C4 /* Preferences.swift */; };
 		FB44BAC1AC5A3F6C433CD88D /* PinnedFrameTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F4B7442BDF523BAC5B0E4C2 /* PinnedFrameTests.swift */; };
 		FC2AF8C9E9E74838C9FFBA9D /* KeyboardSize.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF40FA941FDAF9CD08E77E79 /* KeyboardSize.swift */; };
@@ -111,6 +116,7 @@
 
 /* Begin PBXFileReference section */
 		0620AC89CD9C9348E302DDBC /* GrammarTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrammarTests.swift; sourceTree = "<group>"; };
+		0B6F6FA453ABBF1284665231 /* SpareKeysTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpareKeysTests.swift; sourceTree = "<group>"; };
 		167A2498198387A80DD85FC1 /* MyWordsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MyWordsTests.swift; sourceTree = "<group>"; };
 		187356BE0502A777FA4C52FC /* ReadinessCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReadinessCard.swift; sourceTree = "<group>"; };
 		1B70CCE26AA8F46D69AB88E9 /* Vocabulary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Vocabulary.swift; sourceTree = "<group>"; };
@@ -135,6 +141,7 @@
 		8A0596DADB8E2918F9CB0FF9 /* Typikey.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Typikey.entitlements; sourceTree = "<group>"; };
 		8B324A924FE66DC05CD87923 /* KeyboardViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardViewController.swift; sourceTree = "<group>"; };
 		8D99732D3D59D3391FA4D6FC /* KeyboardSizePicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardSizePicker.swift; sourceTree = "<group>"; };
+		99954A75E4A3461FE7370C40 /* SentenceShape.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SentenceShape.swift; sourceTree = "<group>"; };
 		99C68D4951FDDA7ADA09E6C6 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		9D0797993F06D05215ACAB68 /* TypikeyShare.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = TypikeyShare.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		AEFE6601597E0E34BEC4EE89 /* WordCounts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordCounts.swift; sourceTree = "<group>"; };
@@ -166,6 +173,7 @@
 				AF40FA941FDAF9CD08E77E79 /* KeyboardSize.swift */,
 				CC0AA28FDABCFE29ADC640C4 /* Preferences.swift */,
 				52ACB8836103B0ABB01D07BC /* ScreenWords.swift */,
+				99954A75E4A3461FE7370C40 /* SentenceShape.swift */,
 				AEFE6601597E0E34BEC4EE89 /* WordCounts.swift */,
 			);
 			path = Shared;
@@ -245,6 +253,7 @@
 				2F4B7442BDF523BAC5B0E4C2 /* PinnedFrameTests.swift */,
 				7C9F1F5FD052E4FFDD9A120E /* PrivateModeTests.swift */,
 				1C34EE826A9C2E88FA6D179E /* ScreenLearningTests.swift */,
+				0B6F6FA453ABBF1284665231 /* SpareKeysTests.swift */,
 			);
 			path = UITests;
 			sourceTree = "<group>";
@@ -451,6 +460,7 @@
 				DC9285EF1A9BD001BD8A37DF /* ReadinessCard.swift in Sources */,
 				0852A712CFD6797F18D57EC7 /* ScreenLearningIntent.swift in Sources */,
 				34DF27D384A8C18AD355C5F1 /* ScreenWords.swift in Sources */,
+				F798AE3FE6A39DDC28E044D2 /* SentenceShape.swift in Sources */,
 				99396FC77FA01B9D55E83B4A /* SettingsCard.swift in Sources */,
 				F358D447B20F9F451E7AF138 /* TypikeyApp.swift in Sources */,
 				4373895640ABE3EB76CD2B6B /* WordCounts.swift in Sources */,
@@ -467,6 +477,7 @@
 				F965E2D3B9C32AF172CF8F7C /* Preferences.swift in Sources */,
 				BD7FFEE284ED5DFC50FA2351 /* SampleHandler.swift in Sources */,
 				591FC447EABCDC5BDC33DD29 /* ScreenWords.swift in Sources */,
+				A253C341C35E51D2E7AB2B10 /* SentenceShape.swift in Sources */,
 				74A557E66286A37B7352E59E /* WordCounts.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -485,6 +496,7 @@
 				393D7C914534B99903DD7842 /* Palette.swift in Sources */,
 				D9E87446DC34341E0FC20673 /* Preferences.swift in Sources */,
 				3CFD805A7C394D9A86940530 /* ScreenWords.swift in Sources */,
+				8DCAB8AED145D552F0DE427A /* SentenceShape.swift in Sources */,
 				68425C36066BCAAC9E485794 /* Vocabulary.swift in Sources */,
 				64A961B8AFCFB65520C38103 /* WordCounts.swift in Sources */,
 			);
@@ -499,6 +511,7 @@
 				80BD4A4B725DB47900362502 /* KeyboardSize.swift in Sources */,
 				20E5A46D92D05BB8947EB632 /* Preferences.swift in Sources */,
 				C25E2E8F1B21BAF96D75BFAD /* ScreenWords.swift in Sources */,
+				760070968178B8134335A5F0 /* SentenceShape.swift in Sources */,
 				ECDE3A72B866932E3A8BF759 /* ShareViewController.swift in Sources */,
 				ACD558D96C5C5BE41BD634B4 /* WordCounts.swift in Sources */,
 			);
@@ -515,6 +528,7 @@
 				FB44BAC1AC5A3F6C433CD88D /* PinnedFrameTests.swift in Sources */,
 				E874D9C73C6F3FA438850492 /* PrivateModeTests.swift in Sources */,
 				279A952F2D8694A16DDE8465 /* ScreenLearningTests.swift in Sources */,
+				7E40DDA02AAA9CE053A56FBD /* SpareKeysTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -643,7 +657,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 29;
+				CURRENT_PROJECT_VERSION = 30;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = Y7ZZ5G2T3Y;
 				ENABLE_NS_ASSERTIONS = NO;
@@ -723,7 +737,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 29;
+				CURRENT_PROJECT_VERSION = 30;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = Y7ZZ5G2T3Y;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;

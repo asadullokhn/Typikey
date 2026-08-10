@@ -18,6 +18,7 @@ struct SettingsCard: View {
     @State private var grammarOn = Preferences.smartGrammar
     @State private var size = Preferences.keyboardSize
 
+    @State private var reshapeOn = Preferences.boardFollowsSentence
     @State private var fit: KeyboardFit.Reading?
 
     private let store: UserDefaults =
@@ -65,6 +66,28 @@ struct SettingsCard: View {
 
             Divider()
 
+            Toggle(isOn: $reshapeOn) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Use the spare keys")
+                        .font(.title3.weight(.semibold))
+                    Text(reshapeOn
+                         ? "After “can you”, the I / you / he keys offer verbs"
+                         : "Every key stays where it is, always")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .accessibilityIdentifier("boardFollowsSentenceToggle")
+            .onChange(of: reshapeOn) { _, newValue in
+                Preferences.boardFollowsSentence = newValue
+            }
+
+            Text("Once you have written “can you”, nothing can follow it that reads “can you I” — so those seven cells are doing nothing, and they change to verbs instead. They turn green, so you can see which ones moved. Delete a word and they change straight back.\n\nThis is the one setting that moves a key. Fixed positions are the best-evidenced idea in this whole keyboard — one study measured 3.3 seconds per selection against keys that stay put, against 6.0 seconds for keys that move. If Sayfullah starts hunting, turn this off first.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+
+            Divider()
+
             VStack(alignment: .leading, spacing: 10) {
                 Text("Keyboard size")
                     .font(.title3.weight(.semibold))
@@ -79,6 +102,7 @@ struct SettingsCard: View {
             isOn = Preferences.privateMode
             grammarOn = Preferences.smartGrammar
             size = Preferences.keyboardSize
+            reshapeOn = Preferences.boardFollowsSentence
             fit = KeyboardFit.read(from: store)
         }
     }

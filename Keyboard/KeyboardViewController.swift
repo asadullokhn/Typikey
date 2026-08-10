@@ -121,6 +121,16 @@ final class KeyboardViewController: UIInputViewController {
     /// feature ships a way to turn it off; see `Preferences.smartGrammar`.
     private var smartGrammar = true
 
+    /// Whether cells the sentence cannot use are re-offered as words it
+    /// can. The one feature here that moves a cell, so it has the loudest
+    /// switch — see `Preferences.boardFollowsSentence`.
+    private var boardFollowsSentence = true
+
+    /// The shape the board was last built for. Held so a rebuild happens
+    /// when the sentence starts needing something different, and not on
+    /// every keystroke.
+    private var boardSlot: SentenceShape.Slot = .any
+
     /// The subject the sentence is about, when the last word named one.
     /// Only "be" needs it — it is the one English verb that still inflects
     /// for person as well as tense.
@@ -317,6 +327,7 @@ final class KeyboardViewController: UIInputViewController {
         // in-progress token from a previous field never leaks into a new one.
         isPrivate = Preferences.privateMode(in: store)
         smartGrammar = Preferences.smartGrammar(in: store)
+        boardFollowsSentence = Preferences.boardFollowsSentence(in: store)
         // Size is chosen in the app now, so it has to be re-read here —
         // otherwise the change would not land until the extension is next
         // restarted, which from the user's side looks like nothing happened.
@@ -483,7 +494,8 @@ final class KeyboardViewController: UIInputViewController {
         guard lang == .en, smartGrammar, isWordLevel else { return }
         let context = contextBefore()
         guard Grammar.verbForm(after: context) != verbForm
-                || Grammar.subject(before: context) != verbSubject else { return }
+                || Grammar.subject(before: context) != verbSubject
+                || SentenceShape.expected(after: context) != boardSlot else { return }
         buildKeys()
     }
 
@@ -775,6 +787,52 @@ final class KeyboardViewController: UIInputViewController {
         "what", "yes", "no", ".", "?",
     ]
 
+    /// Re-offers the cells the sentence has no use for.
+    ///
+    /// After "can you", nothing can read "can you I", so the seven
+    /// subject-pronoun cells are the board's only spare capacity. They
+    /// carry verbs instead — his most-used first, skipping anything
+    /// already on the board.
+    ///
+    /// A swapped cell arrives in the verb colour, green where yellow was,
+    /// so it announces itself without anything being added to the board.
+    /// Gilbert's rule: let it configure itself, but visibly.
+    ///
+    /// Nothing is stored. The shape is recomputed from the text on every
+    /// rebuild, which is what makes delete-word and clear-all rewind it
+    /// for free — there is no state to unwind, so going back a word puts
+    /// the pronouns back exactly where they were.
+    private func reshaped(_ words: [VocabWord]) -> [VocabWord] {
+        guard boardFollowsSentence, lang == .en,
+              SentenceShape.expected(after: contextBefore()) == .verb
+        else { return words }
+
+        var taken = Set(words.map { $0.en.lowercased() })
+        var pool = verbPool.filter { !taken.contains($0.en.lowercased()) }
+        guard !pool.isEmpty else { return words }
+
+        return words.map { word in
+            guard word.wordClass == .pronoun,
+                  SentenceShape.subjectPronouns.contains(word.en.lowercased()),
+                  !pool.isEmpty
+            else { return word }
+            let replacement = pool.removeFirst()
+            taken.insert(replacement.en.lowercased())
+            return replacement
+        }
+    }
+
+    /// Verbs to draw on, his most-used first. Read off the boards rather
+    /// than kept as a second list, so a verb added anywhere is a verb
+    /// available here.
+    private var verbPool: [VocabWord] {
+        var seen = Set<String>()
+        return vocabulary
+            .flatMap(\.words)
+            .filter { $0.wordClass == .verb && seen.insert($0.en.lowercased()).inserted }
+            .sorted { (usageCounts[$0.en] ?? 0) > (usageCounts[$1.en] ?? 0) }
+    }
+
     private var homeWords: [VocabWord] {
         // Looked up across the whole vocabulary rather than in one
         // category: home draws on Core and Little words both, and which
@@ -816,7 +874,7 @@ final class KeyboardViewController: UIInputViewController {
             if needsInputModeSwitchKey {
                 cells.append(ContentCell(.language, lang == .en ? "EN" : "MS"))
             }
-            cells += homeWords.map(wordCell)
+            cells += reshaped(homeWords).map(wordCell)
             return board(cells)
         case .categories:
             // Wide, short tiles rather than the old 2x2 blocks: now that
@@ -833,7 +891,7 @@ final class KeyboardViewController: UIInputViewController {
             guard !words.isEmpty else {
                 return board([emptyHint(forCategoryAt: index, of: categories.count)])
             }
-            return board(words.map(wordCell))
+            return board(reshaped(words).map(wordCell))
         case .letters:
             var rows: [[ContentCell?]] = [
                 "qwertyuiop".map { Optional(ContentCell(.char(String($0)), String($0))) },
@@ -1033,6 +1091,7 @@ final class KeyboardViewController: UIInputViewController {
         let context = contextBefore()
         verbForm = (lang == .en && smartGrammar) ? Grammar.verbForm(after: context) : .base
         verbSubject = (lang == .en && smartGrammar) ? Grammar.subject(before: context) : nil
+        boardSlot = SentenceShape.expected(after: context)
         inflectionBase.removeAll()
 
         let content = contentRows(for: level)

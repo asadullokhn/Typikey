@@ -52,6 +52,28 @@ enum Preferences {
         store.object(forKey: grammarKey) as? Bool ?? true
     }
 
+    // MARK: Board follows the sentence
+
+    /// Whether cells the sentence cannot use are re-offered as words it
+    /// can. After "can you", the subject-pronoun cells carry verbs.
+    ///
+    /// This one moves cells, which every other feature here refuses to do,
+    /// so it gets the clearest switch of the three. The evidence for fixed
+    /// positions is the strongest in the project — Thistle et al. (2018)
+    /// measured 3.3s per selection against fixed targets versus 6.0s
+    /// against moving ones — and every AAC vendor shipping anything like
+    /// it ships a way off.
+    private static let reshapeKey = "boardFollowsSentence"
+
+    static var boardFollowsSentence: Bool {
+        get { readDefaultingTrue(reshapeKey) }
+        set { write(newValue, reshapeKey) }
+    }
+
+    static func boardFollowsSentence(in store: UserDefaults) -> Bool {
+        store.object(forKey: reshapeKey) as? Bool ?? true
+    }
+
     // MARK: Keyboard size
 
     /// 0 small, 1 medium, 2 large. It used to be the ⤢ key on the board,
