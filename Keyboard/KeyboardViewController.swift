@@ -33,6 +33,8 @@ final class KeyboardViewController: UIInputViewController {
         case home         // pinned: back to the home board
         case toCategories
         case toWords(Int) // index into allCategories()
+        /// A page Fadillah built in the app, by id.
+        case toPage(String)
         case toLetters
         case toNumbers
         case space
@@ -43,6 +45,7 @@ final class KeyboardViewController: UIInputViewController {
     private enum Level: Equatable {
         case home, categories, letters, numbers
         case words(Int) // index into allCategories()
+        case page(String) // a page built in the app, by id
     }
 
     private struct Key {
@@ -161,7 +164,7 @@ final class KeyboardViewController: UIInputViewController {
 
     private var isWordLevel: Bool {
         switch level {
-        case .home, .categories, .words: return true
+        case .home, .categories, .words, .page: return true
         case .letters, .numbers: return false
         }
     }
@@ -549,7 +552,19 @@ final class KeyboardViewController: UIInputViewController {
             else { continue }
             builtIn[i].words.append(VocabWord(word, .social))
         }
-        return [(recentsName, unique)] + builtIn.map { ($0.name, $0.words) } + [("Mine", mineWords)]
+        // The order Fadillah arranged in the app, if she has. Nothing
+        // stored means the shipped order, which is also what a failed read
+        // and a revoked Full Access give — the board must never be the
+        // reason he cannot find a word.
+        //
+        // Named lookup rather than index arithmetic: a stored arrangement
+        // can name a board that no longer ships, and a build that shipped
+        // a new one must not shuffle everything after it.
+        var byName = [recentsName: unique, "Mine": mineWords]
+        for board in builtIn { byName[board.name] = board.words }
+        return BoardLayout.load(from: store).compactMap { tile in
+            byName[tile.id].map { (tile.name, $0) }
+        }
     }
 
     /// A word of the user's own, as a cell. Matched case-insensitively
@@ -701,6 +716,9 @@ final class KeyboardViewController: UIInputViewController {
         case .categories: defaults.set("categories", forKey: "pendingRestoreLevel")
         case .letters: defaults.set("letters", forKey: "pendingRestoreLevel")
         case .numbers: defaults.set("numbers", forKey: "pendingRestoreLevel")
+        case .page(let id):
+            defaults.set("page", forKey: "pendingRestoreLevel")
+            defaults.set(id, forKey: "pendingRestorePageID")
         case .words(let index):
             defaults.set("words", forKey: "pendingRestoreLevel")
             defaults.set(index, forKey: "pendingRestoreWordsIndex")
@@ -721,10 +739,12 @@ final class KeyboardViewController: UIInputViewController {
         let pendingSignature = defaults.string(forKey: "pendingRestoreSignature")
         let pendingLevel = defaults.string(forKey: "pendingRestoreLevel")
         let pendingWordsIndex = defaults.integer(forKey: "pendingRestoreWordsIndex")
+        let pendingPageID = defaults.string(forKey: "pendingRestorePageID")
         let pendingTimestamp = defaults.object(forKey: "pendingRestoreTimestamp") as? TimeInterval
         defaults.removeObject(forKey: "pendingRestoreSignature")
         defaults.removeObject(forKey: "pendingRestoreLevel")
         defaults.removeObject(forKey: "pendingRestoreWordsIndex")
+        defaults.removeObject(forKey: "pendingRestorePageID")
         defaults.removeObject(forKey: "pendingRestoreTimestamp")
         guard pendingSignature == signature,
               let pendingTimestamp, Date().timeIntervalSince1970 - pendingTimestamp <= pendingRestoreTTL
@@ -735,6 +755,11 @@ final class KeyboardViewController: UIInputViewController {
         case "letters": return .letters
         case "numbers": return .numbers
         case "words": return .words(pendingWordsIndex)
+        // A page that was deleted while the keyboard was away restores to
+        // home rather than to nothing.
+        case "page":
+            guard let pendingPageID, customPage(pendingPageID) != nil else { return .home }
+            return .page(pendingPageID)
         default: return nil
         }
     }
@@ -767,6 +792,60 @@ final class KeyboardViewController: UIInputViewController {
         }
     }
 
+    /// The boards Fadillah built in the app, or nil if she has not.
+    ///
+    /// nil is the important case and the common one: no stored pages means
+    /// the keyboard behaves exactly as it did before this feature existed.
+    /// A failed read, a revoked Full Access and a fresh install all land
+    /// here, and all three have to leave him with a working board — the
+    /// app is allowed to improve the keyboard and is never allowed to be
+    /// the reason it stops working.
+    private var customPages: [KeyboardPage]? {
+        guard store.data(forKey: BoardLayout.pagesKey) != nil else { return nil }
+        let pages = BoardLayout.loadPages(from: store)
+        return pages.isEmpty ? nil : pages
+    }
+
+    private func customPage(_ id: String) -> KeyboardPage? {
+        customPages?.first { $0.id == id }
+    }
+
+    /// A page laid out where the editor put it.
+    ///
+    /// Positional, not packed: cell 12 is row 1, column 2, and stays there
+    /// whatever happens to cell 11. The packer that builds the shipped
+    /// boards closes up behind an empty cell, which is right when a board
+    /// is generated and wrong when a person arranged it — she put that key
+    /// there on purpose, and he learned where it is.
+    private func pageRows(_ page: KeyboardPage) -> [[ContentCell?]] {
+        let cols = contentColumns
+        var rows: [[ContentCell?]] = Array(
+            repeating: Array(repeating: nil, count: cols), count: wordBoardRows)
+        for (index, button) in page.cells.enumerated() {
+            guard let button else { continue }
+            let row = index / KeyboardPage.columns
+            let column = index % KeyboardPage.columns
+            guard row < wordBoardRows, column < cols else { continue }
+            let action: KeyAction = button.destination.map { KeyAction.toPage($0) }
+                ?? .word(button.label)
+            rows[row][column] = ContentCell(action, button.label)
+        }
+        // The keyboard's own way out, laid down last so no arrangement
+        // can bury it. The editor reserves these two cells and never
+        // offers them for editing; without them here, an edited home
+        // board had no route to the category pages or to the letters,
+        // which would have stranded him on whatever page he was on.
+        rows[0][0] = ContentCell(.toCategories, "Categories")
+        if cols > 1 { rows[0][1] = ContentCell(.toLetters, "abc") }
+        // The design's controls go on last so a key can never bury one.
+        for control in gridControls(rows: wordBoardRows) {
+            guard let cell = control.cell,
+                  control.row < rows.count, control.col < cols else { continue }
+            rows[control.row][control.col] = cell
+        }
+        return rows
+    }
+
     /// How the board decides what to show, and the only place that
     /// decision lives. Rebuilt per use rather than cached: it is four
     /// dictionaries by reference, and a stale copy would mean the board
@@ -788,7 +867,15 @@ final class KeyboardViewController: UIInputViewController {
 
     private func contentRows(for level: Level) -> [[ContentCell?]] {
         switch level {
+        case .page(let id):
+            guard let page = customPage(id) else { return contentRows(for: .home) }
+            return pageRows(page)
         case .home:
+            // An edited home board replaces the shipped one. Everything
+            // else about the keyboard — grammar, prediction, the spare
+            // cells — is unchanged, because those read the text rather
+            // than the board.
+            if let home = customPage("home") { return pageRows(home) }
             var cells = [ContentCell(.toCategories, "Categories"),
                          ContentCell(.toLetters, "abc")]
             cells += plan.reshaped(BoardPlan.homeWords, after: contextBefore()).map(wordCell)
@@ -1099,7 +1186,7 @@ final class KeyboardViewController: UIInputViewController {
             return .write
         case .ret:
             return .action // Enter finishes the message; the design's one blue key
-        case .home, .toCategories, .toWords, .toLetters, .toNumbers,
+        case .home, .toCategories, .toWords, .toPage, .toLetters, .toNumbers,
              .shift, .cursorLeft, .cursorRight, .dismiss:
             return .navigate
         case .delete, .deleteWord, .clearAll:
@@ -1223,7 +1310,7 @@ final class KeyboardViewController: UIInputViewController {
             label.attributedText = nil
             label.font = .systemFont(ofSize: 32, weight: .medium)
             label.text = level == .letters && shifted ? text.uppercased() : text
-        case .home, .toCategories, .toWords, .toLetters, .toNumbers, .shift:
+        case .home, .toCategories, .toWords, .toPage, .toLetters, .toNumbers, .shift:
             label.attributedText = nil
             label.font = .systemFont(ofSize: 18, weight: .semibold)
             label.text = text
@@ -1431,6 +1518,10 @@ final class KeyboardViewController: UIInputViewController {
             typedToken = ""
             completionWords = []
             level = .words(i); buildKeys()
+        case .toPage(let id):
+            typedToken = ""
+            completionWords = []
+            level = .page(id); buildKeys()
         case .toLetters:
             typedToken = ""
             completionWords = []

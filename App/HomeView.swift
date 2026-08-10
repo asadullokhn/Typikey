@@ -38,6 +38,8 @@ struct HomeView: View {
                     }
 
                     section("Every day") {
+                        NavigationLink { PagesView() } label: { BoardsNavCard() }
+                            .buttonStyle(.plain)
                         NavigationLink { MyWordsView() } label: { MyWordsNavCard() }
                             .buttonStyle(.plain)
                         ScreenLearningCard()
@@ -130,6 +132,14 @@ struct NavCard: View {
         }
         .homeCardStyle()
         .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+    }
+}
+
+private struct BoardsNavCard: View {
+    var body: some View {
+        NavCard(symbol: "square.grid.2x2",
+                title: "Boards",
+                subtitle: "Arrange the category pages he sees, in the order he sees them.")
     }
 }
 
