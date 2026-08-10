@@ -803,12 +803,12 @@ final class KeyboardViewController: UIInputViewController {
     /// for free — there is no state to unwind, so going back a word puts
     /// the pronouns back exactly where they were.
     private func reshaped(_ words: [VocabWord]) -> [VocabWord] {
-        guard boardFollowsSentence, lang == .en,
-              SentenceShape.expected(after: contextBefore()) == .verb
-        else { return words }
+        guard boardFollowsSentence, lang == .en else { return words }
+        let slot = SentenceShape.expected(after: contextBefore())
+        guard slot != .any else { return words }
 
         var taken = Set(words.map { $0.en.lowercased() })
-        var pool = verbPool.filter { !taken.contains($0.en.lowercased()) }
+        var pool = candidates(for: slot).filter { !taken.contains($0.en.lowercased()) }
         guard !pool.isEmpty else { return words }
 
         return words.map { word in
@@ -822,15 +822,72 @@ final class KeyboardViewController: UIInputViewController {
         }
     }
 
-    /// Verbs to draw on, his most-used first. Read off the boards rather
-    /// than kept as a second list, so a verb added anywhere is a verb
-    /// available here.
-    private var verbPool: [VocabWord] {
+    /// What to offer in a spare cell, his most-used first. Read off the
+    /// boards rather than kept as a second list, so a word added anywhere
+    /// is a word available here.
+    ///
+    /// His own words come first among the nouns: after "my ___" the
+    /// likeliest word in the world is a name he added himself, and those
+    /// are the words no dictionary or category page will ever hold.
+    private func candidates(for slot: SentenceShape.Slot) -> [VocabWord] {
+        let wanted: WordClass = slot == .verb ? .verb : .noun
         var seen = Set<String>()
-        return vocabulary
+        let fromBoards = vocabulary
             .flatMap(\.words)
-            .filter { $0.wordClass == .verb && seen.insert($0.en.lowercased()).inserted }
+            .filter { $0.wordClass == wanted && seen.insert($0.en.lowercased()).inserted }
             .sorted { (usageCounts[$0.en] ?? 0) > (usageCounts[$1.en] ?? 0) }
+        let pool: [VocabWord]
+        if wanted == .noun {
+            let mine = myWords
+                .filter { seen.insert($0.lowercased()).inserted }
+                .map { VocabWord($0, .social) }
+            pool = mine + fromBoards
+        } else {
+            pool = fromBoards
+        }
+
+        // Ranked by the same evidence the suggestion bar uses, not by raw
+        // usage. Usage is all zeros on a fresh install, and measuring six
+        // real sentences showed what that produces: seven spare cells
+        // offering time, Mum, Dad, brother, sister, friend, teacher, while
+        // the words those sentences actually needed — story, monster,
+        // video, park — sat 24th to 43rd and never appeared at all.
+        //
+        // The anchor is the last word that is not a determiner, because
+        // "watch a ___" is answered by what follows "watch", not by what
+        // follows "a".
+        let scores = bigramScores(after: anchorWord())
+        guard !scores.isEmpty else { return pool }
+        return pool.sorted { (scores[$0.en.lowercased()] ?? 0) > (scores[$1.en.lowercased()] ?? 0) }
+    }
+
+    /// The last word carrying meaning: determiners are skipped, since they
+    /// predict nothing on their own.
+    private func anchorWord() -> String {
+        let determiners: Set<String> = ["a", "an", "the", "my", "your", "his", "her", "our", "their", "some", "any"]
+        let words = contextBefore()
+            .lowercased()
+            .components(separatedBy: CharacterSet.alphanumerics.inverted)
+            .filter { !$0.isEmpty }
+        return words.reversed().first { !determiners.contains($0) } ?? ""
+    }
+
+    /// What tends to follow a word, from learned pairs first and the
+    /// shipped seeds behind them. Shared with the suggestion bar's own
+    /// ranking so both answer from the same evidence.
+    private func bigramScores(after previous: String) -> [String: Int] {
+        var scores: [String: Int] = [:]
+        let prefix = "\(previous)|"
+        for (key, count) in learnedBigrams where key.hasPrefix(prefix) {
+            scores[String(key.dropFirst(prefix.count)).lowercased(), default: 0] += count * 10
+        }
+        for (i, word) in (seedBigrams[lang]?[previous] ?? []).enumerated() {
+            scores[word.lowercased(), default: 0] += 3 - i
+        }
+        for (word, count) in screenWords {
+            scores[word.lowercased(), default: 0] += min(count, 3)
+        }
+        return scores
     }
 
     private var homeWords: [VocabWord] {

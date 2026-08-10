@@ -25,22 +25,27 @@ enum SentenceShape {
         /// A verb is the only thing that fits: after a subject, a modal,
         /// or an auxiliary.
         case verb
+        /// A noun is what comes next: after an article or a determiner.
+        /// "write a ___" can be nothing else.
+        case noun
         /// No confident reading. The board stays exactly as it is.
         case any
     }
+
+    /// After a determiner, a noun is all that can follow. This is where
+    /// most letter-by-letter typing was going: measuring six real
+    /// sentences, every single noun after "a" or "the" — story, monster,
+    /// park, video — had to be spelled out, even the ones already sitting
+    /// on a board two taps away.
+    private static let nounCallers: Set<String> = [
+        "a", "an", "the", "my", "your", "his", "her", "our", "their",
+        "this", "that", "some", "any", "every",
+    ]
 
     /// Subjects. Object and possessive pronouns are deliberately absent:
     /// "can you help me" needs `me`, so `me` and `my` are never spent.
     static let subjectPronouns: Set<String> =
         ["i", "you", "he", "she", "it", "we", "they"]
-
-    /// After these, English allows a verb and very little else.
-    private static let verbCallers: Set<String> = [
-        "can", "will", "would", "could", "should", "must", "may", "might", "shall",
-        "do", "does", "did", "don't", "doesn't", "didn't", "won't", "can't",
-        "am", "is", "are", "was", "were", "be", "been", "being",
-        "have", "has", "had", "to", "please", "let",
-    ]
 
     static func expected(after context: String) -> Slot {
         let sentence = currentSentence(context)
@@ -49,10 +54,20 @@ enum SentenceShape {
             .components(separatedBy: CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "'")).inverted)
             .filter { !$0.isEmpty }
         guard let last = words.last else { return .any }
-        if verbCallers.contains(last) { return .verb }
-        // A bare subject at the head of a sentence still wants a verb —
-        // "I ___" — but only when it is the whole sentence so far. Deeper
-        // in, "with you ___" could go anywhere.
+
+        if nounCallers.contains(last) { return .noun }
+
+        // An auxiliary is followed by a verb ONLY once the clause has a
+        // subject. Start a question with one — "Can ___" — and what comes
+        // next is the subject, so the pronouns are the most useful keys on
+        // the board, not the most useless. Spending them there took the
+        // words the sentence needed and offered ones it could not use.
+        if Grammar.verbGovernors.contains(last) {
+            return words.contains(where: subjectPronouns.contains) ? .verb : .any
+        }
+        // A bare subject at the head of a sentence wants a verb — "I ___",
+        // "Can you ___" — but only that early. Deeper in, "with you ___"
+        // could go anywhere.
         if subjectPronouns.contains(last), words.count <= 2 { return .verb }
         return .any
     }

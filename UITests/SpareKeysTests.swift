@@ -14,6 +14,12 @@ final class SpareKeysTests: XCTestCase {
         XCTAssertTrue(app.staticTexts["he"].exists, "setup: the pronoun cells should start as pronouns")
 
         app.staticTexts["can"].firstMatch.tap()
+        // "Can ___" is a question waiting for its subject, so the pronouns
+        // are the most useful keys on the board here — spending them took
+        // away the very words the sentence needed next.
+        XCTAssertTrue(app.staticTexts["you"].waitForExistence(timeout: 3),
+                      "'Can' needs a subject next — the pronouns must stay")
+
         app.staticTexts["you"].firstMatch.tap()
 
         // "can you ___" can only be a verb, so the spare cells change.

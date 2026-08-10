@@ -93,6 +93,7 @@ let vocabulary: [Category] = [
         // which is how English works anyway, since the verb ending is
         // ambiguous and the adverb is what actually places the sentence.
         VocabWord("will", ms: "akan", .verb),
+        VocabWord("time", ms: "masa", emoji: "🕐", .noun),
         VocabWord("yesterday", ms: "semalam", .descriptor),
         VocabWord("tomorrow", ms: "esok", .descriptor),
     ]),
@@ -129,6 +130,12 @@ let vocabulary: [Category] = [
         VocabWord("banana", ms: "pisang", emoji: "🍌", .noun), VocabWord("juice", ms: "jus", emoji: "🧃", .noun),
         VocabWord("milk", ms: "susu", emoji: "🥛", .noun), VocabWord("tea", ms: "teh", emoji: "🍵", .noun),
         VocabWord("biryani", ms: "briyani", emoji: "🍛", .noun), VocabWord("chocolate", ms: "coklat", emoji: "🍫", .noun),
+        // Measured, not guessed: six real sentences were run through the
+        // board and every noun that had to be spelled letter by letter was
+        // recorded. These were among them. Malay unverified.
+        VocabWord("breakfast", ms: "sarapan", emoji: "🥐", .noun),
+        VocabWord("lunch", ms: "makan tengah hari", emoji: "🍱", .noun),
+        VocabWord("dinner", ms: "makan malam", emoji: "🍲", .noun),
     ]),
     Category(en: "Places", ms: "Tempat", words: [
         VocabWord("home", ms: "rumah", emoji: "🏠", .noun), VocabWord("school", ms: "sekolah", emoji: "🏫", .noun),
@@ -145,6 +152,9 @@ let vocabulary: [Category] = [
         VocabWord("idea", emoji: "💡", .noun), VocabWord("cool", ms: "menarik", emoji: "😎", .descriptor),
         VocabWord("funny", ms: "kelakar", emoji: "😂", .descriptor), VocabWord("new", ms: "baru", emoji: "✨", .descriptor),
         VocabWord("finished", ms: "siap", emoji: "🏁", .descriptor), VocabWord("show you", ms: "tunjuk", emoji: "👀", .social),
+        VocabWord("story", ms: "cerita", emoji: "📖", .noun),
+        VocabWord("song", ms: "lagu", emoji: "🎶", .noun),
+        VocabWord("homework", ms: "kerja rumah", emoji: "📓", .noun),
     ]),
     // Browsing is its own vocabulary: the words that move you around a page
     // or a video are almost none of the words you use to talk to a person,
@@ -239,6 +249,11 @@ let seedBigrams: [Lang: [String: [String]]] = [
         "eat": ["rice", "chicken", "now"],
         "drink": ["water", "juice", "tea"],
         "draw": ["monster", "picture", "now"],
+        "watch": ["video", "music", "game"],
+        "write": ["story", "homework", "song"],
+        "read": ["story", "comic", "news"],
+        "play": ["game", "music", "outside"],
+        "have": ["lunch", "dinner", "time"],
         "my": ["Mum", "friend", "idea"],
         "thank": ["you"],
         "how": ["are you"],

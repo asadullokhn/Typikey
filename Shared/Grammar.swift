@@ -135,7 +135,22 @@ enum Grammar {
     private static let baseTriggers: Set<String> = [
         "to", "will", "would", "can", "could", "should", "must", "may", "might", "shall",
         "don't", "doesn't", "didn't", "won't", "can't", "let", "please", "help",
+        // Do-support. Missing these produced "do you are" and "did he
+        // goes", because nothing recognised the auxiliary standing in
+        // front of the subject.
+        "do", "does", "did",
     ]
+
+    /// Everything that can govern a following verb, in one set.
+    ///
+    /// It exists because there were two lists — this one and a copy inside
+    /// SentenceShape — and they disagreed about do-support. One list, so
+    /// they cannot drift again.
+    static let verbGovernors: Set<String> =
+        baseTriggers
+            .union(progressiveAuxiliaries)
+            .union(perfectAuxiliaries)
+            .union(["be", "been"])
 
     /// Subjects that take the -s form. Subjects say who, never when, so
     /// after one of these the selected tense decides the form.
@@ -223,10 +238,7 @@ enum Grammar {
     private static func governor(of subject: String, in words: [String]) -> String? {
         guard words.count >= 2, subjects.contains(subject) else { return nil }
         let before = words[words.count - 2]
-        guard baseTriggers.contains(before)
-                || progressiveAuxiliaries.contains(before)
-                || perfectAuxiliaries.contains(before)
-        else { return nil }
+        guard verbGovernors.contains(before) else { return nil }
         return before
     }
 

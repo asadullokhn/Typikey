@@ -75,6 +75,20 @@ final class GrammarTests: XCTestCase {
                       "after 'Can he' the verb keys must read 'go' — 'can he goes' is not English")
         XCTAssertFalse(app.staticTexts["goes"].exists,
                        "third-person agreement does not survive a modal")
+
+        gridKey(app, "Clear")?.tap()
+        if app.staticTexts["tap again"].waitForExistence(timeout: 2) {
+            app.staticTexts["tap again"].tap()
+        }
+
+        // Do-support, which the first version of this fix missed entirely
+        // because the auxiliary list it consulted had no "do" in it.
+        gridKey(app, "do")?.tap()
+        gridKey(app, "you")?.tap()
+        XCTAssertTrue(app.staticTexts["be"].waitForExistence(timeout: 5),
+                      "after 'Do you' the copula must read 'be' — 'do you are' is not English")
+        XCTAssertFalse(app.staticTexts["are"].exists,
+                       "'are' has no place after do-support either")
     }
 
     // Tense comes from the sentence's own time words, because the board

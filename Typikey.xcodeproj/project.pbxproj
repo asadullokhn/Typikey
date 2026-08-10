@@ -38,6 +38,7 @@
 		8DB6578CF757DE30411A8B1C /* TypikeyBroadcast.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = FCCC334E9988B617A6DCEEFB /* TypikeyBroadcast.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		8DCAB8AED145D552F0DE427A /* SentenceShape.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99954A75E4A3461FE7370C40 /* SentenceShape.swift */; };
 		99396FC77FA01B9D55E83B4A /* SettingsCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36CD9F9B0EFD527380AD5B60 /* SettingsCard.swift */; };
+		9B31A68D7D7AC436AD4BD1F3 /* RealSentencesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1DB53826162CA69123A28D6 /* RealSentencesTests.swift */; };
 		9C862CD8CF1738B5038563A8 /* MyWordsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 167A2498198387A80DD85FC1 /* MyWordsTests.swift */; };
 		A253C341C35E51D2E7AB2B10 /* SentenceShape.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99954A75E4A3461FE7370C40 /* SentenceShape.swift */; };
 		A870D89EC249EBF210079F8E /* KeyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6779423A582866E09D08DAC3 /* KeyView.swift */; };
@@ -152,6 +153,7 @@
 		D977763A87F89006584A3902 /* KeyboardHeightTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardHeightTests.swift; sourceTree = "<group>"; };
 		DBD94BC6DECDCB5E20AD5726 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		E09F72FA2F6C3C2635B039EE /* ScreenLearningIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenLearningIntent.swift; sourceTree = "<group>"; };
+		E1DB53826162CA69123A28D6 /* RealSentencesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RealSentencesTests.swift; sourceTree = "<group>"; };
 		E6C422799418AAD787A25061 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		E79FDBE127D71069003D5477 /* Grammar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Grammar.swift; sourceTree = "<group>"; };
 		EA33C5A4EB0347311C38406D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
@@ -252,6 +254,7 @@
 				167A2498198387A80DD85FC1 /* MyWordsTests.swift */,
 				2F4B7442BDF523BAC5B0E4C2 /* PinnedFrameTests.swift */,
 				7C9F1F5FD052E4FFDD9A120E /* PrivateModeTests.swift */,
+				E1DB53826162CA69123A28D6 /* RealSentencesTests.swift */,
 				1C34EE826A9C2E88FA6D179E /* ScreenLearningTests.swift */,
 				0B6F6FA453ABBF1284665231 /* SpareKeysTests.swift */,
 			);
@@ -527,6 +530,7 @@
 				9C862CD8CF1738B5038563A8 /* MyWordsTests.swift in Sources */,
 				FB44BAC1AC5A3F6C433CD88D /* PinnedFrameTests.swift in Sources */,
 				E874D9C73C6F3FA438850492 /* PrivateModeTests.swift in Sources */,
+				9B31A68D7D7AC436AD4BD1F3 /* RealSentencesTests.swift in Sources */,
 				279A952F2D8694A16DDE8465 /* ScreenLearningTests.swift in Sources */,
 				7E40DDA02AAA9CE053A56FBD /* SpareKeysTests.swift in Sources */,
 			);
@@ -657,7 +661,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 31;
+				CURRENT_PROJECT_VERSION = 34;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = Y7ZZ5G2T3Y;
 				ENABLE_NS_ASSERTIONS = NO;
@@ -737,7 +741,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 31;
+				CURRENT_PROJECT_VERSION = 34;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = Y7ZZ5G2T3Y;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
