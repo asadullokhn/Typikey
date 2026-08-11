@@ -18,11 +18,16 @@ struct PlainTextView: UIViewRepresentable {
     @Binding var text: String
     var placeholder: String
     var minHeight: CGFloat = 120
+    var font: UIFont = .preferredFont(forTextStyle: .title3)
+    /// Called when the field takes or gives up the keyboard. The home
+    /// screen draws the board where the keyboard will appear, so it needs
+    /// to know when the real one is about to cover it.
+    var onFocusChange: (Bool) -> Void = { _ in }
 
     func makeUIView(context: Context) -> UITextView {
         let view = UITextView()
         view.delegate = context.coordinator
-        view.font = .preferredFont(forTextStyle: .title3)
+        view.font = font
         view.backgroundColor = .clear
         view.textContainerInset = .zero
         view.textContainer.lineFragmentPadding = 0
@@ -33,7 +38,7 @@ struct PlainTextView: UIViewRepresentable {
 
         let label = UILabel()
         label.text = placeholder
-        label.font = .preferredFont(forTextStyle: .title3)
+        label.font = font
         label.textColor = .placeholderText
         label.numberOfLines = 0
         label.translatesAutoresizingMaskIntoConstraints = false
@@ -54,17 +59,24 @@ struct PlainTextView: UIViewRepresentable {
         context.coordinator.placeholderLabel?.isHidden = !text.isEmpty
     }
 
-    func makeCoordinator() -> Coordinator { Coordinator(text: $text) }
+    func makeCoordinator() -> Coordinator { Coordinator(text: $text, focus: onFocusChange) }
 
     final class Coordinator: NSObject, UITextViewDelegate {
         private let text: Binding<String>
+        private let focus: (Bool) -> Void
         var placeholderLabel: UILabel?
 
-        init(text: Binding<String>) { self.text = text }
+        init(text: Binding<String>, focus: @escaping (Bool) -> Void) {
+            self.text = text
+            self.focus = focus
+        }
 
         func textViewDidChange(_ textView: UITextView) {
             text.wrappedValue = textView.text
             placeholderLabel?.isHidden = !textView.text.isEmpty
         }
+
+        func textViewDidBeginEditing(_ textView: UITextView) { focus(true) }
+        func textViewDidEndEditing(_ textView: UITextView) { focus(false) }
     }
 }

@@ -8,7 +8,9 @@ import XCTest
 final class ConversationDemoTests: XCTestCase {
     func testReadingTheConversationLearnsItsWords() {
         let app = XCUIApplication()
+        app.launchArguments += ["-skipOnboarding"]
         app.launch()
+        app.openSetup()
 
         let link = app.staticTexts["Practice conversation"]
         XCTAssertTrue(link.waitForExistence(timeout: 5), "practice conversation card not found")

@@ -1,32 +1,53 @@
 import SwiftUI
 
-/// The board editor, from Keiko's design.
+/// The app's home screen, as Keiko drew it.
 ///
-/// The panel is not a picture of the keyboard — it is the keyboard's own
+/// One screen, not a list of cards leading to one. The page controls sit
+/// across the top, the practice field is the whole middle, and the board
+/// occupies the bottom — exactly where the keyboard rises, which is why
+/// the design's first screen shows the real keyboard there and the rest
+/// show the editor. Tap the field and the board steps aside for the thing
+/// it is a picture of.
+///
+/// The panel is not a picture in the loose sense: it is the keyboard's own
 /// geometry, eleven columns by four rows, pinned column and all. Editing a
 /// board at some other size is guesswork, and the person who pays for a
 /// wrong guess is the one who has to find the word again with a joystick.
 ///
-/// Two modes, as drawn. Normally the page is just shown. `Edit Page` turns
-/// blue, a fourth `Done` appears, and every content key becomes tappable:
-/// tap one and you get the three things that decide what a key is — what
-/// it says, what it looks like, and where it goes.
-struct PagesView: View {
+/// Two modes, as drawn. Normally the page is just shown, and keys that
+/// open other pages open them here too. `Edit Page` turns blue, `Setup`
+/// becomes `Done`, and every content key becomes tappable: tap one and you
+/// get the three things that decide what a key is — what it says, what it
+/// looks like, and where it goes.
+struct BoardHomeView: View {
     @StateObject private var store = PageStore()
     @State private var editing = false
     @State private var selected: Int?
     @State private var confirmingDelete = false
+    @State private var practiceText = ""
+    @State private var typing = false
+    @State private var showingSetup = false
+    @State private var showingOnboarding = false
+    @AppStorage("onboardingSeen") private var onboardingSeen = false
 
     var body: some View {
-        VStack(spacing: 20) {
+        VStack(spacing: 18) {
             if !store.keyboardCanSeeEdits { fullAccessWarning }
             actions
             header
-            board
+            Spacer(minLength: 0)
+            // While the real keyboard is up it covers this exactly, so
+            // drawing a second board underneath it is noise at best and a
+            // wrong picture at worst.
+            if !typing {
+                pagePicker
+                board
+            }
         }
         .padding(20)
         .background(Color(.systemGray3))
-        .navigationBarTitleDisplayMode(.inline)
+        // The board is meant to be covered, not shoved upwards.
+        .ignoresSafeArea(.keyboard, edges: .bottom)
         // Cancel is the prominent one, as drawn. The dangerous button
         // should never be the easy one to hit by accident.
         .alert("Are you sure you want to delete?", isPresented: $confirmingDelete) {
@@ -34,6 +55,17 @@ struct PagesView: View {
             Button("Cancel", role: .cancel) {}
         } message: {
             Text("This will delete the keyboard page along with all its contents or buttons.")
+        }
+        .sheet(isPresented: $showingSetup) { SetupView() }
+        .fullScreenCover(isPresented: $showingOnboarding) { OnboardingView() }
+        // First run only, and never under UI test: the suite drives this
+        // screen straight into the keyboard, and a cover over it would be
+        // testing the cover.
+        .onAppear {
+            guard !onboardingSeen,
+                  !ProcessInfo.processInfo.arguments.contains("-skipOnboarding") else { return }
+            onboardingSeen = true
+            showingOnboarding = true
         }
     }
 
@@ -43,24 +75,33 @@ struct PagesView: View {
     /// fails silently, and somebody could spend an hour on a board that
     /// was never going to appear. Say so before the hour, not after.
     private var fullAccessWarning: some View {
-        Label {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("The keyboard cannot see these boards yet")
-                    .font(.headline)
-                Text("Settings > General > Keyboard > Keyboards > Typikey > Allow Full Access. "
-                     + "Until then Typikey keeps using its built-in boards.")
-                    .font(.subheadline)
+        Button { showingOnboarding = true } label: {
+            Label {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("The keyboard cannot see these boards yet")
+                        .font(.headline)
+                    Text("Settings > General > Keyboard > Keyboards > Typikey > Allow Full Access. "
+                         + "Until then Typikey keeps using its built-in boards.")
+                        .font(.subheadline)
+                }
+            } icon: {
+                Image(systemName: "exclamationmark.triangle.fill")
             }
-        } icon: {
-            Image(systemName: "exclamationmark.triangle.fill")
+            .padding(14)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.orange.opacity(0.18), in: RoundedRectangle(cornerRadius: 12))
         }
-        .padding(14)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.orange.opacity(0.18), in: RoundedRectangle(cornerRadius: 12))
+        .buttonStyle(.plain)
+        .foregroundStyle(.primary)
     }
 
     // MARK: Across the top
 
+    /// Four slots in both modes, so nothing moves when you start editing.
+    /// The fourth is the way out of whichever mode you are in: `Done` while
+    /// editing, and otherwise `Setup` — the design draws no door to the
+    /// permissions and settings, and a screen you cannot leave is not a
+    /// home screen.
     private var actions: some View {
         HStack(spacing: 12) {
             ActionCard(title: "Delete Page", systemImage: "trash", tint: .red,
@@ -71,8 +112,13 @@ struct PagesView: View {
                 store.addPage()
                 editing = true
             }
+            // Home is not editable: the keyboard rebuilds it from the
+            // sentence so far, so there is nothing fixed here to edit.
+            // Categories are where arranging pays off, and where it is
+            // safe (team decision, Ali, 11 Aug 2026).
             ActionCard(title: "Edit Page", systemImage: "square.and.pencil",
-                       tint: .accentColor, filled: editing) {
+                       tint: .accentColor, filled: editing,
+                       enabled: store.canEditCurrentPage) {
                 editing = true
             }
             if editing {
@@ -81,6 +127,11 @@ struct PagesView: View {
                     editing = false
                     selected = nil
                 }
+            } else {
+                ActionCard(title: "Setup", systemImage: "gearshape",
+                           tint: .accentColor, filled: false) {
+                    showingSetup = true
+                }
             }
         }
     }
@@ -88,8 +139,11 @@ struct PagesView: View {
     /// The instruction only exists while it is true, and the page's name
     /// sits beside it because renaming a page you cannot see the name of
     /// is how two pages end up called the same thing.
+    ///
+    /// Out of edit mode this whole row is the practice field, which is the
+    /// first thing anyone should do with a keyboard app: type with it.
     private var header: some View {
-        HStack(alignment: .top) {
+        HStack(alignment: .top, spacing: 20) {
             if editing {
                 Text("Tap a button\nto edit it.")
                     .font(.system(size: 30, weight: .bold))
@@ -97,76 +151,102 @@ struct PagesView: View {
                 Image(systemName: "arrow.turn.right.down")
                     .font(.title)
                     .foregroundStyle(.white)
+                Spacer()
+                VStack(spacing: 2) {
+                    Text("Name of Page")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                    TextField("Name of Page", text: $store.currentName)
+                        .font(.title3.weight(.semibold))
+                        .multilineTextAlignment(.center)
+                }
+                .padding(.horizontal, 24)
+                .padding(.vertical, 10)
+                .background(Color(.systemBackground), in: RoundedRectangle(cornerRadius: 12))
             } else {
-                Text(store.previewText.isEmpty ? "Tap a key from your keyboard." : store.previewText)
-                    .font(.system(size: 32, weight: .bold))
-                    .foregroundStyle(.white.opacity(0.55))
-                    .lineLimit(2)
+                VStack(alignment: .leading, spacing: 6) {
+                    PlainTextView(text: $practiceText,
+                                  placeholder: "Tap a key from your keyboard.",
+                                  minHeight: 44,
+                                  font: .systemFont(ofSize: 30, weight: .bold),
+                                  onFocusChange: { typing = $0 })
+                    Divider().overlay(Color.white.opacity(0.5))
+                }
             }
-            Spacer()
-            VStack(spacing: 2) {
-                Text("Name of Page")
-                    .font(.subheadline)
+        }
+    }
+
+    /// Which board is on screen. The design labels it — "List of
+    /// Categories" in Keiko's first screen — and making that label the way
+    /// you change page adds no chrome she did not draw. Something has to
+    /// do it: a page you add and cannot navigate off is a trap.
+    private var pagePicker: some View {
+        Menu {
+            ForEach(store.pages) { page in
+                Button {
+                    store.go(to: page.id)
+                    editing = false
+                    selected = nil
+                } label: {
+                    Label(page.name,
+                          systemImage: page.id == store.currentPageID ? "checkmark" : "square.grid.2x2")
+                }
+            }
+        } label: {
+            HStack(spacing: 6) {
+                Text(store.currentName).font(.headline)
+                Image(systemName: "chevron.down").font(.footnote.weight(.semibold))
+            }
+            .foregroundStyle(.primary)
+        }
+        .frame(maxWidth: .infinity)
+        .overlay(alignment: .trailing) {
+            if store.hiddenWordCount > 0 {
+                Text("\(store.hiddenWordCount) more word\(store.hiddenWordCount == 1 ? "" : "s") "
+                     + "than this page has room for")
+                    .font(.footnote)
                     .foregroundStyle(.secondary)
-                TextField("Name of Page", text: $store.currentName)
-                    .font(.title3.weight(.semibold))
-                    .multilineTextAlignment(.center)
-                    .disabled(!editing)
             }
-            .padding(.horizontal, 24)
-            .padding(.vertical, 10)
-            .background(Color(.systemBackground).opacity(editing ? 1 : 0.6),
-                        in: RoundedRectangle(cornerRadius: 12))
         }
     }
 
     // MARK: The keyboard, at its own geometry
 
+    /// Eleven columns by four rows of squares, sized by the width they are
+    /// given. The pinned column is the keyboard's own — identical on every
+    /// board by design (invariant 9) — and the editor shows it without
+    /// offering to change it.
     private var board: some View {
-        GeometryReader { geometry in
-            let spacing: CGFloat = 6
-            let width = (geometry.size.width - spacing * 10) / 11
-            let height = min(width, (geometry.size.height - spacing * 3) / 4)
-
-            HStack(alignment: .top, spacing: spacing) {
-                // The pinned column, which the editor shows and does not
-                // let you change: these four are the keyboard's own
-                // controls, not the page's, and they are identical on
-                // every board by design (invariant 9).
-                VStack(spacing: spacing) {
-                    ForEach(PageStore.pinned, id: \.self) { control in
-                        ControlKey(label: control, width: width, height: height)
-                    }
-                }
-                VStack(spacing: spacing) {
-                    ForEach(0..<KeyboardPage.rows, id: \.self) { row in
-                        HStack(spacing: spacing) {
-                            ForEach(0..<KeyboardPage.columns, id: \.self) { column in
-                                cell(row: row, column: column, width: width, height: height)
-                            }
-                        }
+        Grid(horizontalSpacing: 6, verticalSpacing: 6) {
+            ForEach(0..<KeyboardPage.rows, id: \.self) { row in
+                GridRow {
+                    let pinned = PageStore.pinned[row]
+                    ControlKey(label: pinned,
+                               action: pinned == "Home" ? { store.goHome() } : nil)
+                    ForEach(0..<KeyboardPage.columns, id: \.self) { column in
+                        cell(row: row, column: column)
                     }
                 }
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .frame(height: 420)
         .padding(12)
         .background(Color(.systemBackground), in: RoundedRectangle(cornerRadius: 18))
     }
 
     @ViewBuilder
-    private func cell(row: Int, column: Int, width: CGFloat, height: CGFloat) -> some View {
+    private func cell(row: Int, column: Int) -> some View {
         let index = row * KeyboardPage.columns + column
         if let fixed = PageStore.fixedControl(row: row, column: column) {
-            ControlKey(label: fixed, width: width, height: height, tint: PageStore.tint(for: fixed))
+            ControlKey(label: fixed, tint: PageStore.tint(for: fixed))
         } else {
             ButtonKey(button: store.button(at: index),
-                      width: width, height: height,
                       editing: editing,
                       isSelected: selected == index) {
-                guard editing else { return }
-                selected = (selected == index) ? nil : index
+                if editing {
+                    selected = (selected == index) ? nil : index
+                } else if let destination = store.button(at: index)?.destination {
+                    store.go(to: destination)
+                }
             }
             .popover(isPresented: Binding(
                 get: { selected == index },
@@ -305,34 +385,43 @@ private struct SymbolPicker: View {
 
 // MARK: - Keys
 
+/// A square that fills whatever column width the grid hands it.
+private extension View {
+    func keyShape(_ fill: Color) -> some View {
+        frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(fill, in: RoundedRectangle(cornerRadius: 8))
+            .aspectRatio(1, contentMode: .fit)
+    }
+}
+
 private struct ControlKey: View {
     let label: String
-    let width: CGFloat
-    let height: CGFloat
     var tint: Color = Color(.systemGray2)
+    var action: (() -> Void)?
 
     var body: some View {
-        Group {
-            if label.hasPrefix("sf:") {
-                Image(systemName: String(label.dropFirst(3)))
-                    .font(.system(size: min(width, height) * 0.42, weight: .semibold))
-            } else {
-                Text(label)
-                    .font(.system(size: min(width, height) * 0.24, weight: .semibold))
-                    .multilineTextAlignment(.center)
-                    .minimumScaleFactor(0.5)
+        Button { action?() } label: {
+            Group {
+                if label.hasPrefix("sf:") {
+                    Image(systemName: String(label.dropFirst(3)))
+                        .font(.title2.weight(.semibold))
+                } else {
+                    Text(label)
+                        .font(.system(size: 17, weight: .semibold))
+                        .multilineTextAlignment(.center)
+                        .minimumScaleFactor(0.4)
+                }
             }
+            .keyShape(tint)
+            .foregroundStyle(.primary)
         }
-        .frame(width: width, height: height)
-        .background(tint, in: RoundedRectangle(cornerRadius: 8))
-        .foregroundStyle(.primary)
+        .buttonStyle(.plain)
+        .disabled(action == nil)
     }
 }
 
 private struct ButtonKey: View {
     let button: BoardButton?
-    let width: CGFloat
-    let height: CGFloat
     let editing: Bool
     let isSelected: Bool
     let tap: () -> Void
@@ -342,16 +431,15 @@ private struct ButtonKey: View {
             VStack(spacing: 2) {
                 if let label = button?.label, !label.isEmpty {
                     Text(label)
-                        .font(.system(size: min(width, height) * 0.22, weight: .semibold))
-                        .minimumScaleFactor(0.5)
+                        .font(.system(size: 17, weight: .semibold))
+                        .minimumScaleFactor(0.4)
                         .lineLimit(1)
                 }
                 if let image = button?.image {
-                    Text(image).font(.system(size: min(width, height) * 0.4))
+                    Text(image).font(.title2)
                 }
             }
-            .frame(width: width, height: height)
-            .background(PageStore.tint(forWord: button?.label), in: RoundedRectangle(cornerRadius: 8))
+            .keyShape(PageStore.tint(forWord: button?.label))
             .overlay(
                 RoundedRectangle(cornerRadius: 8)
                     .stroke(isSelected ? Color.white : Color.black.opacity(button == nil ? 0 : 0.7),
@@ -359,7 +447,9 @@ private struct ButtonKey: View {
             )
         }
         .buttonStyle(.plain)
-        .disabled(!editing)
+        // Out of edit mode only the doorways do anything, which is how the
+        // keyboard itself behaves.
+        .disabled(!editing && button?.destination == nil)
     }
 }
 

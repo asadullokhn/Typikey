@@ -144,6 +144,7 @@ final class PinnedFrameTests: XCTestCase {
 
     private func launchToTypikey() -> XCUIApplication {
         let app = XCUIApplication()
+        app.launchArguments += ["-skipOnboarding"]
         app.launch()
         XCUIDevice.shared.orientation = .portrait
         let field = practiceField(in: app)

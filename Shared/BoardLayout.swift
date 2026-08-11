@@ -138,6 +138,31 @@ struct KeyboardPage: Codable, Equatable, Identifiable {
         self.cells = cells
         self.cells += Array(repeating: nil, count: max(0, Self.cellCount - self.cells.count))
     }
+
+    /// A page seeded from a list of words, laid around the keyboard's own
+    /// furniture.
+    ///
+    /// `pageRows` draws Categories, abc, Enter, hide-keyboard and → over
+    /// fixed cells after the page's own keys, so a word placed in one of
+    /// them is a word nobody ever sees. Filling those cells cost four
+    /// words of the shipped home board — `I` and `you` among them — before
+    /// anyone noticed, which is the same way the `be` key was lost.
+    init(id: String, name: String, words: [BoardButton]) {
+        var cells = [BoardButton?](repeating: nil, count: Self.cellCount)
+        var remaining = words.makeIterator()
+        for index in 0..<Self.cellCount where !Self.reservedCells.contains(index) {
+            cells[index] = remaining.next()
+        }
+        self.init(id: id, name: name, cells: cells)
+    }
+
+    /// Row-major indices of the cells the keyboard keeps for itself:
+    /// Categories and abc at the top left, Enter's two cells, and the
+    /// hide-keyboard and → pair at the bottom right. `PageStore` draws the
+    /// same six, and the two lists have to agree.
+    static let reservedCells: Set<Int> = [0, 1, 18, 19, 38, 39]
+
+    static var freeCellCount: Int { cellCount - reservedCells.count }
 }
 
 extension BoardLayout {
@@ -151,10 +176,10 @@ extension BoardLayout {
     static var builtInPages: [KeyboardPage] {
         let home = KeyboardPage(
             id: "home", name: "Keyboard Home",
-            cells: BoardPlan.homeSelection.map { BoardButton(id: "home.\($0)", label: $0) })
+            words: BoardPlan.homeSelection.map { BoardButton(id: "home.\($0)", label: $0) })
         return [home] + vocabulary.map { category in
             KeyboardPage(id: category.name, name: category.name,
-                         cells: category.words.map {
+                         words: category.words.map {
                              BoardButton(id: "\(category.name).\($0.text)",
                                          label: $0.text, image: $0.emoji)
                          })

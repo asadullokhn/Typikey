@@ -243,6 +243,11 @@ final class KeyboardViewController: UIInputViewController {
     private let completionEngine = CompletionEngine()
     private var completionWords: [String] = []
 
+    /// Precomputed by the app from a model the keyboard cannot reach.
+    /// nil whenever the feature is off, no table has been built, or Full
+    /// Access is missing — all three land on the shipped board.
+    private var assistTable: PredictionTable?
+
     /// Ways of saying what the finished sentence seems to mean, offered
     /// after the question key and cleared by anything else. Held here
     /// rather than recomputed on every rebuild because it is an answer to
@@ -260,6 +265,11 @@ final class KeyboardViewController: UIInputViewController {
         learnedBigrams = (store.dictionary(forKey: "bigrams") as? [String: Int]) ?? [:]
         myWords = (store.array(forKey: "myWords") as? [String]) ?? []
         autoFileCache = (store.dictionary(forKey: "wordFiling") as? [String: String]) ?? [:]
+        // A table the app precomputed, if the family turned that on. Read,
+        // never written, and never fetched — the keyboard makes no requests
+        // (invariant 5). Absent is the normal case and costs nothing.
+        assistTable = store.bool(forKey: PredictionTable.enabledKey)
+            ? PredictionTable.load(from: store) : nil
         reloadScreenWords()
         size = KeyboardSize.clamped(Preferences.keyboardSize(in: store))
 
@@ -855,7 +865,8 @@ final class KeyboardViewController: UIInputViewController {
             learning: .init(usage: usageCounts, bigrams: learnedBigrams,
                             screen: screenWords, mine: myWords),
             followsSentence: boardFollowsSentence,
-            smartGrammar: smartGrammar)
+            smartGrammar: smartGrammar,
+            assist: assistTable)
     }
 
 
@@ -1865,7 +1876,20 @@ final class KeyboardViewController: UIInputViewController {
     }
 
     private func requestPhraseCompletion() {
-        guard isWordLevel, !completionEngine.isDegraded else {
+        guard isWordLevel else {
+            completionWords = []
+            return
+        }
+        // A precomputed sentence wins when there is one. It came from a
+        // stronger model than anything that fits on this device, it was
+        // built from the contexts he actually types, and looking it up
+        // costs nothing — where the on-device engine has to be asked and
+        // answers a moment later, or not at all.
+        if let assisted = assistTable?.completion(after: contextBefore()), !assisted.isEmpty {
+            completionWords = assisted
+            return
+        }
+        guard !completionEngine.isDegraded else {
             completionWords = []
             return
         }

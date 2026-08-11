@@ -134,6 +134,7 @@ final class RealSentencesTests: XCTestCase {
 
     private func launchToKeyboard() -> XCUIApplication {
         let app = XCUIApplication()
+        app.launchArguments += ["-skipOnboarding"]
         app.launch()
         XCUIDevice.shared.orientation = .portrait
         let field = app.textFields.firstMatch.exists ? app.textFields.firstMatch : app.textViews.firstMatch

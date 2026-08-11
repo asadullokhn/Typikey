@@ -29,6 +29,7 @@ final class KeyboardHeightTests: XCTestCase {
 
     func testKeyboardSizeStableAcrossCyclesAndRotation() {
         let app = XCUIApplication()
+        app.launchArguments += ["-skipOnboarding"]
         app.launch()
         XCUIDevice.shared.orientation = .portrait
 
