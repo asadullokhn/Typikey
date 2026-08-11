@@ -77,6 +77,15 @@ struct Keyboard {
     /// words for one tap — so a measurement blind to them is blind to the
     /// keyboard's best trick.
     mutating func say(_ remaining: [String]) -> (consumed: Int, trace: String) {
+        // The long chip: a whole message the app precomputed, taken in one
+        // tap. Counted only when the completion matches every word he was
+        // about to write — tapping it inserts all of them, so a partial
+        // match is not a saving, it is a sentence he has to undo.
+        if let words = plan.assist?.completion(after: text), words.count >= 2,
+           words.count <= remaining.count,
+           zip(words, remaining).allSatisfy({ $0.lowercased() == $1.lowercased() }) {
+            return (words.count, charge(1, words.joined(separator: " "), via: "assist phrase"))
+        }
         for length in stride(from: min(4, remaining.count), through: 2, by: -1) {
             let phrase = remaining.prefix(length).joined(separator: " ")
             if visibleWords().contains(phrase.lowercased()) {
@@ -96,6 +105,12 @@ struct Keyboard {
     /// strip of screen it occupies.
     private mutating func say(one word: String) -> String {
         let target = word.lowercased()
+
+        // The short chip beside the long one: the first word of the
+        // precomputed message, for when only its opening is wanted.
+        if plan.assist?.completion(after: text)?.first?.lowercased() == target {
+            return charge(1, word, via: "assist word")
+        }
 
         // The suggestion bar: one tap from any level, no navigation, and
         // it leaves you exactly where you were.
@@ -269,6 +284,28 @@ func modelLearning() -> BoardPlan.Learning {
     return BoardPlan.Learning(bigrams: bigrams)
 }
 
+/// A table exactly as the app writes it and the keyboard reads it —
+/// continuations and whole messages together. `--model-table` measures the
+/// old shape (bare anchor→words) through learned bigrams; this measures the
+/// artifact we would actually ship.
+func assistTable() -> PredictionTable? {
+    let arguments = CommandLine.arguments
+    guard let flag = arguments.firstIndex(of: "--assist-table"), flag + 1 < arguments.count
+    else { return nil }
+    guard let data = try? Data(contentsOf: URL(fileURLWithPath: arguments[flag + 1])),
+          let table = try? JSONDecoder().decode(PredictionTable.self, from: data)
+    else {
+        print("could not read the assist table at \(arguments[flag + 1])")
+        return nil
+    }
+    print("assist table: \(table.continuations.count) contexts, "
+          + "\(table.phrases.count) with whole messages, from \(table.source)")
+    return table
+}
+
+let assist = assistTable()
+let assistWeight = CommandLine.arguments.firstIndex(of: "--assist-weight")
+    .flatMap { $0 + 1 < CommandLine.arguments.count ? Int(CommandLine.arguments[$0 + 1]) : nil } ?? 2
 let learning = modelLearning()
 var totalTaps = 0
 var totalLetters = 0
@@ -276,7 +313,8 @@ var allSpelled: [String: Int] = [:]
 var lines: [String] = []
 
 for entry in sentences {
-    var keyboard = Keyboard(plan: BoardPlan(learning: learning))
+    var keyboard = Keyboard(plan: BoardPlan(learning: learning,
+                                            assist: assist, assistWeight: assistWeight))
     var trace: [String] = []
     var words = entry.text.split(separator: " ").map(String.init)
     while !words.isEmpty {
