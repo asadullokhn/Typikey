@@ -125,6 +125,7 @@ final class GrammarTests: XCTestCase {
 
     private func launchToKeyboard() -> XCUIApplication {
         let app = XCUIApplication()
+        app.launchArguments += ["-skipOnboarding"]
         app.launch()
 
         let field = app.textViews.firstMatch.exists ? app.textViews.firstMatch : app.textFields.firstMatch

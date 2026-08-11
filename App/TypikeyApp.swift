@@ -12,7 +12,7 @@ struct TypikeyApp: App {
 
     var body: some Scene {
         WindowGroup {
-            HomeView()
+            BoardHomeView()
         }
     }
 
@@ -109,20 +109,6 @@ private struct KeyTileMotif: View {
     private func tile(_ color: Color) -> some View {
         RoundedRectangle(cornerRadius: 8, style: .continuous)
             .fill(color)
-    }
-}
-
-struct TryItCard: View {
-    @Binding var practiceText: String
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("Try it here")
-                .font(.headline)
-            PlainTextView(text: $practiceText,
-                          placeholder: "Tap here, hold the globe key, choose Typikey")
-        }
-        .homeCardStyle()
     }
 }
 

@@ -6,7 +6,9 @@ import XCTest
 final class PrivateModeTests: XCTestCase {
     func testPrivateModeStopsLearning() {
         let app = XCUIApplication()
+        app.launchArguments += ["-skipOnboarding"]
         app.launch()
+        app.openSetup()
 
         let toggle = app.switches["privateModeToggle"]
         for _ in 0..<4 where !toggle.exists {
@@ -18,9 +20,9 @@ final class PrivateModeTests: XCTestCase {
         }
         XCTAssertEqual(toggle.value as? String, "1", "private mode should be on")
 
-        // Type into the practice field with Typikey itself.
-        app.swipeDown()
-        app.swipeDown()
+        // Type into the practice field with Typikey itself — back out on
+        // the home screen, where the field now is.
+        app.closeSetup()
         let field = app.textViews.firstMatch
         XCTAssertTrue(field.waitForExistence(timeout: 5), "practice field not found")
         field.tap()

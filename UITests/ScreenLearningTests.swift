@@ -7,18 +7,22 @@ import XCTest
 // broadcast extension uses and report words back. That covers everything
 // in the OCR pipeline except ReplayKit's frame delivery.
 final class ScreenLearningTests: XCTestCase {
-    func testScreenLearningCardIsOnHomeScreen() {
+    func testScreenLearningCardIsInSetup() {
         let app = XCUIApplication()
+        app.launchArguments += ["-skipOnboarding"]
         app.launch()
+        app.openSetup()
 
         let title = app.staticTexts["Learn from my screen"]
         XCTAssertTrue(title.waitForExistence(timeout: 5),
-                      "screen-learning card should be on the home screen")
+                      "screen-learning card should be in Setup")
     }
 
     func testReaderSelfTestExtractsWords() {
         let app = XCUIApplication()
+        app.launchArguments += ["-skipOnboarding"]
         app.launch()
+        app.openSetup()
 
         // The reader test lives in the Diagnostics drawer — troubleshooting,
         // not daily use — so open that first.

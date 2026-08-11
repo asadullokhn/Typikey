@@ -12,16 +12,31 @@ import Combine
 final class PageStore: ObservableObject {
     @Published private(set) var pages: [KeyboardPage] = []
     @Published var currentIndex = 0
-    /// What the keyboard last typed into the app's practice field, so the
-    /// header shows the real thing rather than a mock-up.
-    @Published private(set) var previewText = ""
 
     private let store: UserDefaults
 
     init(store: UserDefaults = UserDefaults(suiteName: "group.com.asadullokh.ch5.typikey") ?? .standard) {
         self.store = store
-        pages = BoardLayout.loadPages(from: store)
+        pages = Self.withHome(BoardLayout.loadPages(from: store))
     }
+
+    /// Home is shown here and never written.
+    ///
+    /// The keyboard builds its own home board every time it draws — the
+    /// words it offers depend on the sentence so far, so a stored copy
+    /// would be a snapshot of one moment pinned over a board that is
+    /// supposed to move. Storing it would also freeze whatever the editor
+    /// happened to render, and the editor draws the keyboard's furniture
+    /// over four of the forty cells. Categories are editable; home stays as
+    /// it was (team decision, Ali, 11 Aug 2026).
+    private static func withHome(_ pages: [KeyboardPage]) -> [KeyboardPage] {
+        guard !pages.contains(where: { $0.id == homeID }),
+              let home = BoardLayout.builtInPages.first(where: { $0.id == homeID })
+        else { return pages }
+        return [home] + pages
+    }
+
+    private static let homeID = "home"
 
     /// Whether anything written here can actually reach the keyboard.
     ///
@@ -44,7 +59,24 @@ final class PageStore: ObservableObject {
     /// Home cannot be deleted. Every other page is reachable only through
     /// a key that points at it, but home is where the keyboard opens — a
     /// board with no home is a board with no way back.
-    var canDeleteCurrentPage: Bool { currentPageID != "home" }
+    var canDeleteCurrentPage: Bool { currentPageID != Self.homeID }
+
+    /// Nor edited. It is here to be looked at and navigated from.
+    var canEditCurrentPage: Bool { currentPageID != Self.homeID }
+
+    /// How many of the shipped category's words this page has no room for.
+    ///
+    /// A page holds 34 keys once the keyboard's own controls have their
+    /// cells, and three categories ship with more than that. The words that
+    /// do not fit are the rarest ones, and they are still reachable by
+    /// spelling — but a page quietly holding fewer words than the category
+    /// it is named after is exactly the kind of thing nobody notices until
+    /// he cannot say something.
+    var hiddenWordCount: Int {
+        guard let category = vocabulary.first(where: { $0.name == currentPageID })
+        else { return 0 }
+        return max(0, category.words.count - KeyboardPage.freeCellCount)
+    }
 
     func button(at index: Int) -> BoardButton? {
         guard pages.indices.contains(currentIndex),
@@ -68,6 +100,17 @@ final class PageStore: ObservableObject {
                 self.save()
             })
     }
+
+    /// Move around the boards the way the keyboard does — through the keys
+    /// themselves. A key that opens a page here opens it there, and Home
+    /// comes back, so there is one set of directions to learn rather than
+    /// two. Without this, adding a page strands you on it.
+    func go(to id: String) {
+        guard let index = pages.firstIndex(where: { $0.id == id }) else { return }
+        currentIndex = index
+    }
+
+    func goHome() { go(to: Self.homeID) }
 
     func addPage() {
         var n = pages.count
@@ -95,7 +138,9 @@ final class PageStore: ObservableObject {
         save()
     }
 
-    private func save() { BoardLayout.savePages(pages, to: store) }
+    private func save() {
+        BoardLayout.savePages(pages.filter { $0.id != Self.homeID }, to: store)
+    }
 
     // MARK: The keyboard's fixed furniture, which the editor shows and does not change
 

@@ -10,7 +10,9 @@ import XCTest
 final class MyWordsTests: XCTestCase {
     func testManualAddShowsInList() {
         let app = XCUIApplication()
+        app.launchArguments += ["-skipOnboarding"]
         app.launch()
+        app.openSetup()
 
         let link = app.staticTexts["My Words & Phrases"]
         if link.waitForExistence(timeout: 5) {

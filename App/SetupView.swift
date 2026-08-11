@@ -1,29 +1,30 @@
 import SwiftUI
 
-/// The app's home screen.
+/// Everything that is not the board: the permission, the settings, the
+/// help and the diagnostics.
 ///
-/// It used to be one flat run of cards, every one the same weight: setup
-/// steps you follow once sat above the things you open every day, and the
-/// three settings were scattered between them. Nothing said what to look
-/// at first.
+/// This used to be the app's first screen, and it was the wrong one — a
+/// keyboard app that opens on a list of cards makes you read before you
+/// can type. The board is the home screen now (`BoardHomeView`), and this
+/// is what `Setup` opens.
 ///
-/// Now it is grouped by what someone is actually here to do, in the order
+/// It is grouped by what someone is actually here to do, in the order
 /// they need it:
 ///
 /// 1. **Is it working?** — answered before anything else, because when the
 ///    answer is no every setting below it silently does nothing.
-/// 2. **Try it** — the practice field. Proof beats explanation.
-/// 3. **Every day** — My Words, screen learning, the practice conversation.
-/// 4. **Settings** — all three in one place instead of one card and a gap.
-/// 5. **Help** — setup steps and how the keyboard behaves, collapsed,
+/// 2. **Every day** — My Words, screen learning, the practice conversation.
+/// 3. **Settings** — all three in one place instead of one card and a gap.
+/// 4. **Help** — setup steps and how the keyboard behaves, collapsed,
 ///    because they are read once.
-/// 6. **Diagnostics** — last, where troubleshooting belongs.
+/// 5. **Diagnostics** — last, where troubleshooting belongs.
 ///
 /// Sections are labelled so the screen can be scanned rather than read,
 /// which matters for both readers here: Sayfullah drives a pointer at up
 /// to 30 seconds a tap, and Fadillah is usually looking for one thing.
-struct HomeView: View {
-    @State private var practiceText = ""
+struct SetupView: View {
+    @Environment(\.dismiss) private var dismiss
+    @State private var showingOnboarding = false
 
     var body: some View {
         NavigationStack {
@@ -33,13 +34,7 @@ struct HomeView: View {
 
                     ReadinessCard()
 
-                    section("Try it") {
-                        TryItCard(practiceText: $practiceText)
-                    }
-
                     section("Every day") {
-                        NavigationLink { PagesView() } label: { BoardsNavCard() }
-                            .buttonStyle(.plain)
                         NavigationLink { MyWordsView() } label: { MyWordsNavCard() }
                             .buttonStyle(.plain)
                         ScreenLearningCard()
@@ -49,9 +44,16 @@ struct HomeView: View {
 
                     section("Settings") {
                         SettingsCard()
+                        AIAssistCard()
                     }
 
                     section("Help") {
+                        Button { showingOnboarding = true } label: {
+                            NavCard(symbol: "checklist",
+                                    title: "Setup guide",
+                                    subtitle: "The two Settings switches Typikey needs, and whether they are on.")
+                        }
+                        .buttonStyle(.plain)
                         SetupStepsCard()
                         HowItTypesCard()
                     }
@@ -66,6 +68,12 @@ struct HomeView: View {
             }
             .background(Color(.systemGroupedBackground))
             .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { dismiss() }
+                }
+            }
+            .fullScreenCover(isPresented: $showingOnboarding) { OnboardingView() }
         }
         // Siri, Shortcuts and Back Tap land here: raise the broadcast sheet
         // so a training session is one confirming tap away. The short delay
@@ -132,14 +140,6 @@ struct NavCard: View {
         }
         .homeCardStyle()
         .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-    }
-}
-
-private struct BoardsNavCard: View {
-    var body: some View {
-        NavCard(symbol: "square.grid.2x2",
-                title: "Boards",
-                subtitle: "Arrange the category pages he sees, in the order he sees them.")
     }
 }
 
