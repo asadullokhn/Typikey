@@ -39,6 +39,9 @@ struct Keyboard {
     var text = ""
     var taps = 0
     var spelled: [String] = []
+    var predictionOpportunities = 0
+    var predictionHits = 0
+    var routeCounts: [String: Int] = [:]
 
     private var categories: [Category] { vocabulary }
 
@@ -77,15 +80,6 @@ struct Keyboard {
     /// words for one tap — so a measurement blind to them is blind to the
     /// keyboard's best trick.
     mutating func say(_ remaining: [String]) -> (consumed: Int, trace: String) {
-        // The long chip: a whole message the app precomputed, taken in one
-        // tap. Counted only when the completion matches every word he was
-        // about to write — tapping it inserts all of them, so a partial
-        // match is not a saving, it is a sentence he has to undo.
-        if let words = plan.assist?.completion(after: text), words.count >= 2,
-           words.count <= remaining.count,
-           zip(words, remaining).allSatisfy({ $0.lowercased() == $1.lowercased() }) {
-            return (words.count, charge(1, words.joined(separator: " "), via: "assist phrase"))
-        }
         for length in stride(from: min(4, remaining.count), through: 2, by: -1) {
             let phrase = remaining.prefix(length).joined(separator: " ")
             if visibleWords().contains(phrase.lowercased()) {
@@ -105,11 +99,9 @@ struct Keyboard {
     /// strip of screen it occupies.
     private mutating func say(one word: String) -> String {
         let target = word.lowercased()
-
-        // The short chip beside the long one: the first word of the
-        // precomputed message, for when only its opening is wanted.
-        if plan.assist?.completion(after: text)?.first?.lowercased() == target {
-            return charge(1, word, via: "assist word")
+        predictionOpportunities += 1
+        if plan.predictions(after: text).contains(where: { $0.lowercased() == target }) {
+            predictionHits += 1
         }
 
         // The suggestion bar: one tap from any level, no navigation, and
@@ -167,6 +159,7 @@ struct Keyboard {
 
     private mutating func charge(_ cost: Int, _ word: String, via route: String) -> String {
         taps += cost
+        routeCounts[route, default: 0] += 1
         if !text.isEmpty, !text.hasSuffix(" ") { text += " " }
         text += word
         return "\(word) \(cost)  \(route)"
@@ -222,7 +215,7 @@ let corpus: [(who: String, text: String)] = [
 
 /// Sentences from the command line, a file, or the built-in corpus.
 func requestedSentences() -> [(who: String, text: String)] {
-    var arguments = Array(CommandLine.arguments.dropFirst()).filter { $0 != "--verbose" }
+    let arguments = Array(CommandLine.arguments.dropFirst()).filter { $0 != "--verbose" }
     if let flag = arguments.firstIndex(of: "--file") {
         let path = flag + 1 < arguments.count ? arguments[flag + 1] : ""
         guard let contents = try? String(contentsOfFile: path, encoding: .utf8) else {
@@ -235,14 +228,26 @@ func requestedSentences() -> [(who: String, text: String)] {
             .filter { !$0.isEmpty && !$0.hasPrefix("#") }
             .map { (who: "you", text: $0) }
     }
-    arguments = arguments.filter { !$0.hasPrefix("--") }
-    guard !arguments.isEmpty else { return corpus }
-    return arguments.map { (who: "you", text: $0) }
+    // A flag's value is not a sentence. Dropping only the flags would make
+    // a model-table path count as something somebody said.
+    let takesAValue: Set<String> = ["--file", "--model-table", "--model-weight"]
+    var positional: [String] = []
+    var index = 0
+    while index < arguments.count {
+        defer { index += 1 }
+        let argument = arguments[index]
+        if takesAValue.contains(argument) { index += 1; continue }
+        if argument.hasPrefix("--") { continue }
+        positional.append(argument)
+    }
+    guard !positional.isEmpty else { return corpus }
+    return positional.map { (who: "you", text: $0) }
 }
 
 // MARK: - Run
 
 let verbose = CommandLine.arguments.contains("--verbose")
+let metrics = CommandLine.arguments.contains("--metrics")
 let sentences = requestedSentences()
 /// Word-by-word traces are worth reading for a handful of sentences and
 /// unreadable for two hundred. A few of your own get them automatically;
@@ -284,37 +289,17 @@ func modelLearning() -> BoardPlan.Learning {
     return BoardPlan.Learning(bigrams: bigrams)
 }
 
-/// A table exactly as the app writes it and the keyboard reads it —
-/// continuations and whole messages together. `--model-table` measures the
-/// old shape (bare anchor→words) through learned bigrams; this measures the
-/// artifact we would actually ship.
-func assistTable() -> PredictionTable? {
-    let arguments = CommandLine.arguments
-    guard let flag = arguments.firstIndex(of: "--assist-table"), flag + 1 < arguments.count
-    else { return nil }
-    guard let data = try? Data(contentsOf: URL(fileURLWithPath: arguments[flag + 1])),
-          let table = try? JSONDecoder().decode(PredictionTable.self, from: data)
-    else {
-        print("could not read the assist table at \(arguments[flag + 1])")
-        return nil
-    }
-    print("assist table: \(table.continuations.count) contexts, "
-          + "\(table.phrases.count) with whole messages, from \(table.source)")
-    return table
-}
-
-let assist = assistTable()
-let assistWeight = CommandLine.arguments.firstIndex(of: "--assist-weight")
-    .flatMap { $0 + 1 < CommandLine.arguments.count ? Int(CommandLine.arguments[$0 + 1]) : nil } ?? 2
 let learning = modelLearning()
 var totalTaps = 0
 var totalLetters = 0
 var allSpelled: [String: Int] = [:]
+var totalPredictionOpportunities = 0
+var totalPredictionHits = 0
+var totalRouteCounts: [String: Int] = [:]
 var lines: [String] = []
 
 for entry in sentences {
-    var keyboard = Keyboard(plan: BoardPlan(learning: learning,
-                                            assist: assist, assistWeight: assistWeight))
+    var keyboard = Keyboard(plan: BoardPlan(learning: learning))
     var trace: [String] = []
     var words = entry.text.split(separator: " ").map(String.init)
     while !words.isEmpty {
@@ -325,6 +310,9 @@ for entry in sentences {
     totalTaps += keyboard.taps
     totalLetters += entry.text.count
     for word in keyboard.spelled { allSpelled[word.lowercased(), default: 0] += 1 }
+    totalPredictionOpportunities += keyboard.predictionOpportunities
+    totalPredictionHits += keyboard.predictionHits
+    for (route, count) in keyboard.routeCounts { totalRouteCounts[route, default: 0] += count }
 
     let spelledNote = keyboard.spelled.isEmpty ? "" : "   spelled: \(keyboard.spelled.joined(separator: ", "))"
     lines.append(String(format: "%4d  %-52@  (to %@)%@",
@@ -379,5 +367,16 @@ Totals
 """)
 for (word, count) in allSpelled.sorted(by: { ($0.value, $1.key) > ($1.value, $0.key) }) {
     print("    \(word)\(count > 1 ? " ×\(count)" : "")")
+}
+if metrics {
+    let hitRate = totalPredictionOpportunities == 0
+        ? 0
+        : Double(totalPredictionHits) / Double(totalPredictionOpportunities) * 100
+    print("  top-3 hits: \(totalPredictionHits)/\(totalPredictionOpportunities) "
+          + String(format: "(%.1f%%)", hitRate))
+    print("  routes:")
+    for (route, count) in totalRouteCounts.sorted(by: { ($0.value, $1.key) > ($1.value, $0.key) }) {
+        print("    \(route): \(count)")
+    }
 }
 print("")

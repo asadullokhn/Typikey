@@ -27,6 +27,32 @@ final class KeyboardHeightTests: XCTestCase {
 
     private let tolerance: CGFloat = 60
 
+    func testAllFourRowsFitInsideGrantedLandscapeHeight() {
+        let app = XCUIApplication()
+        app.launchArguments += ["-skipOnboarding"]
+        app.launch()
+        XCUIDevice.shared.orientation = .landscapeLeft
+
+        let field = practiceField(in: app)
+        XCTAssertTrue(field.waitForExistence(timeout: 10), "practice field not found")
+        field.tap()
+
+        let continueButton = app.buttons["Continue"]
+        if continueButton.waitForExistence(timeout: 3) {
+            continueButton.tap()
+            field.tap()
+        }
+
+        ensureTypikeyActive(app)
+        let deleteWord = app.staticTexts["Delete word"]
+        snapshot(name: "landscape-four-row-fit")
+
+        XCTAssertTrue(deleteWord.waitForExistence(timeout: 3),
+                      "the fourth keyboard row is clipped out of the granted height")
+        XCTAssertLessThanOrEqual(deleteWord.frame.maxY, app.frame.maxY + 1,
+                                 "the fourth keyboard row extends below the visible screen")
+    }
+
     func testKeyboardSizeStableAcrossCyclesAndRotation() {
         let app = XCUIApplication()
         app.launchArguments += ["-skipOnboarding"]

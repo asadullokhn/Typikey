@@ -1,11 +1,12 @@
 import XCTest
 
-// Invariant 9, in the form the team's design left it: ONE pinned column,
-// on the left, occupying identical frames on every level. Enter, ⌄ and →
-// moved into the content grid, so they are no longer part of this promise
-// — what is asserted about them instead is that they exist on the word
-// boards, which is `testGridControlsPresentOnWordBoards`.
-// Keys are plain UILabels, so they surface as staticTexts.
+// Invariant 9, restored to Keiko's reference: controls pin both edges of
+// the word board. Home / Categories / Clear / Delete word occupy the left;
+// ABC, double-height Enter, and Hide keyboard occupy the right. The eight
+// content columns between them make ten equal 1:1 columns on a 12.9-inch
+// iPad.
+// Word keys surface as buttons containing labels. Target the button when a
+// suggestion can repeat the same word in a second static-text element.
 // PRECONDITION (same as KeyboardHeightTests): Typikey enabled on the
 // simulator and Connect Hardware Keyboard OFF.
 final class PinnedFrameTests: XCTestCase {
@@ -17,17 +18,30 @@ final class PinnedFrameTests: XCTestCase {
     // is every configuration with a second keyboard installed, i.e. every
     // real device and this simulator. Asserting on it would be asserting
     // on which keyboards happen to be installed.
-    private let pinnedLabels = ["Home", "Clear", "Delete word"]
+    private let leftLabels = ["Home", "Categories", "Clear", "Delete word"]
 
     func testPinnedKeysIdenticalAcrossLevels() {
         let app = launchToTypikey()
 
-        let baseline = frames(of: pinnedLabels, in: app)
+        let baseline = frames(of: leftLabels, in: app)
         for (label, frame) in baseline {
             XCTAssertFalse(frame.isEmpty, "\(label) missing on home level")
             XCTAssertLessThan(frame.midX, app.frame.width / 2,
                               "\(label) belongs to the LEFT pinned column")
+            XCTAssertEqual(frame.minX, baseline["Home"]?.minX ?? frame.minX, accuracy: 1,
+                           "\(label) must align with Home on the left edge")
         }
+
+        let abc = app.staticTexts["ABC"]
+        XCTAssertTrue(abc.exists, "ABC missing from the right edge")
+        XCTAssertGreaterThan(abc.frame.midX, app.frame.width * 0.9,
+                             "ABC belongs to the RIGHT pinned column")
+        let enter = app.staticTexts["Enter"]
+        XCTAssertTrue(enter.exists, "Enter missing from the right edge")
+        XCTAssertEqual(enter.frame.minX, abc.frame.minX, accuracy: 1,
+                       "Enter must align with ABC on the right edge")
+        XCTAssertEqual(enter.frame.height, abc.frame.height * 2 + 6, accuracy: 12,
+                       "Enter must span the middle two rows")
 
         app.staticTexts["Categories"].tap()
         assertFrames(baseline, in: app, level: "categories")
@@ -36,21 +50,43 @@ final class PinnedFrameTests: XCTestCase {
         assertFrames(baseline, in: app, level: "words")
 
         app.staticTexts["Home"].tap()
-        app.staticTexts["abc"].tap()
+        app.staticTexts["ABC"].tap()
         assertFrames(baseline, in: app, level: "letters")
 
         app.staticTexts["123"].tap()
         assertFrames(baseline, in: app, level: "numbers")
     }
 
-    // Enter and cursor-right live inside the grid, placed before any word
-    // is packed, so this also proves the packer never lets a word overwrite
-    // one of them.
-    //
-    // Hide keyboard is in whichever place the globe left free: the pinned
-    // column normally, the grid when iOS took the pinned slot for its
-    // switcher. Either satisfies this — what matters is that there is
-    // exactly one way to put the keyboard away, on every board.
+    func testEveryBuiltInCategoryKeepsTypikeyActive() {
+        let app = launchToTypikey()
+        let categories = [
+            ("Core", "want"),
+            ("People", "Mum"),
+            ("Actions", "eat"),
+            ("Feelings", "happy"),
+            ("Food", "water"),
+            ("Places", "home"),
+            ("Art", "draw"),
+            ("Web", "search"),
+            ("Chat", "hello"),
+            ("Little words", "to"),
+        ]
+
+        for (categoryName, visibleWord) in categories {
+            app.staticTexts["Categories"].tap()
+            let category = app.staticTexts[categoryName]
+            XCTAssertTrue(category.waitForExistence(timeout: 3),
+                          "\(categoryName) category is missing")
+            category.tap()
+            XCTAssertTrue(app.staticTexts["Home"].waitForExistence(timeout: 3),
+                          "opening \(categoryName) removed the Typikey extension")
+            XCTAssertTrue(app.staticTexts[visibleWord].firstMatch.exists,
+                          "\(categoryName) did not show its vocabulary")
+        }
+    }
+
+    // The edge controls are keyboard furniture, laid down independently
+    // from page content so no word can overwrite them.
     func testGridControlsPresentOnWordBoards() {
         let app = launchToTypikey()
         for level in ["home", "categories"] {
@@ -58,7 +94,7 @@ final class PinnedFrameTests: XCTestCase {
                             || app.staticTexts["Hide\nkeyboard"].exists,
                           "hide-keyboard missing on \(level)")
             XCTAssertTrue(app.staticTexts["Cursor right"].exists, "cursor-right missing on \(level)")
-            XCTAssertTrue(app.staticTexts["return"].exists || app.staticTexts["Done"].exists
+            XCTAssertTrue(app.staticTexts["Enter"].exists || app.staticTexts["Done"].exists
                             || app.staticTexts["Go"].exists || app.staticTexts["Send"].exists
                             || app.staticTexts["Search"].exists,
                           "Enter missing on \(level)")
@@ -66,29 +102,61 @@ final class PinnedFrameTests: XCTestCase {
         }
     }
 
+    func testRemovedKeyboardSwitcherSlotContainsAWordWithoutMovingTheFrame() {
+        let app = launchToTypikey()
+
+        XCTAssertFalse(app.buttons["Change keyboard"].exists,
+                       "the keyboard-switch button must be removed")
+        let deleteWord = app.staticTexts["Delete word"]
+        XCTAssertTrue(deleteWord.exists, "the left edge column must not move")
+        guard let firstContentColumn = gridText("I", in: app),
+              let formerSlotWord = gridText("what", in: app) else {
+            return XCTFail("the Home board words are missing")
+        }
+        XCTAssertEqual(formerSlotWord.frame.midX, firstContentColumn.frame.midX, accuracy: 4,
+                       "a word must occupy the former switcher column")
+        XCTAssertEqual(formerSlotWord.frame.midY, deleteWord.frame.midY, accuracy: 12,
+                       "the former switcher column must be filled on the bottom row")
+        guard let addedWord = gridText("now", in: app) else {
+            return XCTFail("the freed capacity must add another Home word")
+        }
+        XCTAssertEqual(addedWord.frame.midY, deleteWord.frame.midY, accuracy: 12,
+                       "the additional word must occupy the freed bottom row")
+        XCTAssertTrue(app.staticTexts["Cursor right"].exists,
+                      "the bottom-right content control must not move")
+        XCTAssertGreaterThan(app.staticTexts["ABC"].frame.midX, app.frame.width * 0.9,
+                             "the right edge column must not move")
+    }
+
     // Character-level repair belongs to the levels where characters are
     // typed: the word boards have no ⌫ or ←, the letters level has both.
     func testCharacterToolsLiveOnTheTypingLevels() {
         let app = launchToTypikey()
         XCTAssertFalse(app.staticTexts["Cursor left"].exists, "no cursor-left on a word board")
-        app.staticTexts["abc"].tap()
+        app.staticTexts["ABC"].tap()
         XCTAssertTrue(app.staticTexts["q"].waitForExistence(timeout: 3), "letters level did not open")
         XCTAssertTrue(app.staticTexts["⌫"].exists, "single-character delete missing on letters")
         XCTAssertTrue(app.staticTexts["Cursor left"].exists, "cursor-left missing on letters")
     }
 
-    func testHomeWordTapInsertsWord() {
+    func testVisibleWordTapInsertsWord() {
         let app = launchToTypikey()
-        app.staticTexts["want"].tap()
         let field = practiceField(in: app)
+        let before = field.value as? String ?? ""
+        let wordKey = app.buttons["typikeySuggestion0"]
+        XCTAssertTrue(wordKey.waitForExistence(timeout: 3),
+                      "the first visible word candidate is not addressable")
+        let tappedWord = wordKey.label
+        wordKey.tap()
         let value = field.value as? String ?? ""
-        XCTAssertTrue(value.contains("Want"),
-                      "tapping the 'want' cell should insert 'Want ' (sentence-start capitalization), got: \(value)")
+        XCTAssertNotEqual(value, before, "tapping a word candidate should change the field")
+        XCTAssertTrue(value.localizedCaseInsensitiveContains(tappedWord),
+                      "tapping '\(tappedWord)' should insert that word, got: \(value)")
     }
 
     func testClearAllRequiresArmingTap() {
         let app = launchToTypikey()
-        app.staticTexts["want"].tap()
+        app.buttons["want"].tap()
         var value = practiceField(in: app).value as? String ?? ""
         XCTAssertTrue(value.contains("Want"), "setup: word not inserted")
 
@@ -105,7 +173,7 @@ final class PinnedFrameTests: XCTestCase {
 
     func testManualLevelSurvivesReshow() {
         let app = launchToTypikey()
-        app.staticTexts["abc"].tap()
+        app.staticTexts["ABC"].tap()
         XCTAssertTrue(app.staticTexts["q"].waitForExistence(timeout: 3), "letters level did not open")
         (app.staticTexts["Hide keyboard"].exists
             ? app.staticTexts["Hide keyboard"] : app.staticTexts["Hide\nkeyboard"]).tap()
@@ -162,6 +230,12 @@ final class PinnedFrameTests: XCTestCase {
 
     private func practiceField(in app: XCUIApplication) -> XCUIElement {
         app.textFields.firstMatch.exists ? app.textFields.firstMatch : app.textViews.firstMatch
+    }
+
+    private func gridText(_ label: String, in app: XCUIApplication) -> XCUIElement? {
+        app.staticTexts.matching(identifier: label).allElementsBoundByIndex
+            .filter(\.exists)
+            .max { $0.frame.minY < $1.frame.minY }
     }
 
     private func frames(of labels: [String], in app: XCUIApplication) -> [String: CGRect] {

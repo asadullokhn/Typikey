@@ -14,7 +14,7 @@ import SwiftUI
 /// 1. **Is it working?** — answered before anything else, because when the
 ///    answer is no every setting below it silently does nothing.
 /// 2. **Every day** — My Words, screen learning, the practice conversation.
-/// 3. **Settings** — all three in one place instead of one card and a gap.
+/// 3. **Settings** — the everyday keyboard options in one place.
 /// 4. **Help** — setup steps and how the keyboard behaves, collapsed,
 ///    because they are read once.
 /// 5. **Diagnostics** — last, where troubleshooting belongs.
@@ -44,7 +44,6 @@ struct SetupView: View {
 
                     section("Settings") {
                         SettingsCard()
-                        AIAssistCard()
                     }
 
                     section("Help") {
@@ -225,6 +224,7 @@ private struct DiagnosticsCard: View {
         DisclosureGroup {
             VStack(alignment: .leading, spacing: 18) {
                 EngineStatusSection()
+                FootprintCard()
                 ScreenReaderDiagnostics()
             }
             .padding(.top, 10)

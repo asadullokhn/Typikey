@@ -9,9 +9,14 @@ import XCTest
 /// which is also what keeps them honest about where the thing actually is.
 extension XCUIApplication {
     func openSetup(file: StaticString = #filePath, line: UInt = #line) {
-        let setup = staticTexts["Setup"]
-        XCTAssertTrue(setup.waitForExistence(timeout: 10),
-                      "Setup button not found on the home screen", file: file, line: line)
+        let pageMenu = buttons.matching(
+            NSPredicate(format: "label CONTAINS[c] 'Name of Page'")).firstMatch
+        XCTAssertTrue(pageMenu.waitForExistence(timeout: 10),
+                      "Page menu not found on the home screen", file: file, line: line)
+        pageMenu.tap()
+        let setup = buttons["Setup"]
+        XCTAssertTrue(setup.waitForExistence(timeout: 5),
+                      "Setup action not found in the page menu", file: file, line: line)
         setup.tap()
     }
 

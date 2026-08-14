@@ -128,7 +128,9 @@ struct KeyboardPage: Codable, Equatable, Identifiable {
     var name: String
     var cells: [BoardButton?]
 
-    static let columns = 10
+    /// Eight editable columns sit between the two fixed edge columns.
+    /// Together they form the reference's ten equal-width columns.
+    static let columns = 8
     static let rows = 4
     static var cellCount: Int { columns * rows }
 
@@ -156,11 +158,9 @@ struct KeyboardPage: Codable, Equatable, Identifiable {
         self.init(id: id, name: name, cells: cells)
     }
 
-    /// Row-major indices of the cells the keyboard keeps for itself:
-    /// Categories and abc at the top left, Enter's two cells, and the
-    /// hide-keyboard and → pair at the bottom right. `PageStore` draws the
-    /// same six, and the two lists have to agree.
-    static let reservedCells: Set<Int> = [0, 1, 18, 19, 38, 39]
+    /// The two bottom corners of the editable area remain navigation
+    /// controls, matching the large left/right arrow keys in the design.
+    static let reservedCells: Set<Int> = [24, 31]
 
     static var freeCellCount: Int { cellCount - reservedCells.count }
 }
@@ -175,7 +175,7 @@ extension BoardLayout {
     /// vocabulary a starting point rather than a wall.
     static var builtInPages: [KeyboardPage] {
         let home = KeyboardPage(
-            id: "home", name: "Keyboard Home",
+            id: "home", name: "Keyboard Home Pg 1",
             words: BoardPlan.homeSelection.map { BoardButton(id: "home.\($0)", label: $0) })
         return [home] + vocabulary.map { category in
             KeyboardPage(id: category.name, name: category.name,

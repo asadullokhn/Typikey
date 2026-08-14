@@ -96,6 +96,10 @@ struct SettingsCard: View {
                         Preferences.keyboardSize = newValue
                     }
             }
+
+            Divider()
+
+            PersonalizationCard()
         }
         .homeCardStyle()
         .onAppear {
@@ -105,5 +109,86 @@ struct SettingsCard: View {
             reshapeOn = Preferences.boardFollowsSentence
             fit = KeyboardFit.read(from: store)
         }
+    }
+}
+
+private struct PersonalizationCard: View {
+    @StateObject private var service = PersonalizationService()
+
+    var body: some View {
+        DisclosureGroup {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Calendar and Location are separate, optional sources. Typikey stores only bounded words, short titles, and a coarse place label — never coordinates, attendees, event bodies, or messages.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+
+                Toggle("Use upcoming event titles", isOn: Binding(
+                    get: { service.calendarConsent },
+                    set: { enabled in
+                        Task { await service.setCalendarConsent(enabled) }
+                    }))
+                    .accessibilityIdentifier("calendarPersonalizationToggle")
+
+                Toggle("Use current place label", isOn: Binding(
+                    get: { service.locationConsent },
+                    set: { enabled in
+                        Task { await service.setLocationConsent(enabled) }
+                    }))
+                    .accessibilityIdentifier("locationPersonalizationToggle")
+
+                Text(service.status)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+
+                if let snapshot = service.snapshot, !snapshot.words.isEmpty {
+                    Text("Published words")
+                        .font(.subheadline.weight(.semibold))
+                    ForEach(Array(snapshot.words.prefix(8)), id: \.text) { word in
+                        HStack {
+                            Text(word.text)
+                            Spacer()
+                            Button("Block") {
+                                Task { await service.block(word.text) }
+                            }
+                            .buttonStyle(.borderless)
+                        }
+                    }
+                }
+
+                if let blocked = service.snapshot?.blockedWords, !blocked.isEmpty {
+                    Text("Blocked")
+                        .font(.subheadline.weight(.semibold))
+                    ForEach(blocked.prefix(8), id: \.self) { word in
+                        HStack {
+                            Text(word)
+                            Spacer()
+                            Button("Allow") {
+                                Task { await service.unblock(word) }
+                            }
+                            .buttonStyle(.borderless)
+                        }
+                    }
+                }
+
+                HStack {
+                    Button(service.isRegenerating ? "Updating…" : "Regenerate") {
+                        Task { await service.regenerate() }
+                    }
+                    .disabled(service.isRegenerating)
+                    .buttonStyle(.borderedProminent)
+
+                    Button("Delete published data", role: .destructive) {
+                        service.deletePublishedData()
+                    }
+                    .buttonStyle(.bordered)
+                }
+            }
+            .padding(.top, 8)
+        } label: {
+            Label("Personalized suggestions", systemImage: "person.text.rectangle")
+                .font(.title3.weight(.semibold))
+                .foregroundStyle(.primary)
+        }
+        .tint(.primary)
     }
 }
