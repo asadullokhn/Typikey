@@ -20,6 +20,60 @@ final class CustomPageTests: XCTestCase {
     /// board it had never actually changed.
     private var fixture: String?
 
+    /// The finished setup state is Keiko's 12.9-inch reference screen:
+    /// three actions, the practice sentence, the page label, and ten
+    /// equal visual columns across the board. Permission guidance belongs
+    /// only to setup, not to the screen somebody uses every day.
+    func testConfiguredHomeMatchesReferenceStructure() {
+        let app = XCUIApplication()
+        app.launchArguments += ["-skipOnboarding", "-uiTestFullAccess", "-uiTestPages", "none"]
+        app.launch()
+        XCUIDevice.shared.orientation = .landscapeLeft
+
+        let delete = app.staticTexts["Delete Page"]
+        XCTAssertTrue(delete.waitForExistence(timeout: 10), "Delete Page action missing")
+        XCTAssertTrue(app.staticTexts["Add New Page"].exists, "Add New Page action missing")
+        XCTAssertTrue(app.staticTexts["Edit Page"].exists, "Edit Page action missing")
+        XCTAssertTrue(app.buttons["Edit Page"].isEnabled,
+                      "the reference home page is editable")
+        XCTAssertFalse(app.staticTexts["Setup"].exists,
+                       "Setup must leave the fully configured reference state")
+        XCTAssertFalse(app.staticTexts["The keyboard cannot see these boards yet"].exists,
+                       "permission warning must leave the fully configured reference state")
+        XCTAssertGreaterThan(delete.frame.minX, app.frame.width / 2,
+                             "the three actions belong in the upper-right cluster")
+
+        XCTAssertTrue(app.staticTexts["Name of Page"].exists, "page-name caption missing")
+        XCTAssertTrue(app.buttons.matching(
+            NSPredicate(format: "label CONTAINS[c] 'Keyboard Home Pg 1'")).firstMatch.exists,
+                      "the reference home-page name is missing")
+
+        let home = app.buttons["Home"].firstMatch
+        XCTAssertTrue(home.waitForExistence(timeout: 5), "home board did not render")
+        XCTAssertEqual(home.frame.width, app.frame.width / 10, accuracy: 12,
+                       "the reference uses ten approximately equal 1:1 columns")
+        XCTAssertEqual(app.buttons["Categories"].frame.minX, home.frame.minX, accuracy: 1,
+                       "Categories belongs directly under Home on the left edge")
+        XCTAssertGreaterThan(app.buttons["ABC"].frame.midX, app.frame.width * 0.9,
+                             "ABC belongs in the right edge column")
+    }
+
+    func testExampleSentenceIsPlaceholderNotInput() {
+        let app = XCUIApplication()
+        app.launchArguments += ["-skipOnboarding", "-uiTestFullAccess", "-uiTestPages", "none"]
+        app.launch()
+        XCUIDevice.shared.orientation = .landscapeLeft
+
+        let field = app.textFields.firstMatch.exists
+            ? app.textFields.firstMatch
+            : app.textViews.firstMatch
+        XCTAssertTrue(field.waitForExistence(timeout: 10), "practice field not found")
+        XCTAssertEqual(field.value as? String ?? "", "",
+                       "the example sentence must not be pre-entered text")
+        XCTAssertTrue(app.staticTexts["I like to drink coffee"].exists,
+                      "the example sentence should remain visible as a placeholder")
+    }
+
     /// The common case, and the one that must be indistinguishable from
     /// the keyboard as it was before any of this existed.
     func testNoStoredPagesLeavesTheShippedBoard() {
@@ -45,8 +99,8 @@ final class CustomPageTests: XCTestCase {
     /// to the keyboard, not to the page, so no arrangement can remove the
     /// way home or the way back.
     func testAnEditedPageKeepsTheKeyboardsOwnControls() throws {
-        // Cell 2 onward: 0 and 1 belong to Categories and abc, which the
-        // editor reserves and no arrangement may take.
+        // Fixed navigation lives in the two edge columns, independently
+        // from these editable content cells.
         store(pages: [["id": "home", "name": "Keyboard Home",
                        "cells": [NSNull(), NSNull(), ["id": "a", "label": "Zoq"]]]])
         let app = launchToKeyboard()
@@ -60,7 +114,7 @@ final class CustomPageTests: XCTestCase {
         // that filled every cell would leave him with no route to the
         // categories or the letters at all.
         XCTAssertTrue(app.staticTexts["Categories"].exists, "Categories must survive editing")
-        XCTAssertTrue(app.staticTexts["abc"].exists, "abc must survive editing")
+        XCTAssertTrue(app.staticTexts["ABC"].exists, "ABC must survive editing")
     }
 
     /// A key placed in cell 12 stays in cell 12 when cell 11 is emptied.

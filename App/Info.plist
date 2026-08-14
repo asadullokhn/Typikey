@@ -22,6 +22,10 @@
 	<string>1</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<key>NSCalendarsFullAccessUsageDescription</key>
+	<string>Typikey can use selected upcoming event titles to improve on-device keyboard suggestions.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Typikey can use a coarse current place label to improve on-device keyboard suggestions.</string>
 	<key>UILaunchScreen</key>
 	<dict/>
 	<key>UISupportedInterfaceOrientations</key>

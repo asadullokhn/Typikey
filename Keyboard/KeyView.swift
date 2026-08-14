@@ -135,9 +135,13 @@ final class KeyView: UIView {
     ///     Home sits directly on the tray. The focus ring still appears,
     ///     because explore-then-commit needs it on every key.
     func paint(fill: UIColor, focused: Bool, bordered: Bool = true) {
-        let base = focused ? fill.shifted(by: 0.18) : fill
+        let resolvedFill = fill.resolvedColor(with: traitCollection)
+        let base = focused ? resolvedFill.shifted(by: 0.18) : resolvedFill
         gradient.colors = base.keyGradient
         layer.borderWidth = focused ? 4 : (bordered ? 1 : 0)
-        layer.borderColor = (focused ? Palette.focus : base.darkened(by: 0.16)).cgColor
+        let border = focused
+            ? Palette.focus.resolvedColor(with: traitCollection)
+            : base.darkened(by: 0.16)
+        layer.borderColor = border.cgColor
     }
 }

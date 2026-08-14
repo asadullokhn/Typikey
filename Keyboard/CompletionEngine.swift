@@ -3,6 +3,23 @@ import Foundation
 import FoundationModels
 #endif
 
+enum CompletionOutcome: Equatable {
+    case available(words: [String], latency: Duration)
+    case unavailable
+    case timedOut
+    case failed
+    case superseded
+}
+
+#if canImport(FoundationModels)
+@available(iOS 26.0, *)
+@Generable
+private struct ModelSuggestion {
+    @Guide(description: "One to three short continuations, best first", .maximumCount(3))
+    var candidates: [String]
+}
+#endif
+
 /// On-device phrase completion. All FoundationModels access lives here;
 /// the controller only sees requestCompletion/isDegraded. On any
 /// unavailability or repeated failure the engine degrades permanently for
@@ -17,16 +34,29 @@ final class CompletionEngine {
     }
 
     private(set) var isDegraded = false
+    private(set) var lastOutcome: CompletionOutcome?
 
-    private let debounceInterval: TimeInterval = 0.3
-    private let timeout: TimeInterval = 2.0
+    typealias ResponseProvider = @Sendable (String, FieldProfile) async throws -> [String]
+
+    private let debounceInterval: TimeInterval
+    private let timeout: TimeInterval
     private var generation = 0
     private var consecutiveFailures = 0
     private var pendingWork: DispatchWorkItem?
     private var inFlight: Task<Void, Never>?
+    private let responseProvider: ResponseProvider?
+
+    init(responseProvider: ResponseProvider? = nil,
+         debounceInterval: TimeInterval = 0.3,
+         timeout: TimeInterval = 2.0) {
+        self.responseProvider = responseProvider
+        self.debounceInterval = max(0, debounceInterval)
+        self.timeout = max(0.001, timeout)
+    }
 
     func requestCompletion(context: String,
                            vocabulary: [String],
+                           fieldProfile: FieldProfile = .generic,
                            onResult: @escaping (Completion?) -> Void) {
         pendingWork?.cancel()
         inFlight?.cancel()
@@ -40,7 +70,8 @@ final class CompletionEngine {
             // assumeIsolated bridges into the MainActor-isolated generate() without
             // an extra async hop.
             MainActor.assumeIsolated {
-                self?.generate(context: context, vocabulary: vocabulary, token: token, onResult: onResult)
+                self?.generate(context: context, vocabulary: vocabulary,
+                               fieldProfile: fieldProfile, token: token, onResult: onResult)
             }
         }
         pendingWork = work
@@ -53,7 +84,8 @@ final class CompletionEngine {
         onResult(completion)
     }
 
-    private func recordFailure() {
+    private func recordFailure(_ outcome: CompletionOutcome) {
+        lastOutcome = outcome
         consecutiveFailures += 1
         session = nil
         if consecutiveFailures >= 2 {
@@ -61,98 +93,47 @@ final class CompletionEngine {
         }
     }
 
-    private static let trailingPunctuation = ".!?,;:"
-
-    /// Splits the model's text into at most five clean words; nil when
-    /// nothing usable remains. Trims punctuation glued to the end of a word
-    /// and drops tokens with no letters or digits (bare "-" or "▸" isn't a
-    /// word).
-    private func sanitize(_ text: String) -> Completion? {
-        let words = text
-            .replacingOccurrences(of: "\n", with: " ")
-            .split(separator: " ")
-            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-            .map { token -> String in
-                var token = token
-                while let last = token.last, Self.trailingPunctuation.contains(last) {
-                    token.removeLast()
-                }
-                return token
-            }
-            .filter { !$0.isEmpty }
-            .filter { $0.rangeOfCharacter(from: .alphanumerics) != nil }
-            .prefix(5)
-        return words.isEmpty ? nil : Completion(words: Array(words))
-    }
-
-#if canImport(FoundationModels)
-    private var session: Any?
-
-    private func generate(context: String, vocabulary: [String], token: Int,
-                          onResult: @escaping (Completion?) -> Void) {
-        guard #available(iOS 26.0, *) else {
-            isDegraded = true
-            deliver(nil, token: token, onResult: onResult)
-            return
-        }
-        guard SystemLanguageModel.default.availability == .available else {
-            isDegraded = true
-            deliver(nil, token: token, onResult: onResult)
-            return
-        }
-
-        let voice = vocabulary.prefix(40).joined(separator: ", ")
-        let snippet = String(context.suffix(200))
-        let prompt = """
-        Continue the user's sentence naturally, in the same language the \
-        sentence is written in. Answer with at most 5 words, plain text only, \
-        no punctuation unless it ends the sentence. Match the user's simple, \
-        direct style. Words this user often uses: \(voice).
-        Sentence so far: \(snippet)
-        """
-
-        let existing = session as? LanguageModelSession
-        let liveSession = existing ?? LanguageModelSession()
-        session = liveSession
+    private func beginGeneration(token: Int,
+                                 operation: @escaping @Sendable () async throws -> [String],
+                                 onResult: @escaping (Completion?) -> Void) {
+        let started = ContinuousClock.now
         let watchdogTimeout = timeout
-
         inFlight = Task { [weak self] in
             guard let self else { return }
-            // Detached: these only touch liveSession/prompt/each other, never
-            // engine state, so the actual model call and its timer run off the
-            // main actor instead of serializing through it.
-            let generator = Task.detached {
-                try await liveSession.respond(to: prompt).content
-            }
+            let generator = Task.detached { try await operation() }
             let watchdog = Task.detached {
                 try await Task.sleep(nanoseconds: UInt64(watchdogTimeout * 1_000_000_000))
                 generator.cancel()
             }
-            // Propagate outer-task cancellation (a superseding request) down into
-            // the in-flight respond() call, the same way the watchdog already does
-            // for timeouts, so a stale generation never keeps running concurrently
-            // with the next one.
             await withTaskCancellationHandler {
                 do {
-                    let text = try await generator.value
+                    let candidates = try await generator.value
                     watchdog.cancel()
-                    // Supersession bumps `generation` before cancelling us; a
-                    // stale success (result arrived just as it was superseded)
-                    // must not reset the failure streak for the live generation.
-                    if token == self.generation {
-                        self.consecutiveFailures = 0
+                    guard token == self.generation else {
+                        self.lastOutcome = .superseded
+                        return
                     }
-                    self.deliver(self.sanitize(text), token: token, onResult: onResult)
+                    let words = CompletionSanitizer.words(from: candidates)
+                    self.consecutiveFailures = 0
+                    self.lastOutcome = .available(
+                        words: words ?? [], latency: started.duration(to: .now))
+                    self.deliver(words.map(Completion.init(words:)),
+                                 token: token, onResult: onResult)
+                } catch is CancellationError {
+                    watchdog.cancel()
+                    if Task.isCancelled {
+                        self.lastOutcome = .superseded
+                        return
+                    }
+                    self.recordFailure(.timedOut)
+                    self.deliver(nil, token: token, onResult: onResult)
                 } catch {
                     watchdog.cancel()
-                    // Both supersession and a watchdog timeout cancel `generator`
-                    // and surface here as CancellationError, so the error type
-                    // alone can't tell them apart. Only supersession cancels
-                    // `inFlight` (the ambient task this closure runs as part of);
-                    // the watchdog only ever cancels `generator`. A real timeout
-                    // must still count as a failure and degrade like any other.
-                    if Task.isCancelled { return }
-                    self.recordFailure()
+                    if Task.isCancelled {
+                        self.lastOutcome = .superseded
+                        return
+                    }
+                    self.recordFailure(.failed)
                     self.deliver(nil, token: token, onResult: onResult)
                 }
             } onCancel: {
@@ -160,13 +141,98 @@ final class CompletionEngine {
             }
         }
     }
+
+#if canImport(FoundationModels)
+    private var session: Any?
+    private var sessionProfile: FieldProfile?
+
+    private func generate(context: String, vocabulary: [String], fieldProfile: FieldProfile, token: Int,
+                          onResult: @escaping (Completion?) -> Void) {
+        if let responseProvider {
+            let prompt = makePrompt(context: context, vocabulary: vocabulary, fieldProfile: fieldProfile)
+            beginGeneration(token: token, operation: {
+                try await responseProvider(prompt, fieldProfile)
+            }, onResult: onResult)
+            return
+        }
+        guard #available(iOS 26.0, *) else {
+            isDegraded = true
+            lastOutcome = .unavailable
+            deliver(nil, token: token, onResult: onResult)
+            return
+        }
+        guard SystemLanguageModel.default.availability == .available else {
+            isDegraded = true
+            lastOutcome = .unavailable
+            deliver(nil, token: token, onResult: onResult)
+            return
+        }
+
+        let prompt = makePrompt(context: context, vocabulary: vocabulary, fieldProfile: fieldProfile)
+
+        let existing = sessionProfile == fieldProfile ? session as? LanguageModelSession : nil
+        let liveSession = existing ?? LanguageModelSession(instructions: instructions(for: fieldProfile))
+        if existing == nil {
+            liveSession.prewarm(promptPrefix: Prompt(promptPrefix(for: fieldProfile)))
+        }
+        session = liveSession
+        sessionProfile = fieldProfile
+        beginGeneration(token: token, operation: {
+            let response = try await liveSession.respond(
+                to: prompt,
+                generating: ModelSuggestion.self,
+                options: GenerationOptions(
+                    sampling: .greedy,
+                    temperature: 0.2,
+                    maximumResponseTokens: 48))
+            return response.content.candidates
+        }, onResult: onResult)
+    }
 #else
     private var session: Any?
 
-    private func generate(context: String, vocabulary: [String], token: Int,
+    private func generate(context: String, vocabulary: [String], fieldProfile: FieldProfile, token: Int,
                           onResult: @escaping (Completion?) -> Void) {
+        if let responseProvider {
+            let prompt = makePrompt(context: context, vocabulary: vocabulary, fieldProfile: fieldProfile)
+            beginGeneration(token: token, operation: {
+                try await responseProvider(prompt, fieldProfile)
+            }, onResult: onResult)
+            return
+        }
         isDegraded = true
+        lastOutcome = .unavailable
         deliver(nil, token: token, onResult: onResult)
     }
 #endif
+
+    private func makePrompt(context: String,
+                            vocabulary: [String],
+                            fieldProfile: FieldProfile) -> String {
+        let voice = vocabulary.prefix(40).joined(separator: ", ")
+        return """
+        \(promptPrefix(for: fieldProfile)) \(String(context.suffix(200)))
+        Prefer this person's familiar words when natural: \(voice).
+        """
+    }
+
+    private func instructions(for fieldProfile: FieldProfile) -> String {
+        switch fieldProfile {
+        case .conversational:
+            return "Suggest up to three short AAC message continuations in the user's language."
+        case .search:
+            return "Suggest up to three concise search-query continuations in the user's language."
+        case .email, .url:
+            return "Do not generate prose for structured fields."
+        case .generic:
+            return "Suggest up to three short natural continuations in the user's language."
+        }
+    }
+
+    private func promptPrefix(for fieldProfile: FieldProfile) -> String {
+        switch fieldProfile {
+        case .search: return "Search query so far:"
+        default: return "Sentence so far:"
+        }
+    }
 }

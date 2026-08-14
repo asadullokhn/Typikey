@@ -12,6 +12,28 @@ import CoreGraphics
 enum KeyboardFit {
     private static let key = "keyboardFit"
 
+    static func requestedHeight(
+        preset: CGFloat,
+        measuredDeficit: CGFloat,
+        screenHeight: CGFloat,
+        isPhone: Bool
+    ) -> CGFloat {
+        let screenFraction: CGFloat = isPhone ? 0.6 : 0.75
+        return min(preset + measuredDeficit, screenHeight * screenFraction)
+    }
+
+    static func fittedRowHeight(
+        preferred: CGFloat,
+        availableHeight: CGFloat,
+        rows: Int,
+        gap: CGFloat,
+        outerInset: CGFloat
+    ) -> CGFloat {
+        let occupiedBySpacing = outerInset * 2 + gap * CGFloat(rows - 1)
+        let heightLimited = (availableHeight - occupiedBySpacing) / CGFloat(rows)
+        return max(1, min(preferred, heightLimited))
+    }
+
     struct Reading {
         let requested: CGFloat
         let granted: CGFloat

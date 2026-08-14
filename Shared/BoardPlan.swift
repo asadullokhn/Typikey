@@ -40,21 +40,6 @@ struct BoardPlan {
     var followsSentence = true
     var smartGrammar = true
 
-    /// What a model precomputed in the app, if anybody turned that on.
-    ///
-    /// Weighted low on purpose. The first table ever measured here made the
-    /// corpus 50 taps worse, and only because it was loaded into the learned
-    /// bigrams — which score ten times anything else — did that damage reach
-    /// the board at all. A model's guess is evidence, not the verdict, so it
-    /// is added beside the seeds rather than on top of everything.
-    var assist: PredictionTable?
-    var assistWeight = 2
-
-    private func assistScores(after previous: String) -> [(String, Int)] {
-        guard let words = assist?.continuations[previous.lowercased()] else { return [] }
-        return words.enumerated().map { ($1.lowercased(), max(1, assistWeight * (5 - $0)) ) }
-    }
-
     /// What a cell reads right now.
     ///
     /// Verb keys follow the sentence: after "I am", `go` reads `going`.
@@ -91,10 +76,10 @@ struct BoardPlan {
 
     /// The home board, named word by word.
     ///
-    /// Four rows leave 33 word cells and Core is 54 words, so home cannot
+    /// Four rows leave 30 word cells and Core is 54 words, so home cannot
     /// simply be "all of Core" — it has to be chosen. What earns a cell
-    /// here is what a sentence cannot be built without: every pronoun, the
-    /// auxiliaries, the few verbs that combine with everything, and the
+    /// here is what a sentence cannot be built without: the primary AAC
+    /// subjects, the auxiliaries, the few verbs that combine with everything, and the
     /// closed classes. "I am waiting" is a dead end without `for`, which
     /// is why `for` is here and `where` is not.
     ///
@@ -117,7 +102,10 @@ struct BoardPlan {
     /// because it is the least load-bearing of five prepositions, and
     /// unlike the others it is rarely the word a sentence dies without.
     static let homeSelection = [
-        "I", "you", "he", "she", "it", "we", "they",
+        // The two-edge reference has 31 word slots. Third-person and
+        // plural subjects remain one tap away on Core; the first-person
+        // AAC sentence builders stay on Home.
+        "I", "you", "it",
         "be", "do", "have", "can", "will",
         "want", "like", "go", "help", "stop",
         "not", "more",
@@ -130,12 +118,12 @@ struct BoardPlan {
         // the list, ahead of `now` (24) and `me` (19), because "that is
         // funny" and "I like that" are half of what anyone says.
         //
-        // One word, not two. When iOS requires the globe it takes the
-        // pinned slot and Hide keyboard falls back into the grid, leaving
-        // 36 cells rather than 37 — so a 35th word would appear on most
-        // iPads and silently vanish on any device with a second keyboard
-        // installed. That failure has cost this project a build before.
+        // Appended, never inserted: the reference has stable word
+        // positions between its fixed controls.
         "that",
+        // Removing the keyboard-switch button frees one more Home cell.
+        // `now` was already the next-ranked word in the measured corpus.
+        "now",
     ]
 
     /// Looked up across the whole vocabulary rather than in one category:
@@ -265,9 +253,6 @@ struct BoardPlan {
         for (i, word) in (seedBigrams[previous] ?? []).enumerated() {
             scores[word, default: 0] += 3 - i
         }
-        for (word, score) in assistScores(after: previous) {
-            scores[word, default: 0] += score
-        }
         // Screen context: words the user is looking at right now are
         // likely in the reply. Weighted above the generic seeds but below
         // any real learned bigram, so personal learning always wins.
@@ -317,9 +302,6 @@ struct BoardPlan {
         }
         for (i, word) in (seedBigrams[previous] ?? []).enumerated() {
             scores[word.lowercased(), default: 0] += 3 - i
-        }
-        for (word, score) in assistScores(after: previous) {
-            scores[word, default: 0] += score
         }
         for (word, count) in learning.screen {
             scores[word.lowercased(), default: 0] += min(count, 3)

@@ -12,7 +12,6 @@ xcrun swiftc -O -o "$out/tapcost" \
   Shared/Grammar.swift \
   Shared/SentenceShape.swift \
   Shared/BoardPlan.swift \
-  Shared/PredictionTable.swift \
   Shared/Rephrase.swift \
   Tools/tapcost/main.swift
 "$out/tapcost" "$@"

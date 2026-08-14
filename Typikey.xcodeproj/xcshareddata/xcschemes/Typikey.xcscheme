@@ -58,6 +58,17 @@
             parallelizable = "NO">
             <BuildableReference
                BuildableIdentifier = "primary"
+               BlueprintIdentifier = "71B1F71AA2D1B631E5F4580F"
+               BuildableName = "TypikeyTests.xctest"
+               BlueprintName = "TypikeyTests"
+               ReferencedContainer = "container:Typikey.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
                BlueprintIdentifier = "00E59903FECC2CA8D9F86ED3"
                BuildableName = "TypikeyUITests.xctest"
                BlueprintName = "TypikeyUITests"

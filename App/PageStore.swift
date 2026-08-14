@@ -20,15 +20,7 @@ final class PageStore: ObservableObject {
         pages = Self.withHome(BoardLayout.loadPages(from: store))
     }
 
-    /// Home is shown here and never written.
-    ///
-    /// The keyboard builds its own home board every time it draws — the
-    /// words it offers depend on the sentence so far, so a stored copy
-    /// would be a snapshot of one moment pinned over a board that is
-    /// supposed to move. Storing it would also freeze whatever the editor
-    /// happened to render, and the editor draws the keyboard's furniture
-    /// over four of the forty cells. Categories are editable; home stays as
-    /// it was (team decision, Ali, 11 Aug 2026).
+    /// Add the shipped home page until the user saves an edited copy.
     private static func withHome(_ pages: [KeyboardPage]) -> [KeyboardPage] {
         guard !pages.contains(where: { $0.id == homeID }),
               let home = BoardLayout.builtInPages.first(where: { $0.id == homeID })
@@ -37,13 +29,6 @@ final class PageStore: ObservableObject {
     }
 
     private static let homeID = "home"
-
-    /// Whether anything written here can actually reach the keyboard.
-    ///
-    /// The keyboard sets this the first time it runs with Full Access; without
-    /// the grant it reads its own sandbox and never sees the shared container
-    /// at all, so an edit made here would simply not happen.
-    var keyboardCanSeeEdits: Bool { store.bool(forKey: ScreenWords.keyboardAccessKey) }
 
     var currentPageID: String { pages.indices.contains(currentIndex) ? pages[currentIndex].id : "" }
 
@@ -61,22 +46,7 @@ final class PageStore: ObservableObject {
     /// board with no home is a board with no way back.
     var canDeleteCurrentPage: Bool { currentPageID != Self.homeID }
 
-    /// Nor edited. It is here to be looked at and navigated from.
-    var canEditCurrentPage: Bool { currentPageID != Self.homeID }
-
-    /// How many of the shipped category's words this page has no room for.
-    ///
-    /// A page holds 34 keys once the keyboard's own controls have their
-    /// cells, and three categories ship with more than that. The words that
-    /// do not fit are the rarest ones, and they are still reachable by
-    /// spelling — but a page quietly holding fewer words than the category
-    /// it is named after is exactly the kind of thing nobody notices until
-    /// he cannot say something.
-    var hiddenWordCount: Int {
-        guard let category = vocabulary.first(where: { $0.name == currentPageID })
-        else { return 0 }
-        return max(0, category.words.count - KeyboardPage.freeCellCount)
-    }
+    var canEditCurrentPage: Bool { pages.indices.contains(currentIndex) }
 
     func button(at index: Int) -> BoardButton? {
         guard pages.indices.contains(currentIndex),
@@ -139,32 +109,29 @@ final class PageStore: ObservableObject {
     }
 
     private func save() {
-        BoardLayout.savePages(pages.filter { $0.id != Self.homeID }, to: store)
+        BoardLayout.savePages(pages, to: store)
     }
 
     // MARK: The keyboard's fixed furniture, which the editor shows and does not change
 
-    static let pinned = ["Home", "Clear", "Delete\nword", "sf:globe"]
+    static let leftEdge = ["sf:house.fill", "sf:square.grid.2x2.fill", "Clear", "Delete\nword"]
 
     /// The controls the design places inside the content grid. They are
     /// drawn so the editor's geometry matches the keyboard's exactly, and
     /// they are not editable: they belong to the keyboard, not the page.
     static func fixedControl(row: Int, column: Int) -> String? {
         switch (row, column) {
-        case (0, 0): return "sf:square.grid.2x2.fill"
-        case (0, 1): return "ABC"
-        case (1, 8), (1, 9): return column == 8 ? "Enter" : ""
-        case (3, 8): return "sf:keyboard.chevron.compact.down"
-        case (3, 9): return "sf:arrow.right"
+        case (3, 0): return "sf:arrow.left"
+        case (3, KeyboardPage.columns - 1): return "sf:arrow.right"
         default: return nil
         }
     }
 
     static func tint(for control: String) -> Color {
         switch control {
-        case "Enter", "": return Color(red: 0.80, green: 0.87, blue: 0.96)
-        case "ABC", "sf:square.grid.2x2.fill",
-             "sf:keyboard.chevron.compact.down", "sf:arrow.right":
+        case "Enter", "": return Color(.systemGray3)
+        case "ABC", "sf:house.fill", "sf:square.grid.2x2.fill",
+             "sf:keyboard.chevron.compact.down", "sf:arrow.left", "sf:arrow.right":
             return Color(.systemBackground)
         default: return Color(.systemGray2)
         }

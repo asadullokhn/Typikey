@@ -100,6 +100,7 @@ First run on a new device needs Developer Mode enabled (Settings → Privacy & S
 
 - [Would a model on the app beat the keyboard's trigrams?](docs/experiments/2026-08-10-app-side-model.md) — no, not this way. An on-device model generating a next-word table scored 1879 taps against the shipped 1847, and was worse at every weight tried. It reproduces the hand-tuned seeds where they exist and adds noise where they do not. The tooling to retry it lives in `Tools/predict-table/`, and the table it produced is beside the report.
 
+- [What the keyboard actually costs in memory](docs/experiments/2026-08-11-keyboard-memory.md) — 58.3 MB peak on the simulator against a 30-80 MB ceiling, the first reading in the project's life. The extension now records its own high-water mark and the app shows it in Diagnostics, so the ceiling is a number rather than folklore. The device figure is still outstanding.
 ## Known limitations / not yet decided
 
 - Malay is gone for the MVP rather than fixed. If it returns, every word needs a native-speaking AAC user's read — Singaporean Malay has colloquial forms a dictionary translation misses — and Malay marks tense with particles rather than by inflecting, so the verb keys would need a different mechanism there, not a translated one.
