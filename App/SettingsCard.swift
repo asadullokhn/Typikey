@@ -1,12 +1,12 @@
 import SwiftUI
 
 /// Every setting in one place: whether Typikey remembers a conversation,
-/// whether verb keys reshape themselves, and how big the board is.
+/// and whether verb keys reshape themselves.
 ///
-/// All three cross from the app into the keyboard through the shared
-/// container, so all three need Allow Full Access to have any effect —
-/// which is what `ReadinessCard` says at the top of the screen, since a
-/// setting that silently does nothing is worse than one that is missing.
+/// Both cross from the app into the keyboard through the shared container,
+/// so both need Allow Full Access to have any effect — which is what
+/// `ReadinessCard` says at the top of the screen, since a setting that
+/// silently does nothing is worse than one that is missing.
 ///
 /// Kept on the home screen rather than buried in Diagnostics, because it is
 /// something a person reaches for *before* a private conversation, not
@@ -16,13 +16,7 @@ import SwiftUI
 struct SettingsCard: View {
     @State private var isOn = Preferences.privateMode
     @State private var grammarOn = Preferences.smartGrammar
-    @State private var size = Preferences.keyboardSize
-
     @State private var reshapeOn = Preferences.boardFollowsSentence
-    @State private var fit: KeyboardFit.Reading?
-
-    private let store: UserDefaults =
-        UserDefaults(suiteName: ScreenWords.suiteName) ?? .standard
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -88,26 +82,13 @@ struct SettingsCard: View {
 
             Divider()
 
-            VStack(alignment: .leading, spacing: 10) {
-                Text("Keyboard size")
-                    .font(.title3.weight(.semibold))
-                KeyboardSizePicker(selection: $size, measured: fit)
-                    .onChange(of: size) { _, newValue in
-                        Preferences.keyboardSize = newValue
-                    }
-            }
-
-            Divider()
-
             PersonalizationCard()
         }
         .homeCardStyle()
         .onAppear {
             isOn = Preferences.privateMode
             grammarOn = Preferences.smartGrammar
-            size = Preferences.keyboardSize
             reshapeOn = Preferences.boardFollowsSentence
-            fit = KeyboardFit.read(from: store)
         }
     }
 }

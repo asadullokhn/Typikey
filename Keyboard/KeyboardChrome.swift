@@ -308,25 +308,29 @@ extension KeyboardViewController {
         var bounds = fullBounds
         // viewDidLayoutSubviews compensates the height REQUEST when the
         // system grants less than we asked for; this clamp is only a
-        // defensive floor for the transient frame before that lands, so
-        // it targets the raw preset — not the (possibly inflated)
+        // defensive floor for the transient frame before that lands, so it
+        // targets the plain target height — not the (possibly inflated)
         // requested height — and converges to the designed size.
-        bounds.size.height = min(bounds.height, min(view.bounds.height > 0 ? view.bounds.height : presetHeight, presetHeight))
+        let target = targetHeight
+        bounds.size.height = min(bounds.height, min(view.bounds.height > 0 ? view.bounds.height : target, target))
         guard bounds.width > 0, !keys.isEmpty else { return }
         let yOffset = fullBounds.height - bounds.height
         layoutYOffset = yOffset
+        // Paint through the bottom safe area too. The system parks our view
+        // above the home-indicator strip and leaves that strip to us;
+        // unpainted, the app shows through it and the board reads as
+        // floating above the screen edge rather than sitting on it.
         boardBackground.frame = CGRect(
-            x: 0, y: yOffset, width: fullBounds.width, height: fullBounds.height - yOffset)
+            x: 0, y: yOffset, width: fullBounds.width,
+            height: fullBounds.height - yOffset + view.safeAreaInsets.bottom)
         let inset: CGFloat = 4
 
         layoutSuggestionBar(in: bounds, yOffset: yOffset, inset: inset)
 
-        let outer: CGFloat = 12
-        let gap: CGFloat = 8
-        let referenceColumns = isCompact ? 7 : 10
-        let edgeCell = max(1, (bounds.width - outer * 2
-                              - gap * CGFloat(referenceColumns - 1))
-                            / CGFloat(referenceColumns))
+        let outer = KeyboardFit.outerInset
+        let gap = KeyboardFit.gap
+        let edgeCell = KeyboardFit.cellWidth(
+            boardWidth: bounds.width, columns: referenceColumns)
         let rightX = outer + CGFloat(referenceColumns - 1) * (edgeCell + gap)
         let contentLeft = outer + edgeCell + gap
         let contentRight = rightX - gap
@@ -336,25 +340,32 @@ extension KeyboardViewController {
 
         let availableHeight = bounds.height - topBarHeight
         guard availableHeight > 0 else { return }
+        let bottomInset = KeyboardFit.bottomInset(
+            safeAreaBottom: view.safeAreaInsets.bottom)
         let edgeRowCell: CGFloat
         let contentRowCell: CGFloat
         let gridTop: CGFloat
         if !isCompact && contentRowCount == 4 {
             let fittedRowCell = KeyboardFit.fittedRowHeight(
-                preferred: edgeCell,
+                preferred: edgeCell * KeyboardFit.maxRowAspect,
                 availableHeight: availableHeight,
                 rows: 4,
                 gap: gap,
-                outerInset: outer)
+                verticalInset: outer + bottomInset)
             edgeRowCell = fittedRowCell
             contentRowCell = fittedRowCell
+            // Sit on the bottom edge. Any slack the grant leaves over goes
+            // above the grid, under the suggestion bar, rather than being
+            // split into a band below the last row that reads as the board
+            // floating clear of the screen.
             let gridHeight = fittedRowCell * 4 + gap * 3
-            gridTop = yOffset + topBarHeight
-                + max(outer, (availableHeight - gridHeight) / 2)
+            gridTop = max(yOffset + topBarHeight + outer,
+                          yOffset + bounds.height - bottomInset - gridHeight)
         } else {
-            edgeRowCell = max(1, (availableHeight - gap * 3 - outer * 2) / 4)
+            edgeRowCell = max(1, (availableHeight - gap * 3 - outer - bottomInset) / 4)
             contentRowCell = max(1, (availableHeight
-                                     - gap * CGFloat(contentRowCount - 1) - outer * 2)
+                                     - gap * CGFloat(contentRowCount - 1)
+                                     - outer - bottomInset)
                                     / CGFloat(contentRowCount))
             gridTop = yOffset + topBarHeight + outer
         }
@@ -397,7 +408,7 @@ extension KeyboardViewController {
     /// the latter. Recorded only when it changes, since layout runs often.
     func recordFit(rowHeight: CGFloat) {
         let reading = KeyboardFit.Reading(
-            requested: requestedHeight,
+            requested: targetHeight,
             granted: view.bounds.height,
             rowHeight: rowHeight,
             rows: contentRowCount,

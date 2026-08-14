@@ -66,45 +66,38 @@ final class KeyboardViewController: UIInputViewController {
         let rowSpan: Int
     }
 
-    // Three height presets, chosen in the app rather than on the board —
-    // the size key spent a grid slot on something adjusted once and then
-    // never again, and grid slots are the scarcest thing here.
-    //
-    // The iPad numbers are deliberately large. A dedicated AAC app takes
-    // the whole screen, and this one has to fit a real core vocabulary:
-    // Large is what makes six rows of ten possible at ~97pt each, which is
-    // taller than a key on the system keyboard, not smaller.
-    // Layout is fully width-responsive on top: when the system narrows us
-    // (floating, Split View, Slide Over, Stage Manager) the grid drops to
-    // compact mode instead of breaking. The phone numbers stay small
-    // because an iPad preset would swallow an iPhone screen.
-    var size: KeyboardSize = .large
-    var presetHeight: CGFloat {
-        size.height(phone: UIDevice.current.userInterfaceIdiom == .phone)
-    }
+    // The board is always as tall as it can be; there is no size setting.
+    // Height follows width — rows grow with the cells up to
+    // KeyboardFit.maxRowAspect, clamped by a fraction of the screen — so
+    // asking is never worth more than the rows can spend. Layout stays
+    // width-responsive on top: when the system narrows us (floating, Split
+    // View, Slide Over, Stage Manager) the grid drops to compact mode
+    // instead of breaking.
     var heightConstraint: NSLayoutConstraint?
     var healAttempts = 0
     var lastCompact = false
-    let topBarHeight: CGFloat = 56
+    let topBarHeight = KeyboardFit.barHeight
     let debounceInterval: TimeInterval = 0.5
 
-    // The system can grant the extension's window LESS height than we
-    // request (iPadOS 26 reserves an input-assistant band above
-    // third-party keyboards). heightDeficit accumulates the measured
-    // shortfall so the REQUEST compensates for it; requestedHeight is
-    // what we ask the constraint for everywhere we used to ask for the
-    // raw preset. Capped at 160 so it can never runaway. The whole request
-    // is additionally clamped to 75% of an iPad screen, which leaves room
-    // for the reserved band while still reaching the Large preset, and 60%
-    // on iPhone so a portrait preset cannot bury an app in landscape.
-    var heightDeficit: CGFloat = 0
-    var requestedHeight: CGFloat {
-        let screenHeight = (view.window?.screen ?? UIScreen.main).bounds.height
-        return KeyboardFit.requestedHeight(
-            preset: presetHeight,
-            measuredDeficit: heightDeficit,
+    var screenHeight: CGFloat { (view.window?.screen ?? UIScreen.main).bounds.height }
+
+    /// Before the first layout the screen stands in for the board's width.
+    var boardWidth: CGFloat {
+        view.bounds.width > 0
+            ? view.bounds.width
+            : (view.window?.screen ?? UIScreen.main).bounds.width
+    }
+
+    /// Columns the pinned edges are measured against — the content grid's
+    /// own count varies, the frame it sits in must not.
+    var referenceColumns: Int { isCompact ? 7 : 10 }
+
+    var targetHeight: CGFloat {
+        KeyboardFit.targetHeight(
+            boardWidth: boardWidth,
+            columns: referenceColumns,
             screenHeight: screenHeight,
-            isPhone: UIDevice.current.userInterfaceIdiom == .phone)
+            safeAreaBottom: view.safeAreaInsets.bottom)
     }
 
     var isCompact: Bool {
@@ -291,21 +284,32 @@ final class KeyboardViewController: UIInputViewController {
         myWords = (store.array(forKey: "myWords") as? [String]) ?? []
         autoFileCache = (store.dictionary(forKey: "wordFiling") as? [String: String]) ?? [:]
         reloadScreenWords()
-        size = KeyboardSize.clamped(Preferences.keyboardSize(in: store))
 
-        // Height lives on OUR content view, never on the root view. The
-        // system derives the window height from content fitting; a height
-        // constraint on the root view fights the system's cached window
-        // frame, and the loser gets re-cached — that feedback loop is what
-        // made the keyboard grow on every open/close cycle.
+        // The height belongs on the ROOT view. Autolayout has no implicit
+        // "a subview fits inside its superview", so a height on trackingView
+        // — pinned leading, trailing and bottom, with no top anchor —
+        // described trackingView and nothing else. The root view's fitting
+        // height stayed unconstrained, the system used its own default, and
+        // the extension was handed 343pt however much it asked for. Every
+        // size control above this line was inert; the deficit compensation
+        // below spent its life chasing a request that could not be granted.
+        //
+        // 999 rather than required: the system installs its own height
+        // constraint on the input view, and two required constraints that
+        // disagree are what produced the historic grow-on-every-open bug.
+        // At 999 ours wins wherever the system's is breakable and yields
+        // where it is not, so a disagreement costs points, not a feedback
+        // loop.
         trackingView.translatesAutoresizingMaskIntoConstraints = false
         trackingView.isMultipleTouchEnabled = false
         trackingView.controller = self
         view.addSubview(trackingView)
-        let height = trackingView.heightAnchor.constraint(equalToConstant: presetHeight)
+        let height = view.heightAnchor.constraint(equalToConstant: targetHeight)
+        height.priority = UILayoutPriority(999)
         NSLayoutConstraint.activate([
             trackingView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             trackingView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            trackingView.topAnchor.constraint(equalTo: view.topAnchor),
             trackingView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
             height,
         ])
@@ -329,23 +333,6 @@ final class KeyboardViewController: UIInputViewController {
         buildSuggestionBar()
         predictionDocumentIdentifier = currentDocumentIdentifier
         buildKeys()
-    }
-
-    /// Tears the height constraint down and builds a new one.
-    ///
-    /// Height lives on the content view, never the root view — a height
-    /// constraint on the root fights the system's cached window frame, and
-    /// the loser gets re-cached, which is the feedback loop that made the
-    /// keyboard grow on every open. Within that rule, replacing the
-    /// constraint is the strongest signal available that the size really
-    /// changed.
-    func rebuildHeightConstraint() {
-        heightConstraint?.isActive = false
-        let height = trackingView.heightAnchor.constraint(equalToConstant: requestedHeight)
-        height.isActive = true
-        heightConstraint = height
-        view.setNeedsLayout()
-        view.layoutIfNeeded()
     }
 
     // Pointer support (trackpad, Apple Pencil hover, AssistiveTouch
@@ -373,33 +360,6 @@ final class KeyboardViewController: UIInputViewController {
         isPrivate = Preferences.privateMode(in: store)
         smartGrammar = Preferences.smartGrammar(in: store)
         boardFollowsSentence = Preferences.boardFollowsSentence(in: store)
-        // Size is chosen in the app now, so it has to be re-read here —
-        // otherwise the change would not land until the extension is next
-        // restarted, which from the user's side looks like nothing happened.
-        let chosenSize = KeyboardSize.clamped(Preferences.keyboardSize(in: store))
-        if chosenSize != size {
-            size = chosenSize
-            // heightDeficit is a shortfall MEASURED AGAINST ONE PRESET, and
-            // it never decays. Carried across a size change it makes every
-            // other size wrong, and a shrink wrong in a way that looks like
-            // nothing happened at all: the request stays
-            // (old preset + deficit) tall, the system keeps the window that
-            // tall, and only the drawn board gets smaller — leaving a band
-            // of dead space above it. Forget the measurement and take it
-            // again for the size actually chosen.
-            heightDeficit = 0
-            // The self-heal shrinks an oversized window, and it gives up
-            // after two tries. Those tries were spent on the old size.
-            healAttempts = 0
-            // Replace the constraint rather than retune it. Changing
-            // `constant` asks the system to revisit a window height it has
-            // already cached — the same cache that caused the historic
-            // growth bug — and on a size change that request is quietly
-            // ignored often enough that the picker looked dead. A new
-            // constraint object is a change the layout engine cannot
-            // coalesce away.
-            rebuildHeightConstraint()
-        }
         myWords = (store.array(forKey: "myWords") as? [String]) ?? []
         reloadScreenWords()
         reloadPersonalizationSnapshot()
@@ -408,7 +368,7 @@ final class KeyboardViewController: UIInputViewController {
         predictionTrieSignature = ""
         typedToken = ""
         boardBackground.backgroundColor = isPrivate ? Palette.privateBoard : Palette.board
-        heightConstraint?.constant = requestedHeight
+        heightConstraint?.constant = targetHeight
         let signature = "\(textDocumentProxy.keyboardType?.rawValue ?? -1)|\(textDocumentProxy.returnKeyType?.rawValue ?? -1)"
         predictionDocumentIdentifier = currentDocumentIdentifier
         // Unconditional and unconditionally FIRST: reads and clears any
@@ -440,12 +400,20 @@ final class KeyboardViewController: UIInputViewController {
         }
         layoutKeys()
 
+        // The target follows the board's width, which is unknown until this
+        // first layout — the screen stands in for it before then — and moves
+        // again on rotation and Split View resizes. Without this the
+        // constraint keeps whatever height that stand-in produced.
+        if !isRotating, let constraint = heightConstraint,
+           abs(constraint.constant - targetHeight) > 1 {
+            constraint.constant = targetHeight
+        }
+
         // Self-heal: if the container is still oversized once rotation has
-        // settled, rebuild the height constraint from scratch — reasserting
-        // the existing one is not always enough to shrink the window.
-        // Compares against requestedHeight (not the raw preset) so it
-        // doesn't fight the undersize compensation below.
-        let drift = trackingView.bounds.height - requestedHeight
+        // settled, reassert the height with a value the layout engine cannot
+        // coalesce away — setting the same constant is a no-op, and a no-op
+        // never shrinks a stale window.
+        let drift = trackingView.bounds.height - targetHeight
         if !isRotating, !pendingHeightFix, drift > 1, healAttempts < 2, heightConstraint != nil {
             pendingHeightFix = true
             healAttempts += 1
@@ -453,64 +421,41 @@ final class KeyboardViewController: UIInputViewController {
                 guard let self, let constraint = self.heightConstraint else { return }
                 // A genuine value change — same-value updates are no-ops to
                 // the layout engine and never shrink the stale window.
-                constraint.constant = self.requestedHeight - 2
+                constraint.constant = self.targetHeight - 2
                 self.view.setNeedsLayout()
                 self.view.layoutIfNeeded()
-                constraint.constant = self.requestedHeight
+                constraint.constant = self.targetHeight
                 self.view.setNeedsLayout()
                 self.view.layoutIfNeeded()
                 self.pendingHeightFix = false
             }
         }
 
-        // Compensate: the system can hand the extension LESS height than
-        // trackingView requests (iPadOS 26 reserves an input-assistant
-        // band above third-party keyboards). Measure the shortfall
-        // against the real container and bump the request by exactly
-        // that much — guarded to escalate only when a NEW, larger
-        // deficit is measured, so this can never compound into the
-        // historic growth-loop bug documented at the top of this file.
-        // The 160pt cap is applied BEFORE the comparison (not just to
-        // the stored value) — otherwise, once heightDeficit is capped,
-        // a stale/lagging view.bounds.height keeps reporting a raw
-        // deficit above the (now-static) capped value forever, and this
-        // block re-fires — and calls setNeedsLayout() — every single
-        // layout pass indefinitely.
-        // !isCompact: floating keyboard / Split View / Slide Over grants
-        // are small BY DESIGN — that is not the input-assistant-band
-        // shortfall this mechanism exists to compensate for. heightDeficit
-        // never decays on its own, so measuring a compact-mode grant here
-        // would let a float episode pin the deficit at the 160pt cap and
-        // then inflate the docked, full-width keyboard afterward.
-        // Pad-only: the reserved band this compensates for is an iPadOS 26
-        // behavior. On a phone the only wide layout is landscape, where a
-        // grant below the (screen-clamped) request is normal — learning it
-        // as a deficit would leak extra height back into portrait.
-        if !isRotating, !isCompact, UIDevice.current.userInterfaceIdiom == .pad,
-           let constraint = heightConstraint, view.bounds.height > 0,
-           view.bounds.height < constraint.constant - 1 {
-            let deficit = min(constraint.constant - view.bounds.height, 160)
-            if deficit > heightDeficit {
-                heightDeficit = deficit
-                constraint.constant = requestedHeight
-                view.setNeedsLayout()
-            }
-        }
+        // There was an undersize compensation here: it measured a grant
+        // smaller than the request and inflated the request to match. It
+        // existed because the height constraint sat on a subview and could
+        // never be honoured, so the shortfall it chased was permanent. With
+        // the constraint on the root view the grant matches to the pixel,
+        // and the only thing left for that mechanism to measure was the
+        // system's own default during the first layout pass — which it
+        // learned as a 160pt deficit and never gave back, leaving a
+        // transparent band across the top of the keyboard until the field
+        // was closed and reopened.
     }
 
     // On rotation the system can hand the extension transient, oversized
     // bounds. Reassert our height across the transition so the keyboard
-    // settles back to its preset instead of staying huge.
+    // settles back to its target instead of staying huge.
     override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
         super.viewWillTransition(to: size, with: coordinator)
         resetTouchIntent()
         isRotating = true
         healAttempts = 0
         coordinator.animate(alongsideTransition: { _ in
-            self.heightConstraint?.constant = self.requestedHeight
+            self.heightConstraint?.constant = self.targetHeight
             self.view.setNeedsLayout()
         }, completion: { _ in
-            self.heightConstraint?.constant = self.requestedHeight
+            self.heightConstraint?.constant = self.targetHeight
             self.view.setNeedsLayout()
             self.view.layoutIfNeeded()
             self.isRotating = false

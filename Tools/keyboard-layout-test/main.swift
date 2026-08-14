@@ -1,43 +1,64 @@
 import CoreGraphics
 import Foundation
 
-let grantedHeight: CGFloat = 479
-let suggestionBarHeight: CGFloat = 56
-let availableHeight = grantedHeight - suggestionBarHeight
-let rowHeight = KeyboardFit.fittedRowHeight(
-    preferred: 127,
-    availableHeight: availableHeight,
-    rows: 4,
-    gap: 8,
-    outerInset: 12)
-let gridBottom = suggestionBarHeight + 12 + rowHeight * 4 + 8 * 3 + 12
+// The device in front of us: a 13-inch iPad in Display Zoom, landscape.
+let screenW: CGFloat = 1032
+let screenH: CGFloat = 774
+let safeBottom: CGFloat = 5
+let columns = 10
 
-precondition(abs(rowHeight - 93.75) < 0.001,
-             "a 479pt grant must reduce four rows to 93.75pt")
-precondition(gridBottom <= grantedHeight + 0.001,
-             "the fourth row must remain inside the granted keyboard height")
+let cell = KeyboardFit.cellWidth(boardWidth: screenW, columns: columns)
+let target = KeyboardFit.targetHeight(
+    boardWidth: screenW, columns: columns,
+    screenHeight: screenH, safeAreaBottom: safeBottom)
+let bottom = KeyboardFit.bottomInset(safeAreaBottom: safeBottom)
+let row = KeyboardFit.fittedRowHeight(
+    preferred: cell * KeyboardFit.maxRowAspect,
+    availableHeight: target - KeyboardFit.barHeight,
+    rows: KeyboardFit.rows,
+    gap: KeyboardFit.gap,
+    verticalInset: KeyboardFit.outerInset + bottom)
 
-let roomyRowHeight = KeyboardFit.fittedRowHeight(
-    preferred: 127,
-    availableHeight: 584,
-    rows: 4,
-    gap: 8,
-    outerInset: 12)
-precondition(roomyRowHeight == 127,
-             "the reference row size must remain unchanged when it fits")
+// Square keys are the design. The cell width is fixed by the column count,
+// so this is also what decides the board's height.
+precondition(abs(row - cell) < 0.001,
+             "a word cell must be exactly as tall as it is wide")
 
-let landscapeRequest = KeyboardFit.requestedHeight(
-    preset: 640,
-    measuredDeficit: 135,
-    screenHeight: 1024,
-    isPhone: false)
-precondition(landscapeRequest == 768,
-             "iPad compensation must be allowed to request 75% of landscape height")
+// The board asks for precisely what those rows need, so the grid fills it:
+// no dead margin above the first row or below the last beyond the insets.
+let occupied = KeyboardFit.barHeight + KeyboardFit.outerInset
+    + row * CGFloat(KeyboardFit.rows)
+    + KeyboardFit.gap * CGFloat(KeyboardFit.rows - 1) + bottom
+precondition(abs(occupied - target) < 0.001,
+             "the target height must be exactly what the board occupies")
 
-let phoneRequest = KeyboardFit.requestedHeight(
-    preset: 640,
-    measuredDeficit: 135,
-    screenHeight: 1024,
-    isPhone: true)
-precondition(abs(phoneRequest - 614.4) < 0.001,
-             "the existing 60% phone cap must remain unchanged")
+// The bottom margin is the home-indicator strip, not the 12pt the sides
+// use — the board sits on the screen edge rather than floating above it.
+precondition(bottom < KeyboardFit.outerInset,
+             "the bottom margin must be tighter than the side margin")
+
+// The screen fraction is a backstop, not the thing normally in force.
+precondition(target < screenH * KeyboardFit.targetFraction,
+             "square cells must land under the screen ceiling, not on it")
+
+// A grant smaller than asked for shrinks the rows rather than pushing the
+// fourth one past the bottom edge.
+let squeezed = KeyboardFit.fittedRowHeight(
+    preferred: cell,
+    availableHeight: 300 - KeyboardFit.barHeight,
+    rows: KeyboardFit.rows,
+    gap: KeyboardFit.gap,
+    verticalInset: KeyboardFit.outerInset + bottom)
+let squeezedBottom = KeyboardFit.barHeight + KeyboardFit.outerInset
+    + squeezed * 4 + KeyboardFit.gap * 3 + bottom
+precondition(squeezed < cell, "a short grant must shrink the rows")
+precondition(squeezedBottom <= 300.001,
+             "the fourth row must remain inside the granted height")
+
+// Portrait: narrower cells, so a shorter board. Still square, still exact.
+let portraitCell = KeyboardFit.cellWidth(boardWidth: screenH, columns: columns)
+let portraitTarget = KeyboardFit.targetHeight(
+    boardWidth: screenH, columns: columns,
+    screenHeight: screenW, safeAreaBottom: safeBottom)
+precondition(portraitCell < cell && portraitTarget < target,
+             "a narrower board must be a shorter one")
