@@ -193,7 +193,10 @@ extension KeyboardViewController {
         // stop had already ended the sentence. refreshVerbForms rebuilds
         // only when the board would actually read differently, so this
         // costs nothing on the commits that change nothing.
-        DispatchQueue.main.async { [weak self] in self?.refreshVerbForms() }
+        DispatchQueue.main.async { [weak self] in
+            self?.refreshVerbForms()
+            self?.syncReturnKey()
+        }
     }
 
     /// Repeats are intentional for deletes and cursor movement; clear-all
@@ -206,22 +209,7 @@ extension KeyboardViewController {
     }
 
     func handleClearAll() {
-        if let armed = clearArmedAt, Date().timeIntervalSince(armed) < 3 {
-            clearArmedAt = nil
-            clearAllText()
-            buildKeys() // restore the "Clear all" label
-            return
-        }
-        clearArmedAt = Date()
-        haptics.armedDestructive() // the next tap erases everything — say so by feel
-        buildKeys() // relabel to "tap again"
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3) { [weak self] in
-            guard let self, self.clearArmedAt != nil else { return }
-            if Date().timeIntervalSince(self.clearArmedAt!) >= 3 {
-                self.clearArmedAt = nil
-                self.buildKeys() // disarm quietly
-            }
-        }
+        clearAllText()
     }
 
     /// Clears everything the field exposes. Extensions only see a context
@@ -262,13 +250,18 @@ extension KeyboardViewController {
         let previous = lastWord()
 
         var text = word
-        if atSentenceStart(), let first = text.first, first.isLowercase {
+        let joined = WordJoin.leads(word) || WordJoin.continues(contextBefore())
+        if !joined, !WordJoin.isJoiner(word),
+           atSentenceStart(), let first = text.first, first.isLowercase {
             text = first.uppercased() + text.dropFirst()
         }
-        if let last = contextBefore().last, last != " ", last != "\n" {
+        // ".com" pulls back onto the word before it, the way punctuation does.
+        if WordJoin.leads(word), contextBefore().last == " " {
+            textDocumentProxy.deleteBackward()
+        } else if !joined, let last = contextBefore().last, last != " ", last != "\n" {
             textDocumentProxy.insertText(" ")
         }
-        textDocumentProxy.insertText(text + " ")
+        textDocumentProxy.insertText(WordJoin.trails(word) ? text : text + " ")
 
         // Count the base word, not the inflected label: "go", "goes" and
         // "going" are one key and one habit, and Recents would otherwise
