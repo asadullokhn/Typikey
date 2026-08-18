@@ -32,8 +32,8 @@ final class MyWordsTests: XCTestCase {
 
         // Typikey may open on Home (grid) or already on letters, depending
         // on the last-used level restored for this field signature.
-        if app.staticTexts["abc"].waitForExistence(timeout: 3) {
-            app.staticTexts["abc"].tap()
+        if app.staticTexts["ABC"].waitForExistence(timeout: 3) {
+            app.staticTexts["ABC"].tap()
         }
 
         for letter in ["q", "u", "a", "n", "d", "o"] {

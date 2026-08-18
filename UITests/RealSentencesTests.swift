@@ -92,7 +92,7 @@ final class RealSentencesTests: XCTestCase {
     // MARK: driving
 
     private func spell(_ word: String, in app: XCUIApplication) {
-        if app.staticTexts["abc"].exists { app.staticTexts["abc"].tap() }
+        if app.staticTexts["ABC"].exists { app.staticTexts["ABC"].tap() }
         for letter in word.lowercased() {
             let key = app.staticTexts[String(letter)].firstMatch
             if key.waitForExistence(timeout: 2) { key.tap() }
@@ -104,9 +104,6 @@ final class RealSentencesTests: XCTestCase {
     private func clearField(_ app: XCUIApplication) {
         guard app.staticTexts["Clear"].exists else { return }
         app.staticTexts["Clear"].tap()
-        if app.staticTexts["tap again"].waitForExistence(timeout: 2) {
-            app.staticTexts["tap again"].tap()
-        }
     }
 
     private func fieldText(_ app: XCUIApplication) -> String {
@@ -137,16 +134,7 @@ final class RealSentencesTests: XCTestCase {
         app.launchArguments += ["-skipOnboarding"]
         app.launch()
         XCUIDevice.shared.orientation = .portrait
-        let field = app.textFields.firstMatch.exists ? app.textFields.firstMatch : app.textViews.firstMatch
-        XCTAssertTrue(field.waitForExistence(timeout: 10), "practice field not found")
-        field.tap()
-        let continueButton = app.buttons["Continue"]
-        if continueButton.waitForExistence(timeout: 3) {
-            continueButton.tap()
-            field.tap()
-        }
-        XCTAssertTrue(app.staticTexts["Home"].waitForExistence(timeout: 10),
-                      "Typikey home board not visible — is Typikey the active keyboard?")
+        app.focusRealKeyboard()
         return app
     }
 }

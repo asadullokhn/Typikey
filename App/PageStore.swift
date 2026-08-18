@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 import Combine
 
 /// The pages the editor works on, and the one place that writes them.
@@ -114,8 +115,6 @@ final class PageStore: ObservableObject {
 
     // MARK: The keyboard's fixed furniture, which the editor shows and does not change
 
-    static let leftEdge = ["sf:house.fill", "sf:square.grid.2x2.fill", "Clear", "Delete\nword"]
-
     /// The controls the design places inside the content grid. They are
     /// drawn so the editor's geometry matches the keyboard's exactly, and
     /// they are not editable: they belong to the keyboard, not the page.
@@ -127,32 +126,23 @@ final class PageStore: ObservableObject {
         }
     }
 
-    static func tint(for control: String) -> Color {
+    /// The same roles the keyboard paints by, from the same `Palette`.
+    static func tint(for control: String) -> UIColor {
         switch control {
-        case "Enter", "": return Color(.systemGray3)
-        case "ABC", "sf:house.fill", "sf:square.grid.2x2.fill",
-             "sf:keyboard.chevron.compact.down", "sf:arrow.left", "sf:arrow.right":
-            return Color(.systemBackground)
-        default: return Color(.systemGray2)
+        case "Enter": return Palette.commit
+        case "Clear", "Delete\nword": return Palette.erase
+        // Home has no card on the keyboard: it sits on the tray itself.
+        case "sf:house.fill": return Palette.board
+        default: return Palette.navigate
         }
     }
 
-    /// The Fitzgerald key, matched to the keyboard's own palette so the
-    /// editor and the board never disagree about what colour a word is.
-    static func tint(forWord word: String?) -> Color {
-        guard let word, !word.isEmpty else { return Color(.systemGray6) }
-        guard let entry = vocabIndex[word] ?? vocabIndex[word.lowercased()] else {
-            return Color(red: 0.96, green: 0.95, blue: 0.91)
-        }
-        switch entry.wordClass {
-        case .pronoun:    return Color(red: 0.98, green: 0.96, blue: 0.72)
-        case .verb:       return Color(red: 0.80, green: 0.91, blue: 0.72)
-        case .descriptor: return Color(red: 0.86, green: 0.93, blue: 0.98)
-        case .noun:       return Color(red: 1.00, green: 0.87, blue: 0.72)
-        case .social:     return Color(red: 0.99, green: 0.85, blue: 0.91)
-        case .question:   return Color(red: 0.90, green: 0.85, blue: 0.98)
-        case .function:   return Color(red: 0.96, green: 0.95, blue: 0.91)
-        case .punct:      return .white
-        }
+    /// The Fitzgerald key, from the keyboard's own palette so the editor and
+    /// the board never disagree about what colour a word is.
+    static func tint(forWord word: String?) -> UIColor {
+        guard let word, !word.isEmpty else { return .systemGray6 }
+        guard let entry = vocabIndex[word] ?? vocabIndex[word.lowercased()]
+        else { return Palette.function }
+        return Palette.color(for: entry.wordClass)
     }
 }

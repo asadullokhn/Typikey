@@ -53,7 +53,11 @@ final class PinnedFrameTests: XCTestCase {
         app.staticTexts["ABC"].tap()
         assertFrames(baseline, in: app, level: "letters")
 
-        app.staticTexts["123"].tap()
+        let toNumbers = app.staticTexts.matching(identifier: "123").allElementsBoundByIndex
+            .filter(\.exists)
+            .max { $0.frame.midX < $1.frame.midX }
+        XCTAssertNotNil(toNumbers, "no 123 key on the letters board")
+        toNumbers?.tap()
         assertFrames(baseline, in: app, level: "numbers")
     }
 
@@ -109,30 +113,27 @@ final class PinnedFrameTests: XCTestCase {
                        "the keyboard-switch button must be removed")
         let deleteWord = app.staticTexts["Delete word"]
         XCTAssertTrue(deleteWord.exists, "the left edge column must not move")
-        guard let firstContentColumn = gridText("I", in: app),
-              let formerSlotWord = gridText("what", in: app) else {
+        guard let bottomRowWord = gridText("that", in: app) else {
             return XCTFail("the Home board words are missing")
         }
-        XCTAssertEqual(formerSlotWord.frame.midX, firstContentColumn.frame.midX, accuracy: 4,
-                       "a word must occupy the former switcher column")
-        XCTAssertEqual(formerSlotWord.frame.midY, deleteWord.frame.midY, accuracy: 12,
-                       "the former switcher column must be filled on the bottom row")
-        guard let addedWord = gridText("now", in: app) else {
-            return XCTFail("the freed capacity must add another Home word")
-        }
-        XCTAssertEqual(addedWord.frame.midY, deleteWord.frame.midY, accuracy: 12,
-                       "the additional word must occupy the freed bottom row")
+        XCTAssertEqual(bottomRowWord.frame.midY, deleteWord.frame.midY, accuracy: 12,
+                       "words must reach the bottom row of the content grid")
+        // The two bottom corners are the cursor keys on every board, which
+        // is what the app's page model has always reserved.
+        XCTAssertTrue(app.staticTexts["Cursor left"].exists,
+                      "the bottom-left content control must not move")
         XCTAssertTrue(app.staticTexts["Cursor right"].exists,
                       "the bottom-right content control must not move")
         XCTAssertGreaterThan(app.staticTexts["ABC"].frame.midX, app.frame.width * 0.9,
                              "the right edge column must not move")
     }
 
-    // Character-level repair belongs to the levels where characters are
-    // typed: the word boards have no ⌫ or ←, the letters level has both.
+    // Both cursor keys sit in the bottom corners of every board (19 Aug
+    // 2026); ⌫ belongs only to the levels where characters are typed.
     func testCharacterToolsLiveOnTheTypingLevels() {
         let app = launchToTypikey()
-        XCTAssertFalse(app.staticTexts["Cursor left"].exists, "no cursor-left on a word board")
+        XCTAssertTrue(app.staticTexts["Cursor left"].exists, "cursor-left pins the bottom-left")
+        XCTAssertFalse(app.staticTexts["⌫"].exists, "no single-character delete on a word board")
         app.staticTexts["ABC"].tap()
         XCTAssertTrue(app.staticTexts["q"].waitForExistence(timeout: 3), "letters level did not open")
         XCTAssertTrue(app.staticTexts["⌫"].exists, "single-character delete missing on letters")
@@ -154,21 +155,20 @@ final class PinnedFrameTests: XCTestCase {
                       "tapping '\(tappedWord)' should insert that word, got: \(value)")
     }
 
-    func testClearAllRequiresArmingTap() {
+    // Clear erases on one tap (team decision, 18 Aug 2026). It used to arm
+    // first and relabel to "tap again".
+    func testClearAllErasesOnOneTap() {
         let app = launchToTypikey()
-        app.buttons["want"].tap()
+        // "want" is also a suggestion chip; the grid key is the lower match.
+        gridText("want", in: app)?.tap()
         var value = practiceField(in: app).value as? String ?? ""
         XCTAssertTrue(value.contains("Want"), "setup: word not inserted")
 
         app.staticTexts["Clear"].tap()
         value = practiceField(in: app).value as? String ?? ""
-        XCTAssertTrue(value.contains("Want"), "first tap must only arm, not clear")
-        XCTAssertTrue(app.staticTexts["tap again"].waitForExistence(timeout: 2),
-                      "armed clear-all should relabel to 'tap again'")
-
-        app.staticTexts["tap again"].tap()
-        value = practiceField(in: app).value as? String ?? ""
-        XCTAssertFalse(value.contains("Want"), "second tap should clear the text")
+        XCTAssertFalse(value.contains("Want"), "one tap should clear the text")
+        XCTAssertFalse(app.staticTexts["tap again"].exists,
+                       "Clear no longer arms, so it must never relabel")
     }
 
     func testManualLevelSurvivesReshow() {
@@ -215,16 +215,7 @@ final class PinnedFrameTests: XCTestCase {
         app.launchArguments += ["-skipOnboarding"]
         app.launch()
         XCUIDevice.shared.orientation = .portrait
-        let field = practiceField(in: app)
-        XCTAssertTrue(field.waitForExistence(timeout: 10), "practice field not found")
-        field.tap()
-        let continueButton = app.buttons["Continue"]
-        if continueButton.waitForExistence(timeout: 3) {
-            continueButton.tap()
-            practiceField(in: app).tap()
-        }
-        XCTAssertTrue(app.staticTexts["Home"].waitForExistence(timeout: 5),
-                      "Typikey home level not visible — is Typikey the active keyboard?")
+        app.focusRealKeyboard()
         return app
     }
 

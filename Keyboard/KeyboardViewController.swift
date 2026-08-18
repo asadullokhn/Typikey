@@ -28,34 +28,6 @@ final class KeyboardViewController: UIInputViewController {
         let terminator: String
     }
 
-    enum KeyAction: Equatable {
-        case word(String)
-        case punct(String)
-        case char(String)
-        case shift
-        case delete       // pinned: one character
-        case deleteWord   // pinned
-        case clearAll     // pinned, two-tap armed (Task 3)
-        case cursorLeft   // pinned (Task 3)
-        case cursorRight  // pinned (Task 3)
-        case home         // pinned: back to the home board
-        case toCategories
-        case toWords(Int) // index into allCategories()
-        /// A page Fadillah built in the app, by id.
-        case toPage(String)
-        case toLetters
-        case toNumbers
-        case space
-        case ret
-        case dismiss
-    }
-
-    enum Level: Equatable {
-        case home, categories, letters, numbers
-        case words(Int) // index into allCategories()
-        case page(String) // a page built in the app, by id
-    }
-
     struct Key {
         let action: KeyAction
         let label: String
@@ -151,9 +123,12 @@ final class KeyboardViewController: UIInputViewController {
     /// key keeps its color and emoji, and usage is counted against the base
     /// word rather than scattering across "go", "going" and "goes".
     var inflectionBase: [String: String] = [:]
-    var level: Level = .home
-    var clearArmedAt: Date?
+    var level: BoardLevel = .home
     var lastIntentSignature: String?
+    /// Whether the return key has something to act on. Cached rather than
+    /// read per key: `style` runs for every key on every restyle, and this
+    /// crosses to the host.
+    var returnIsActive = false
 
     // The reference has eight word columns between two fixed edge columns.
     // Typing levels retain ten character columns inside those same edges.
@@ -487,6 +462,7 @@ final class KeyboardViewController: UIInputViewController {
         }
         predictionDocumentIdentifier = documentIdentifier
         typedToken = ""
+        syncReturnKey()
         refreshVerbForms()
         updateSuggestions()
         requestPhraseCompletion()

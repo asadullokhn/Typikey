@@ -74,6 +74,7 @@ extension KeyboardViewController {
         // matter what caused it — a level change back from the letters
         // keyboard, a re-show, or the sentence simply moving on.
         let context = contextBefore()
+        returnIsActive = textDocumentProxy.hasText
         verbForm = smartGrammar ? Grammar.verbForm(after: context) : .base
         verbSubject = smartGrammar ? Grammar.subject(before: context) : nil
         boardSlot = SentenceShape.expected(after: context)
@@ -84,19 +85,17 @@ extension KeyboardViewController {
 
         // Four fixed controls on the left, three on the right. Enter spans
         // the middle two rows exactly as it does in the reference.
-        for (row, definition) in leftEdgeColumn.enumerated() {
-            addKey(definition, row: row, col: 0)
+        for (row, cell) in leftEdgeColumn.enumerated() {
+            addKey(cell, row: row, col: 0)
         }
         let rightColumn = contentColumns + 1
         addKey(rightEdgeTop, row: 0, col: rightColumn)
-        addKey((.ret, goLabel()), row: 1, col: rightColumn, rowSpan: 2)
-        addKey((.dismiss, "Hide keyboard"), row: 3, col: rightColumn)
+        addKey(BoardFrame.rightEnter(label: goLabel()), row: 1, col: rightColumn)
+        addKey(BoardFrame.rightDismiss, row: 3, col: rightColumn)
 
         for (row, cells) in content.enumerated() {
             for (i, cell) in cells.enumerated() {
-                if let cell {
-                    addKey((cell.action, cell.label), row: row, col: i + 1, colSpan: cell.colSpan, rowSpan: cell.rowSpan)
-                }
+                if let cell { addKey(cell, row: row, col: i + 1) }
             }
         }
 
@@ -104,11 +103,14 @@ extension KeyboardViewController {
         view.setNeedsLayout()
     }
 
-    func addKey(_ def: (KeyAction, String), row: Int, col: Int, colSpan: Int = 1, rowSpan: Int = 1) {
+    func addKey(_ cell: ContentCell, row: Int, col: Int) {
         let keyLabel = KeyView()
-        style(keyLabel, action: def.0, label: def.1, highlighted: false)
+        // In the hierarchy before it is painted: a detached view has no
+        // appearance, and every colour would resolve light.
         trackingView.addSubview(keyLabel)
-        keys.append(Key(action: def.0, label: def.1, view: keyLabel, row: row, col: col, colSpan: colSpan, rowSpan: rowSpan))
+        style(keyLabel, action: cell.action, label: cell.label, highlighted: false)
+        keys.append(Key(action: cell.action, label: cell.label, view: keyLabel,
+                        row: row, col: col, colSpan: cell.colSpan, rowSpan: cell.rowSpan))
     }
 
     /// Which of the three jobs a key does. The role decides its color, and
@@ -127,18 +129,6 @@ extension KeyboardViewController {
             return .navigate
         case .delete, .deleteWord, .clearAll:
             return .erase
-        }
-    }
-
-    /// The controls the design draws as glyphs rather than words.
-    func symbolName(for action: KeyAction) -> String? {
-        switch action {
-        case .home: return "house.fill"
-        case .toCategories: return "square.grid.2x2.fill"
-        case .dismiss: return "keyboard.chevron.compact.down"
-        case .cursorRight: return "arrow.right"
-        case .cursorLeft: return "arrow.left"
-        default: return nil
         }
     }
 
@@ -169,14 +159,14 @@ extension KeyboardViewController {
             // tray, in the tray's own colour, so only the glyph reads.
             background = action == .home ? Palette.board : Palette.navigate
         case .action:
-            background = UIColor(white: 0.66, alpha: 1)
+            // Blue once there is something to send, grey when the field is
+            // empty — the same answer the system keyboard gives.
+            background = returnIsActive ? Palette.action : Palette.commit
         case .erase:
-            // Armed clear-all is the one irreversible key; it announces
-            // itself in red rather than relying on the label change alone.
-            background = isClearAllArmed(action) ? Palette.destructive : Palette.erase
+            background = Palette.erase
         }
 
-        let foreground: UIColor = action == .ret ? .white : Palette.foreground(on: background)
+        let foreground = Palette.foreground(on: background)
         label.paint(fill: background, focused: highlighted)
         label.textColor = foreground
         // Phrases have to be allowed to wrap; a control label is one word
@@ -189,7 +179,7 @@ extension KeyboardViewController {
         // inside the same label keeps every key on one code path; the
         // spoken label carries the name so VoiceOver and the tests read
         // the board a sighted user sees.
-        if let symbol = symbolName(for: action) {
+        if let symbol = BoardFrame.symbolName(for: action) {
             // Home is grey rather than blue: it is not one of the keys that
             // send you somewhere new, it is the way back to where you were.
             let tint = action == .home ? Palette.homeGlyph : foreground
@@ -276,9 +266,16 @@ extension KeyboardViewController {
         }
     }
 
-    func isClearAllArmed(_ action: KeyAction) -> Bool {
-        if case .clearAll = action { return clearArmedAt != nil }
-        return false
+    /// Repaints the return key alone when the field gains or loses text.
+    /// A full `buildKeys` would drop the highlight mid-slide.
+    func syncReturnKey() {
+        let active = textDocumentProxy.hasText
+        guard active != returnIsActive else { return }
+        returnIsActive = active
+        guard let index = keys.firstIndex(where: { $0.action == .ret }) else { return }
+        let key = keys[index]
+        style(key.view, action: key.action, label: key.label,
+              highlighted: index == highlightedIndex)
     }
 
     func restyleAll() {

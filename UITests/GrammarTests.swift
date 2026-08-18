@@ -14,7 +14,7 @@ final class GrammarTests: XCTestCase {
         // "I" then "am": "I" is a grid word, "am" is typed on the letters
         // level — the same path a user takes.
         gridKey(app, "I")?.tap()
-        app.staticTexts["abc"].tap()
+        app.staticTexts["ABC"].tap()
         app.staticTexts["a"].firstMatch.tap()
         app.staticTexts["m"].firstMatch.tap()
         app.staticTexts["Home"].tap()
@@ -65,9 +65,6 @@ final class GrammarTests: XCTestCase {
                        "'are' has no place after a modal")
 
         gridKey(app, "Clear")?.tap()
-        if app.staticTexts["tap again"].waitForExistence(timeout: 2) {
-            app.staticTexts["tap again"].tap()
-        }
 
         gridKey(app, "can")?.tap()
         gridKey(app, "he")?.tap()
@@ -77,9 +74,6 @@ final class GrammarTests: XCTestCase {
                        "third-person agreement does not survive a modal")
 
         gridKey(app, "Clear")?.tap()
-        if app.staticTexts["tap again"].waitForExistence(timeout: 2) {
-            app.staticTexts["tap again"].tap()
-        }
 
         // Do-support, which the first version of this fix missed entirely
         // because the auxiliary list it consulted had no "do" in it.
@@ -128,17 +122,7 @@ final class GrammarTests: XCTestCase {
         app.launchArguments += ["-skipOnboarding"]
         app.launch()
 
-        let field = app.textViews.firstMatch.exists ? app.textViews.firstMatch : app.textFields.firstMatch
-        XCTAssertTrue(field.waitForExistence(timeout: 10), "practice field not found")
-        field.tap()
-
-        let continueButton = app.buttons["Continue"]
-        if continueButton.waitForExistence(timeout: 3) {
-            continueButton.tap()
-            field.tap()
-        }
-        XCTAssertTrue(app.staticTexts["Home"].waitForExistence(timeout: 10),
-                      "Typikey home board not visible — is Typikey the active keyboard?")
+        app.focusRealKeyboard()
         return app
     }
 

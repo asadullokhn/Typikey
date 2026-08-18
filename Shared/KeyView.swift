@@ -16,6 +16,8 @@ import UIKit
 final class KeyView: UIView {
     private let gradient = CAGradientLayer()
     private let label = UILabel()
+    /// The last paint, so the key can redo it when the appearance changes.
+    private var lastPaint: (fill: UIColor, focused: Bool, bordered: Bool)?
 
     var text: String? {
         get { label.text }
@@ -135,13 +137,42 @@ final class KeyView: UIView {
     ///     Home sits directly on the tray. The focus ring still appears,
     ///     because explore-then-commit needs it on every key.
     func paint(fill: UIColor, focused: Bool, bordered: Bool = true) {
-        let resolvedFill = fill.resolvedColor(with: traitCollection)
+        lastPaint = (fill, focused, bordered)
+        let appearance = resolvedAppearance
+        let resolvedFill = fill.resolvedColor(with: appearance)
         let base = focused ? resolvedFill.shifted(by: 0.18) : resolvedFill
         gradient.colors = base.keyGradient
         layer.borderWidth = focused ? 4 : (bordered ? 1 : 0)
         let border = focused
-            ? Palette.focus.resolvedColor(with: traitCollection)
+            ? Palette.focus.resolvedColor(with: appearance)
             : base.darkened(by: 0.16)
         layer.borderColor = border.cgColor
+    }
+
+    /// A key painted before it joins the hierarchy has no style of its own,
+    /// and `resolvedColor` answers *light* for unspecified — which is how a
+    /// dark keyboard came up wearing the light palette under white text.
+    private var resolvedAppearance: UITraitCollection {
+        if traitCollection.userInterfaceStyle != .unspecified { return traitCollection }
+        if let window, window.traitCollection.userInterfaceStyle != .unspecified {
+            return window.traitCollection
+        }
+        return UITraitCollection.current
+    }
+
+    override func didMoveToWindow() {
+        super.didMoveToWindow()
+        repaint()
+    }
+
+    override func traitCollectionDidChange(_ previous: UITraitCollection?) {
+        super.traitCollectionDidChange(previous)
+        guard traitCollection.hasDifferentColorAppearance(comparedTo: previous) else { return }
+        repaint()
+    }
+
+    private func repaint() {
+        guard let last = lastPaint else { return }
+        paint(fill: last.fill, focused: last.focused, bordered: last.bordered)
     }
 }

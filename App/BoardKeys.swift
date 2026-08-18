@@ -1,28 +1,47 @@
 import SwiftUI
 
-// The three kinds of thing the board draws: a control the editor shows
-// and will not change, a key belonging to the page, and one of the
-// actions across the top.
+/// The keyboard's key face in SwiftUI. Mirrors `KeyView.paint` and must keep
+/// mirroring it. Size comes from the caller's frame: Enter spans two rows.
+private struct KeySurface: ViewModifier {
+    @Environment(\.colorScheme) private var scheme
+    let fill: UIColor
+    let bordered: Bool
+    let focused: Bool
 
-/// A square that fills whatever column width the grid hands it.
-extension View {
-    func keyShape(_ fill: Color) -> some View {
-        frame(maxWidth: .infinity, maxHeight: .infinity)
+    func body(content: Content) -> some View {
+        let base = fill.resolvedColor(
+            with: UITraitCollection(userInterfaceStyle: scheme == .dark ? .dark : .light))
+        let shape = RoundedRectangle(cornerRadius: 16, style: .continuous)
+        return content
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(
-                RoundedRectangle(cornerRadius: 14)
-                    .fill(fill)
-                    .shadow(color: .black.opacity(0.22), radius: 4, x: 0, y: 1)
-                    .shadow(color: .white.opacity(0.72), radius: 3, x: 0, y: -1)
+                shape.fill(LinearGradient(
+                    colors: [Color(uiColor: base.lightened(by: 0.10)),
+                             Color(uiColor: base.darkened(by: 0.06))],
+                    startPoint: .top, endPoint: .bottom))
             )
-            .aspectRatio(1, contentMode: .fit)
+            .overlay(
+                shape.strokeBorder(
+                    focused ? Color(uiColor: Palette.focus)
+                            : Color(uiColor: base.darkened(by: 0.16)),
+                    lineWidth: focused ? 4 : (bordered ? 1 : 0))
+            )
+    }
+}
+
+extension View {
+    func keyShape(_ fill: UIColor, bordered: Bool = true, focused: Bool = false) -> some View {
+        modifier(KeySurface(fill: fill, bordered: bordered, focused: focused))
     }
 }
 
 struct ControlKey: View {
     let label: String
-    var tint: Color = Color(.systemGray2)
+    var tint: UIColor = Palette.navigate
     var accessibilityName: String?
     var action: (() -> Void)?
+
+    private var isHome: Bool { label == "sf:house.fill" }
 
     var body: some View {
         Button { action?() } label: {
@@ -37,8 +56,9 @@ struct ControlKey: View {
                         .minimumScaleFactor(0.4)
                 }
             }
-            .keyShape(tint)
-            .foregroundStyle(label == "Enter" ? Color.white : Color.primary)
+            .keyShape(tint, bordered: !isHome)
+            .foregroundStyle(Color(uiColor: isHome ? Palette.homeGlyph
+                                                   : Palette.foreground(on: tint)))
         }
         .buttonStyle(.plain)
         .disabled(action == nil)
@@ -65,49 +85,9 @@ struct ButtonKey: View {
                     Text(image).font(.system(size: 37))
                 }
             }
-            .keyShape(PageStore.tint(forWord: button?.label))
-            .overlay(
-                RoundedRectangle(cornerRadius: 14)
-                    .stroke(isSelected ? Color.white : Color.black.opacity(button == nil ? 0 : 0.7),
-                            lineWidth: isSelected ? 3 : (button == nil ? 0 : 1))
-            )
+            .keyShape(PageStore.tint(forWord: button?.label), focused: isSelected)
         }
         .buttonStyle(.plain)
-        // Out of edit mode only the doorways do anything, which is how the
-        // keyboard itself behaves.
-        .disabled(!editing && button?.destination == nil)
-    }
-}
-
-/// One of the three large actions in the reference's upper-right cluster.
-struct ActionCard: View {
-    let title: String
-    let systemImage: String
-    let tint: Color
-    var filled = false
-    var enabled = true
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            VStack(spacing: 14) {
-                Image(systemName: systemImage)
-                    .font(.system(size: 48, weight: .regular))
-                    .frame(width: 152, height: 152)
-                    .background(
-                        RoundedRectangle(cornerRadius: 24)
-                            .fill(filled ? tint : Color(.systemBackground))
-                            .shadow(color: .black.opacity(filled ? 0 : 0.14), radius: 13, y: 4)
-                    )
-                    .foregroundStyle(filled ? Color.white : Color(.systemGray2))
-                Text(title)
-                    .font(.system(size: 25, weight: .regular))
-                    .lineLimit(1)
-                    .foregroundStyle(enabled ? (filled ? tint : Color.primary) : Color.secondary)
-            }
-            .frame(width: 176)
-        }
-        .buttonStyle(.plain)
-        .disabled(!enabled)
+        .disabled(!editing && button == nil)
     }
 }

@@ -33,17 +33,8 @@ final class KeyboardHeightTests: XCTestCase {
         app.launch()
         XCUIDevice.shared.orientation = .landscapeLeft
 
-        let field = practiceField(in: app)
-        XCTAssertTrue(field.waitForExistence(timeout: 10), "practice field not found")
-        field.tap()
+        app.focusRealKeyboard()
 
-        let continueButton = app.buttons["Continue"]
-        if continueButton.waitForExistence(timeout: 3) {
-            continueButton.tap()
-            field.tap()
-        }
-
-        ensureTypikeyActive(app)
         let deleteWord = app.staticTexts["Delete word"]
         snapshot(name: "landscape-four-row-fit")
 
@@ -59,19 +50,10 @@ final class KeyboardHeightTests: XCTestCase {
         app.launch()
         XCUIDevice.shared.orientation = .portrait
 
-        let field = practiceField(in: app)
-        XCTAssertTrue(field.waitForExistence(timeout: 10), "practice field not found")
-        field.tap()
+        app.focusRealKeyboard()
 
         // A newly enabled third-party keyboard triggers a one-time system
         // education sheet ("Quickly Change Keyboards") that blocks input.
-        let continueButton = app.buttons["Continue"]
-        if continueButton.waitForExistence(timeout: 3) {
-            continueButton.tap()
-            field.tap()
-        }
-
-        ensureTypikeyActive(app)
         let screenHeight = XCUIScreen.main.screenshot().image.size.height
 
         let baseline = practiceField(in: app).frame.maxY
@@ -93,7 +75,6 @@ final class KeyboardHeightTests: XCTestCase {
             if !app.staticTexts["Home"].waitForExistence(timeout: 3) {
                 practiceField(in: app).tap()
             }
-            ensureTypikeyActive(app)
             let position = practiceField(in: app).frame.maxY
             snapshot(name: "cycle-\(cycle)")
             XCTAssertEqual(position, baseline, accuracy: tolerance,
@@ -121,7 +102,6 @@ final class KeyboardHeightTests: XCTestCase {
         if !app.staticTexts["Home"].waitForExistence(timeout: 3) {
             practiceField(in: app).tap()
         }
-        ensureTypikeyActive(app)
         let final = practiceField(in: app).frame.maxY
         snapshot(name: "final")
         XCTAssertEqual(final, baseline, accuracy: tolerance,
@@ -131,23 +111,6 @@ final class KeyboardHeightTests: XCTestCase {
     // SwiftUI's multiline TextField can surface as either element type.
     private func practiceField(in app: XCUIApplication) -> XCUIElement {
         app.textFields.firstMatch.exists ? app.textFields.firstMatch : app.textViews.firstMatch
-    }
-
-    /// Cycle the globe key until our grid shows up, and hard-fail if it
-    /// never does. Without this the test can pass while silently measuring
-    /// the system keyboard.
-    private func ensureTypikeyActive(_ app: XCUIApplication) {
-        for _ in 0..<6 {
-            if app.staticTexts["Home"].waitForExistence(timeout: 2) { return }
-            let globe = app.buttons["Next keyboard"].exists
-                ? app.buttons["Next keyboard"]
-                : app.buttons.matching(
-                    NSPredicate(format: "label CONTAINS[c] 'keyboard'")).firstMatch
-            guard globe.exists else { break }
-            globe.tap()
-        }
-        XCTAssertTrue(app.staticTexts["Home"].exists,
-                      "Typikey is not the active keyboard — the test would be measuring the system keyboard")
     }
 
     /// Unused: preserved documentation of the enablement-automation

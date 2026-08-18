@@ -121,9 +121,11 @@ struct BoardPlan {
         // Appended, never inserted: the reference has stable word
         // positions between its fixed controls.
         "that",
-        // Removing the keyboard-switch button frees one more Home cell.
-        // `now` was already the next-ranked word in the measured corpus.
-        "now",
+        // `now` was added when removing the keyboard-switch button freed a
+        // cell. Cursor-left has that cell back — the app's board always
+        // reserved both bottom corners and the keyboard now agrees — so the
+        // word it paid for comes back off. Thirty names for thirty cells:
+        // an overflowing list loses its tail silently.
     ]
 
     /// Looked up across the whole vocabulary rather than in one category:

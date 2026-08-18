@@ -336,20 +336,21 @@ for entry in sentences {
 // Overflow is lost silently — no gap, no crash, the packer just closes up
 // behind it — which is how the `be` key went missing for a whole build.
 //
-// A category page reserves Enter (2 cells) and the cursor key: 40 - 3.
-// Home spends two more on Categories and abc, and has to survive the
-// tighter of two layouts — when iOS requires the globe it takes the pinned
-// slot, Hide keyboard falls back into the grid, and a cell goes with it.
-let pageCapacity = 37
-let homeCapacity = 36 - 2
+// Eight content columns over four rows, less the two bottom corners the
+// cursor keys occupy. Both the keyboard and the app's page model agree on
+// this number now; they used to differ by one, which silently dropped the
+// last word of `homeSelection` in the app only.
+let pageCapacity = 8 * 4 - 2
+let homeCapacity = 8 * 4 - 2
+// Category overflow is by design — the ranked words that fit are shown and
+// the rest stay reachable through ABC — so it is reported, not warned about.
 for category in vocabulary where category.words.count > pageCapacity {
-    print("WARNING  \(category.name) has \(category.words.count) words on a \(pageCapacity)-cell page — "
-          + "\(category.words.count - pageCapacity) will not appear")
+    print("note     \(category.name) ranks \(category.words.count) words into \(pageCapacity) cells — "
+          + "\(category.words.count - pageCapacity) reachable only by spelling")
 }
 if BoardPlan.homeSelection.count > homeCapacity {
-    print("WARNING  home names \(BoardPlan.homeSelection.count) words but only \(homeCapacity) fit once the "
-          + "globe takes the pinned slot — \(BoardPlan.homeSelection.count - homeCapacity) would vanish on "
-          + "any device with a second keyboard installed")
+    print("WARNING  home names \(BoardPlan.homeSelection.count) words for \(homeCapacity) cells — "
+          + "\(BoardPlan.homeSelection.count - homeCapacity) vanish silently, with no gap and no crash")
 }
 
 print("\nTaps per sentence\n")
