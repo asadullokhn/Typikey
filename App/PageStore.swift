@@ -31,7 +31,11 @@ final class PageStore: ObservableObject {
 
     private static let homeID = "home"
 
-    var currentPageID: String { pages.indices.contains(currentIndex) ? pages[currentIndex].id : "" }
+    var currentPage: KeyboardPage? {
+        pages.indices.contains(currentIndex) ? pages[currentIndex] : nil
+    }
+
+    var currentPageID: String { currentPage?.id ?? "" }
 
     var currentName: String {
         get { pages.indices.contains(currentIndex) ? pages[currentIndex].name : "" }

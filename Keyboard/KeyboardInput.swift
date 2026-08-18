@@ -9,87 +9,20 @@ import NaturalLanguage
 /// mistake costs him a word he did not mean to say.
 
 extension KeyboardViewController {
-    // MARK: Explore-then-commit (called by TrackingView)
+    // MARK: Explore-then-commit
 
-    func handleTouch(_ sample: TouchSample) {
-        if sample.phase == .began {
-            lastTouchEvidence = nil
-        }
-        let evidence = touchIntentFilter.consume(
-            sample, keyFrames: keys.map { $0.view.frame })
-        switch sample.phase {
-        case .began, .moved:
-            touchMoved(to: sample.point)
-        case .ended:
-            lastTouchEvidence = evidence
-            touchLifted(at: sample.point)
-        case .cancelled:
-            lastTouchEvidence = nil
-            touchCancelled()
-        }
-    }
+    /// Sliding, the nearest-key rule and the double-tap guard all live in
+    /// `BoardGridView` now, shared with the app's practice board. What is
+    /// left here is what a commit *means*, which is the only part the two
+    /// hosts genuinely differ on.
 
     func resetTouchIntent() {
-        touchIntentFilter.reset()
         lastTouchEvidence = nil
-    }
-
-    func touchMoved(to point: CGPoint) {
-        let index = keyIndex(at: point)
-        guard index != highlightedIndex else { return }
-        // Crossing onto a new key is the moment the user needs confirming:
-        // sliding is free exploration, so this tick is how the board is read
-        // by feel rather than by eye.
-        if index != nil { haptics.slidToNewKey() }
-        let old = highlightedIndex
-        highlightedIndex = index
-        if let old { style(keys[old].view, action: keys[old].action, label: keys[old].label, highlighted: false) }
-        if let index { style(keys[index].view, action: keys[index].action, label: keys[index].label, highlighted: true) }
-    }
-
-    func touchLifted(at point: CGPoint) {
-        let index = keyIndex(at: point)
-        highlightedIndex = nil
-        restyleAll()
-        guard let index else { return }
-        commit(keys[index].action)
-    }
-
-    func touchCancelled() {
-        highlightedIndex = nil
-        restyleAll()
-    }
-
-    /// No dead zones: any point below the suggestion bar maps to the
-    /// nearest key by center distance.
-    func keyIndex(at point: CGPoint) -> Int? {
-        guard point.y > layoutYOffset + topBarHeight else { return nil } // suggestion buttons handle themselves
-        var best: (index: Int, distance: CGFloat)?
-        for (i, key) in keys.enumerated() {
-            if key.view.frame.contains(point) { return i }
-            let c = CGPoint(x: key.view.frame.midX, y: key.view.frame.midY)
-            let d = hypot(c.x - point.x, c.y - point.y)
-            if best == nil || d < best!.distance { best = (i, d) }
-        }
-        return best?.index
     }
 
     // MARK: Committing
 
     func commit(_ action: KeyAction) {
-        // Double-tap guard; delete, word-delete, clear-all, and the
-        // cursor arrows are exempt — repeats are intentional for those.
-        if !isDebounceExempt(action),
-           let last = lastCommit, last.action == action,
-           Date().timeIntervalSince(last.at) < debounceInterval {
-            return
-        }
-        pendingCorrection = nil
-        pendingAutomaticCorrection = nil
-        appliedCorrection = nil
-        haptics.commit()
-        lastCommit = (action, Date())
-
         switch action {
         case .word(let w):
             rephrasings = []

@@ -33,6 +33,7 @@
 		32D2413983CFEF011F699077 /* Grammar.swift in Sources */ = {isa = PBXBuildFile; fileRef = E79FDBE127D71069003D5477 /* Grammar.swift */; };
 		33940D4408BF3550431CA9C7 /* FieldIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C10B8DBBF15A98B9B9272A7 /* FieldIntent.swift */; };
 		34DF27D384A8C18AD355C5F1 /* ScreenWords.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52ACB8836103B0ABB01D07BC /* ScreenWords.swift */; };
+		362B98BA27E4747A2A084F9A /* BoardGridView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24138F521E7630A5EBAD86E8 /* BoardGridView.swift */; };
 		36F3201524616ADCC1EBA6D6 /* PredictionTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32FB74CF8EBEF100DB4F617C /* PredictionTypes.swift */; };
 		37264894691093715A72DCFF /* FootprintCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C11DC54A394506E97941B9F /* FootprintCard.swift */; };
 		381F2EEC3EFFF1D3BFBE0D73 /* KeyboardInput.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84CFAA1D28C10D2D7D04EA15 /* KeyboardInput.swift */; };
@@ -87,6 +88,7 @@
 		7F8FE036464FCAF79F831A76 /* BoardPlan.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AB8AE5A7229F41BA740F9B5 /* BoardPlan.swift */; };
 		812FFC0EDD122006C47B764B /* PageStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE501B1C4F332883CF5A262B /* PageStore.swift */; };
 		81775C4406A29833465C9898 /* Vocabulary.swift in Sources */ = {isa = PBXBuildFile; fileRef = FECDE3085E7D6EF9AA9E45FC /* Vocabulary.swift */; };
+		81E7320E85A7200C4DCEAFBB /* BoardGridView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24138F521E7630A5EBAD86E8 /* BoardGridView.swift */; };
 		833B62E60DCEAD4F55BC16A2 /* PracticeLine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AC3BE841F20F30D2CC0075D /* PracticeLine.swift */; };
 		83A24EBDC83C6A32C07C8AF0 /* BoardLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = B29172B74D31F081C9F1BBF4 /* BoardLayout.swift */; };
 		8476459C3C2B29DE51B838A4 /* BoardKeyModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F71E48E234FB1DAFCAC6851C /* BoardKeyModel.swift */; };
@@ -112,6 +114,7 @@
 		9378FC721ADB00C428A625B7 /* TextDocumentIdentity.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDAFAC4D7DB71ED7339A956C /* TextDocumentIdentity.swift */; };
 		94A8D1415258863B96D5C045 /* BoardPlan.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AB8AE5A7229F41BA740F9B5 /* BoardPlan.swift */; };
 		96DF4AE2E7601035E270B938 /* BoardHomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 629732A9A38CC659B735C502 /* BoardHomeView.swift */; };
+		98B0A8CE3AC6664644B5ADDA /* PracticeBoard.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0C69BAFB858CEEE098DDD30 /* PracticeBoard.swift */; };
 		99396FC77FA01B9D55E83B4A /* SettingsCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36CD9F9B0EFD527380AD5B60 /* SettingsCard.swift */; };
 		9B31A68D7D7AC436AD4BD1F3 /* RealSentencesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1DB53826162CA69123A28D6 /* RealSentencesTests.swift */; };
 		9C862CD8CF1738B5038563A8 /* MyWordsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 167A2498198387A80DD85FC1 /* MyWordsTests.swift */; };
@@ -121,15 +124,16 @@
 		A253C341C35E51D2E7AB2B10 /* SentenceShape.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99954A75E4A3461FE7370C40 /* SentenceShape.swift */; };
 		A3632C1D64AF3FB0D0D9DF27 /* BoardPlan.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AB8AE5A7229F41BA740F9B5 /* BoardPlan.swift */; };
 		A3672A59EDE33FA656B148C3 /* Rephrase.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2E7B80B851EBBC851622A8D /* Rephrase.swift */; };
+		A76969A1824F27441A07961B /* BoardGridView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24138F521E7630A5EBAD86E8 /* BoardGridView.swift */; };
 		AAB759FD06199BBA669FB03D /* TypikeyShare.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 9D0797993F06D05215ACAB68 /* TypikeyShare.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		ACD558D96C5C5BE41BD634B4 /* WordCounts.swift in Sources */ = {isa = PBXBuildFile; fileRef = AEFE6601597E0E34BEC4EE89 /* WordCounts.swift */; };
-		ADB40220B6F8E8286502458B /* BoardKeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1819ED862BE52C21E31C5D83 /* BoardKeys.swift */; };
 		AFC2CF5F0BCA56C3F339F333 /* KeyboardFit.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30AE72E91A8C9C4399ABC7D3 /* KeyboardFit.swift */; };
 		B12B6A432A5767B3443D17ED /* PredictionRanker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D28E5AC859752BDE0698FC3 /* PredictionRanker.swift */; };
 		B2B5324F7B9371F214CE4E11 /* CompletionSanitizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC933A22B1A0F240A3230016 /* CompletionSanitizer.swift */; };
 		B2CCDAC9095CA7780F89DBA4 /* DoubleMetaphone.swift in Sources */ = {isa = PBXBuildFile; fileRef = 882E752E27FA8543406D0810 /* DoubleMetaphone.swift */; };
 		B6545676A5F144200F1F194D /* WordJoin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70F2424277134504A9E69758 /* WordJoin.swift */; };
 		B9274BDBCA7F7A765DA6CCD7 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = E6C422799418AAD787A25061 /* PrivacyInfo.xcprivacy */; };
+		BA8482B6B4910DD08C3BC47D /* BoardGridView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24138F521E7630A5EBAD86E8 /* BoardGridView.swift */; };
 		BD72207B7019C86BCF8699CE /* CompletionEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE154DB166CA944192DDE2A3 /* CompletionEngine.swift */; };
 		BD7FFEE284ED5DFC50FA2351 /* SampleHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86125954B46BC2FC71586B57 /* SampleHandler.swift */; };
 		BE38A4EC0309269B95DCC245 /* PredictionRanker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D28E5AC859752BDE0698FC3 /* PredictionRanker.swift */; };
@@ -236,7 +240,6 @@
 		0B6F6FA453ABBF1284665231 /* SpareKeysTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpareKeysTests.swift; sourceTree = "<group>"; };
 		0C10B8DBBF15A98B9B9272A7 /* FieldIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FieldIntent.swift; sourceTree = "<group>"; };
 		167A2498198387A80DD85FC1 /* MyWordsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MyWordsTests.swift; sourceTree = "<group>"; };
-		1819ED862BE52C21E31C5D83 /* BoardKeys.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardKeys.swift; sourceTree = "<group>"; };
 		187356BE0502A777FA4C52FC /* ReadinessCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReadinessCard.swift; sourceTree = "<group>"; };
 		1A129E186564F881C5A5862C /* TouchIntentFilter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TouchIntentFilter.swift; sourceTree = "<group>"; };
 		1AC3BE841F20F30D2CC0075D /* PracticeLine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PracticeLine.swift; sourceTree = "<group>"; };
@@ -244,6 +247,7 @@
 		2016330202A42D01A890D163 /* WordJoinTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordJoinTests.swift; sourceTree = "<group>"; };
 		238704140C8DFC7E10D738C7 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		240462D84393EE3D2F39FBFC /* KeyboardLearning.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardLearning.swift; sourceTree = "<group>"; };
+		24138F521E7630A5EBAD86E8 /* BoardGridView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardGridView.swift; sourceTree = "<group>"; };
 		27CA430F7FA8AB138D998320 /* MyWordsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MyWordsView.swift; sourceTree = "<group>"; };
 		2F4B7442BDF523BAC5B0E4C2 /* PinnedFrameTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PinnedFrameTests.swift; sourceTree = "<group>"; };
 		30AE72E91A8C9C4399ABC7D3 /* KeyboardFit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardFit.swift; sourceTree = "<group>"; };
@@ -297,6 +301,7 @@
 		CC0AA28FDABCFE29ADC640C4 /* Preferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Preferences.swift; sourceTree = "<group>"; };
 		CF7E62C498902F2E0623081B /* TypikeyTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = TypikeyTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		CFC09854C4D1A2C86B8914A9 /* PrefixTrieTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrefixTrieTests.swift; sourceTree = "<group>"; };
+		D0C69BAFB858CEEE098DDD30 /* PracticeBoard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PracticeBoard.swift; sourceTree = "<group>"; };
 		D1FE36D33948B6C127131124 /* TrackingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackingView.swift; sourceTree = "<group>"; };
 		D5B11FEFBA118BEE14B0F01B /* SetupNavigation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetupNavigation.swift; sourceTree = "<group>"; };
 		D6755D1E733576488ACF9B75 /* TypikeyBroadcast.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = TypikeyBroadcast.entitlements; sourceTree = "<group>"; };
@@ -334,6 +339,7 @@
 		2039E81F54811E23AE83073C /* Shared */ = {
 			isa = PBXGroup;
 			children = (
+				24138F521E7630A5EBAD86E8 /* BoardGridView.swift */,
 				F71E48E234FB1DAFCAC6851C /* BoardKeyModel.swift */,
 				B29172B74D31F081C9F1BBF4 /* BoardLayout.swift */,
 				3AB8AE5A7229F41BA740F9B5 /* BoardPlan.swift */,
@@ -425,7 +431,6 @@
 			children = (
 				238704140C8DFC7E10D738C7 /* Assets.xcassets */,
 				629732A9A38CC659B735C502 /* BoardHomeView.swift */,
-				1819ED862BE52C21E31C5D83 /* BoardKeys.swift */,
 				01F90EC0F1367D4EE9616E2B /* ButtonEditor.swift */,
 				73C356DFA180B06CD6221686 /* ConversationDemoView.swift */,
 				EDFBA5A4BB56E39D63110108 /* EngineStatus.swift */,
@@ -436,6 +441,7 @@
 				FE501B1C4F332883CF5A262B /* PageStore.swift */,
 				693CF1CD5D816AB3AC16D08F /* PersonalizationService.swift */,
 				69B956A9B583D4897560968A /* PlainTextField.swift */,
+				D0C69BAFB858CEEE098DDD30 /* PracticeBoard.swift */,
 				F8E96F4A011B31966E87D99B /* PracticeComposer.swift */,
 				1AC3BE841F20F30D2CC0075D /* PracticeLine.swift */,
 				E6C422799418AAD787A25061 /* PrivacyInfo.xcprivacy */,
@@ -697,9 +703,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				362B98BA27E4747A2A084F9A /* BoardGridView.swift in Sources */,
 				96DF4AE2E7601035E270B938 /* BoardHomeView.swift in Sources */,
 				3B7ED7F2877438B9DD29C3EF /* BoardKeyModel.swift in Sources */,
-				ADB40220B6F8E8286502458B /* BoardKeys.swift in Sources */,
 				23B15E76A12AEC0C2FD4AFF2 /* BoardLayout.swift in Sources */,
 				A3632C1D64AF3FB0D0D9DF27 /* BoardPlan.swift in Sources */,
 				749EDA4D7B28F6E19D653FA1 /* ButtonEditor.swift in Sources */,
@@ -722,6 +728,7 @@
 				FF5654363B70ADFCFEBFD1E8 /* PersonalizationService.swift in Sources */,
 				FB58C4DA84C08C1B782A9A1B /* PersonalizationSnapshot.swift in Sources */,
 				867DEE28BF0C8AE912495320 /* PlainTextField.swift in Sources */,
+				98B0A8CE3AC6664644B5ADDA /* PracticeBoard.swift in Sources */,
 				86275803CCD08F0B85C5AE53 /* PracticeComposer.swift in Sources */,
 				833B62E60DCEAD4F55BC16A2 /* PracticeLine.swift in Sources */,
 				F94D8F0A0434D1DC6FCC210B /* PredictionRanker.swift in Sources */,
@@ -750,6 +757,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A76969A1824F27441A07961B /* BoardGridView.swift in Sources */,
 				4CF1A8FCD5F7581B38A8ABB9 /* BoardKeyModel.swift in Sources */,
 				83A24EBDC83C6A32C07C8AF0 /* BoardLayout.swift in Sources */,
 				7F8FE036464FCAF79F831A76 /* BoardPlan.swift in Sources */,
@@ -785,6 +793,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				2F11C9219179F8897B1883F0 /* BoardContent.swift in Sources */,
+				81E7320E85A7200C4DCEAFBB /* BoardGridView.swift in Sources */,
 				BF9C3E77C738C267A381FB82 /* BoardKeyModel.swift in Sources */,
 				786F0CA8AA5C11E8F99ABE45 /* BoardLayout.swift in Sources */,
 				94A8D1415258863B96D5C045 /* BoardPlan.swift in Sources */,
@@ -844,6 +853,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				BA8482B6B4910DD08C3BC47D /* BoardGridView.swift in Sources */,
 				8476459C3C2B29DE51B838A4 /* BoardKeyModel.swift in Sources */,
 				D2756984BC6F58385552282F /* BoardLayout.swift in Sources */,
 				68CAFD07FB8E332187122C3C /* BoardPlan.swift in Sources */,
@@ -1042,7 +1052,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 53;
+				CURRENT_PROJECT_VERSION = 54;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = Y7ZZ5G2T3Y;
 				ENABLE_NS_ASSERTIONS = NO;
@@ -1123,7 +1133,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 53;
+				CURRENT_PROJECT_VERSION = 54;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = Y7ZZ5G2T3Y;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;

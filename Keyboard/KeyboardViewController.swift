@@ -28,15 +28,6 @@ final class KeyboardViewController: UIInputViewController {
         let terminator: String
     }
 
-    struct Key {
-        let action: KeyAction
-        let label: String
-        let view: KeyView
-        let row: Int
-        let col: Int // 0...contentColumns+1
-        let colSpan: Int
-        let rowSpan: Int
-    }
 
     // The board is always as tall as it can be; there is no size setting.
     // Height follows width — rows grow with the cells up to
@@ -83,10 +74,11 @@ final class KeyboardViewController: UIInputViewController {
     /// Paints only the actual keyboard band — the rest of an oversized
     /// container stays transparent instead of a white wall.
     let boardBackground = UIView()
+    /// The board itself, shared with the app's practice keyboard.
+    let boardGrid = BoardGridView()
     var isRotating = false
     var pendingHeightFix = false
 
-    var keys: [Key] = []
     var contentRowCount = 4
     var lastFitSignature: String?
 
@@ -146,7 +138,6 @@ final class KeyboardViewController: UIInputViewController {
         }
     }
     var shifted = false
-    var lastCommit: (action: KeyAction, at: Date)?
 
     // Haptics are a no-op on iPads (no Taptic Engine) — wired anyway so an
     // iPhone build gets them for free. The input click is the audible
@@ -155,8 +146,6 @@ final class KeyboardViewController: UIInputViewController {
 
     let trackingView = TrackingView()
     var suggestionButtons: [UIButton] = []
-    var highlightedIndex: Int?
-    var touchIntentFilter = TouchIntentFilter()
     var lastTouchEvidence: TouchEvidence?
     var typedTokenTouchEvidence: TouchEvidence?
     var pendingCorrection: SuggestedCorrection?
@@ -292,6 +281,8 @@ final class KeyboardViewController: UIInputViewController {
 
         boardBackground.backgroundColor = isPrivate ? Palette.privateBoard : Palette.board
         trackingView.addSubview(boardBackground)
+        configureBoardGrid()
+        trackingView.addSubview(boardGrid)
 
         registerForTraitChanges([
             UITraitUserInterfaceStyle.self,
@@ -316,9 +307,9 @@ final class KeyboardViewController: UIInputViewController {
     @objc func handleHover(_ g: UIHoverGestureRecognizer) {
         switch g.state {
         case .began, .changed:
-            touchMoved(to: g.location(in: trackingView))
+            boardGrid.highlight(at: g.location(in: boardGrid))
         case .ended, .cancelled, .failed:
-            touchCancelled()
+            boardGrid.clearHighlight()
         default:
             break
         }
