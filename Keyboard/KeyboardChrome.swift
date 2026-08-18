@@ -194,7 +194,7 @@ extension KeyboardViewController {
     /// and how a slide should feel.
     func configureBoardGrid() {
         boardGrid.isMultipleTouchEnabled = false
-        boardGrid.onCommit = { [weak self] action in self?.commit(action) }
+        boardGrid.onCommit = { [weak self] key in self?.commit(key.action) }
         boardGrid.onSlide = { [weak self] in self?.haptics.slidToNewKey() }
         boardGrid.onTouchEvidence = { [weak self] evidence in
             self?.lastTouchEvidence = evidence

@@ -49,10 +49,20 @@ final class BoardGridView: UIView {
     var geometry = Geometry() { didSet { setNeedsLayout() } }
     var context = Context() { didSet { restyleAll() } }
 
-    var onCommit: (KeyAction) -> Void = { _ in }
+    /// The key that was pressed, not just what it does. Two cells can carry
+    /// the same word, and a host that edits the board has to know which one
+    /// was hit — the grid already knows, so it says.
+    var onCommit: (Key) -> Void = { _ in }
     /// Crossing onto a new key while sliding — the board is read by feel.
     var onSlide: () -> Void = {}
     var onTouchEvidence: (TouchEvidence?) -> Void = { _ in }
+
+    /// A key the host is holding open — the app's editor marks the key being
+    /// changed. Unlike the touch highlight this survives lift-off, which is
+    /// the whole point: the editor stays up while you look at it.
+    var selectedKey: Int? {
+        didSet { if selectedKey != oldValue { restyleAll() } }
+    }
 
     private(set) var keys: [Key] = []
     /// What the current keys were built from, so a rebuild that would draw
@@ -92,7 +102,7 @@ final class BoardGridView: UIView {
 
     func restyleAll() {
         for (i, key) in keys.enumerated() {
-            style(key, highlighted: i == highlightedIndex)
+            style(key, highlighted: i == highlightedIndex || i == selectedKey)
         }
     }
 
@@ -114,6 +124,7 @@ final class BoardGridView: UIView {
         switch role(of: action) {
         case .write:
             if case .word(let w) = action {
+                guard !w.isEmpty else { return Palette.paper } // an empty cell
                 return context.word(w).map { Palette.color(for: $0.wordClass) }
                     ?? Palette.color(for: .social) // a word of the user's own
             }
@@ -175,6 +186,10 @@ extension BoardGridView {
                 label.attributedText = nil
                 label.font = font(21, .semibold, .title3)
                 label.text = text
+                // A cell with nothing on it is where a new key goes. It draws
+                // as a blank, but it still has to be findable by anyone
+                // reading the board rather than looking at it.
+                if w.isEmpty { label.spokenLabel = "Empty cell" }
             }
         case .deleteWord:
             // The strike falls on the second line only — it is the word
@@ -292,6 +307,10 @@ extension BoardGridView {
 extension BoardGridView {
     /// No dead zones: any point maps to the nearest key by centre distance
     /// (invariant 4).
+    func keyIndex(row: Int, col: Int) -> Int? {
+        keys.firstIndex { $0.row == row && $0.col == col }
+    }
+
     func keyIndex(at point: CGPoint) -> Int? {
         var best: (index: Int, distance: CGFloat)?
         for (i, key) in keys.enumerated() {
@@ -334,7 +353,7 @@ extension BoardGridView {
             highlightedIndex = nil
             restyleAll()
             guard let index else { return }
-            commit(keys[index].action)
+            commit(keys[index])
         case .cancelled:
             onTouchEvidence(nil)
             highlightedIndex = nil
@@ -345,13 +364,13 @@ extension BoardGridView {
     /// Invariant 3: a repeated key inside half a second is a tremor, not a
     /// second word. Erasing and moving the cursor are exempt — those are
     /// the keys a person genuinely does press twice.
-    func commit(_ action: KeyAction) {
-        if let last = lastCommit, last.action == action,
-           now().timeIntervalSince(last.at) < 0.5, !isRepeatable(action) {
+    func commit(_ key: Key) {
+        if let last = lastCommit, last.action == key.action,
+           now().timeIntervalSince(last.at) < 0.5, !isRepeatable(key.action) {
             return
         }
-        lastCommit = (action, now())
-        onCommit(action)
+        lastCommit = (key.action, now())
+        onCommit(key)
     }
 
     private func isRepeatable(_ action: KeyAction) -> Bool {
