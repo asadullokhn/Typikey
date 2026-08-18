@@ -57,7 +57,12 @@ enum Palette {
     /// Takes something away: delete, word-delete, clear all. The only grey
     /// keys on the board, so "this removes something" reads at a glance.
     static let erase = adaptive(light: (0.76, 0.77, 0.79), dark: (0.31, 0.31, 0.33))
-    /// Finishes the message: Enter, and the send arrow.
+    /// Enter with nothing to send. Dark text on it, not white: white on this
+    /// grey measures 2.4:1, under the 3:1 floor even at this size. Once there
+    /// is something to send the key turns `action` blue and takes white.
+    static let commit = UIColor(white: 0.66, alpha: 1)
+    /// Blue, for the things that are blue: the send arrow and the
+    /// suggestion pills' text.
     static let action = adaptive(light: (0.00, 0.48, 1.00), dark: (0.04, 0.52, 1.00))
     /// Clear all, once armed — the only irreversible key on the board.
     static let destructive = adaptive(light: (0.84, 0.24, 0.24), dark: (0.82, 0.18, 0.17))
