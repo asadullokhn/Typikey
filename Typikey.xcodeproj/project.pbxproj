@@ -33,6 +33,7 @@
 		32D2413983CFEF011F699077 /* Grammar.swift in Sources */ = {isa = PBXBuildFile; fileRef = E79FDBE127D71069003D5477 /* Grammar.swift */; };
 		33940D4408BF3550431CA9C7 /* FieldIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C10B8DBBF15A98B9B9272A7 /* FieldIntent.swift */; };
 		34DF27D384A8C18AD355C5F1 /* ScreenWords.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52ACB8836103B0ABB01D07BC /* ScreenWords.swift */; };
+		362B98BA27E4747A2A084F9A /* BoardGridView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24138F521E7630A5EBAD86E8 /* BoardGridView.swift */; };
 		36F3201524616ADCC1EBA6D6 /* PredictionTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32FB74CF8EBEF100DB4F617C /* PredictionTypes.swift */; };
 		37264894691093715A72DCFF /* FootprintCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C11DC54A394506E97941B9F /* FootprintCard.swift */; };
 		381F2EEC3EFFF1D3BFBE0D73 /* KeyboardInput.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84CFAA1D28C10D2D7D04EA15 /* KeyboardInput.swift */; };
@@ -87,6 +88,7 @@
 		7F8FE036464FCAF79F831A76 /* BoardPlan.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AB8AE5A7229F41BA740F9B5 /* BoardPlan.swift */; };
 		812FFC0EDD122006C47B764B /* PageStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE501B1C4F332883CF5A262B /* PageStore.swift */; };
 		81775C4406A29833465C9898 /* Vocabulary.swift in Sources */ = {isa = PBXBuildFile; fileRef = FECDE3085E7D6EF9AA9E45FC /* Vocabulary.swift */; };
+		81E7320E85A7200C4DCEAFBB /* BoardGridView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24138F521E7630A5EBAD86E8 /* BoardGridView.swift */; };
 		833B62E60DCEAD4F55BC16A2 /* PracticeLine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AC3BE841F20F30D2CC0075D /* PracticeLine.swift */; };
 		83A24EBDC83C6A32C07C8AF0 /* BoardLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = B29172B74D31F081C9F1BBF4 /* BoardLayout.swift */; };
 		8476459C3C2B29DE51B838A4 /* BoardKeyModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F71E48E234FB1DAFCAC6851C /* BoardKeyModel.swift */; };
@@ -121,6 +123,7 @@
 		A253C341C35E51D2E7AB2B10 /* SentenceShape.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99954A75E4A3461FE7370C40 /* SentenceShape.swift */; };
 		A3632C1D64AF3FB0D0D9DF27 /* BoardPlan.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AB8AE5A7229F41BA740F9B5 /* BoardPlan.swift */; };
 		A3672A59EDE33FA656B148C3 /* Rephrase.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2E7B80B851EBBC851622A8D /* Rephrase.swift */; };
+		A76969A1824F27441A07961B /* BoardGridView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24138F521E7630A5EBAD86E8 /* BoardGridView.swift */; };
 		AAB759FD06199BBA669FB03D /* TypikeyShare.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 9D0797993F06D05215ACAB68 /* TypikeyShare.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		ACD558D96C5C5BE41BD634B4 /* WordCounts.swift in Sources */ = {isa = PBXBuildFile; fileRef = AEFE6601597E0E34BEC4EE89 /* WordCounts.swift */; };
 		ADB40220B6F8E8286502458B /* BoardKeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1819ED862BE52C21E31C5D83 /* BoardKeys.swift */; };
@@ -130,6 +133,7 @@
 		B2CCDAC9095CA7780F89DBA4 /* DoubleMetaphone.swift in Sources */ = {isa = PBXBuildFile; fileRef = 882E752E27FA8543406D0810 /* DoubleMetaphone.swift */; };
 		B6545676A5F144200F1F194D /* WordJoin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70F2424277134504A9E69758 /* WordJoin.swift */; };
 		B9274BDBCA7F7A765DA6CCD7 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = E6C422799418AAD787A25061 /* PrivacyInfo.xcprivacy */; };
+		BA8482B6B4910DD08C3BC47D /* BoardGridView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24138F521E7630A5EBAD86E8 /* BoardGridView.swift */; };
 		BD72207B7019C86BCF8699CE /* CompletionEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE154DB166CA944192DDE2A3 /* CompletionEngine.swift */; };
 		BD7FFEE284ED5DFC50FA2351 /* SampleHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86125954B46BC2FC71586B57 /* SampleHandler.swift */; };
 		BE38A4EC0309269B95DCC245 /* PredictionRanker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D28E5AC859752BDE0698FC3 /* PredictionRanker.swift */; };
@@ -244,6 +248,7 @@
 		2016330202A42D01A890D163 /* WordJoinTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordJoinTests.swift; sourceTree = "<group>"; };
 		238704140C8DFC7E10D738C7 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		240462D84393EE3D2F39FBFC /* KeyboardLearning.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardLearning.swift; sourceTree = "<group>"; };
+		24138F521E7630A5EBAD86E8 /* BoardGridView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardGridView.swift; sourceTree = "<group>"; };
 		27CA430F7FA8AB138D998320 /* MyWordsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MyWordsView.swift; sourceTree = "<group>"; };
 		2F4B7442BDF523BAC5B0E4C2 /* PinnedFrameTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PinnedFrameTests.swift; sourceTree = "<group>"; };
 		30AE72E91A8C9C4399ABC7D3 /* KeyboardFit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardFit.swift; sourceTree = "<group>"; };
@@ -334,6 +339,7 @@
 		2039E81F54811E23AE83073C /* Shared */ = {
 			isa = PBXGroup;
 			children = (
+				24138F521E7630A5EBAD86E8 /* BoardGridView.swift */,
 				F71E48E234FB1DAFCAC6851C /* BoardKeyModel.swift */,
 				B29172B74D31F081C9F1BBF4 /* BoardLayout.swift */,
 				3AB8AE5A7229F41BA740F9B5 /* BoardPlan.swift */,
@@ -697,6 +703,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				362B98BA27E4747A2A084F9A /* BoardGridView.swift in Sources */,
 				96DF4AE2E7601035E270B938 /* BoardHomeView.swift in Sources */,
 				3B7ED7F2877438B9DD29C3EF /* BoardKeyModel.swift in Sources */,
 				ADB40220B6F8E8286502458B /* BoardKeys.swift in Sources */,
@@ -750,6 +757,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A76969A1824F27441A07961B /* BoardGridView.swift in Sources */,
 				4CF1A8FCD5F7581B38A8ABB9 /* BoardKeyModel.swift in Sources */,
 				83A24EBDC83C6A32C07C8AF0 /* BoardLayout.swift in Sources */,
 				7F8FE036464FCAF79F831A76 /* BoardPlan.swift in Sources */,
@@ -785,6 +793,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				2F11C9219179F8897B1883F0 /* BoardContent.swift in Sources */,
+				81E7320E85A7200C4DCEAFBB /* BoardGridView.swift in Sources */,
 				BF9C3E77C738C267A381FB82 /* BoardKeyModel.swift in Sources */,
 				786F0CA8AA5C11E8F99ABE45 /* BoardLayout.swift in Sources */,
 				94A8D1415258863B96D5C045 /* BoardPlan.swift in Sources */,
@@ -844,6 +853,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				BA8482B6B4910DD08C3BC47D /* BoardGridView.swift in Sources */,
 				8476459C3C2B29DE51B838A4 /* BoardKeyModel.swift in Sources */,
 				D2756984BC6F58385552282F /* BoardLayout.swift in Sources */,
 				68CAFD07FB8E332187122C3C /* BoardPlan.swift in Sources */,
