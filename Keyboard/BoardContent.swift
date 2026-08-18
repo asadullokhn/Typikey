@@ -108,19 +108,9 @@ extension KeyboardViewController {
 
     // MARK: Frame (fixed controls on both edges)
 
-    var leftEdgeColumn: [(KeyAction, String)] {
-        [(.home, "Home"),
-         (.toCategories, "Categories"),
-         (.clearAll, clearArmedAt == nil ? "Clear" : "tap again"),
-         (.deleteWord, "Delete\nword")]
-    }
+    var leftEdgeColumn: [ContentCell] { BoardFrame.leftColumn }
 
-    var rightEdgeTop: (KeyAction, String) {
-        switch level {
-        case .letters: return (.toNumbers, "123")
-        default: return (.toLetters, "ABC")
-        }
-    }
+    var rightEdgeTop: ContentCell { BoardFrame.rightTop(level: level) }
 
     /// allCategories() index of the Chat board (offset 1 for Recents).
     var chatWordsIndex: Int {
@@ -196,7 +186,7 @@ extension KeyboardViewController {
     /// it as absent (while still clearing it).
     /// Called right before `dismissKeyboard()` so the level survives even
     /// if dismissing tears down this controller instance.
-    func persistPendingRestore(signature: String, level: Level) {
+    func persistPendingRestore(signature: String, level: BoardLevel) {
         let defaults = UserDefaults.standard
         defaults.set(signature, forKey: "pendingRestoreSignature")
         defaults.set(Date().timeIntervalSince1970, forKey: "pendingRestoreTimestamp")
@@ -223,7 +213,7 @@ extension KeyboardViewController {
     /// it matched. Returns the saved level only when the signature still
     /// matches and the note is fresh (see `pendingRestoreTTL`); returns
     /// nil (having still cleared it) otherwise.
-    func consumePendingRestore(matching signature: String) -> Level? {
+    func consumePendingRestore(matching signature: String) -> BoardLevel? {
         let defaults = UserDefaults.standard
         let pendingSignature = defaults.string(forKey: "pendingRestoreSignature")
         let pendingLevel = defaults.string(forKey: "pendingRestoreLevel")
@@ -264,21 +254,21 @@ extension KeyboardViewController {
         }
     }
 
-    /// A content cell that can span multiple grid slots (e.g. a wide
-    /// space bar, or a big 2x2 category tile). Default span is 1x1 — a
-    /// normal single cell.
-    struct ContentCell {
+    /// The shared abc/123 layout, in this target's own cell type.
+    func contentCell(_ cell: TypingLayout.Cell?) -> ContentCell? {
+        guard let cell else { return nil }
         let action: KeyAction
-        let label: String
-        let colSpan: Int
-        let rowSpan: Int
-
-        init(_ action: KeyAction, _ label: String, colSpan: Int = 1, rowSpan: Int = 1) {
-            self.action = action
-            self.label = label
-            self.colSpan = colSpan
-            self.rowSpan = rowSpan
+        switch cell.key {
+        case .char(let c):   action = .char(c)
+        case .shift:         action = .shift
+        case .space:         action = .space
+        case .delete:        action = .delete
+        case .cursorLeft:    action = .cursorLeft
+        case .cursorRight:   action = .cursorRight
+        case .toLetters:     action = .toLetters
+        case .toNumbers:     action = .toNumbers
         }
+        return ContentCell(action, cell.label, colSpan: cell.colSpan)
     }
 
     /// The boards Fadillah built in the app, or nil if she has not.
@@ -346,7 +336,7 @@ extension KeyboardViewController {
         return ContentCell(word.wordClass == .punct ? .punct(text) : .word(text), text)
     }
 
-    func contentRows(for level: Level) -> [[ContentCell?]] {
+    func contentRows(for level: BoardLevel) -> [[ContentCell?]] {
         switch level {
         case .page(let id):
             guard let page = customPage(id) else { return contentRows(for: .home) }
@@ -383,24 +373,9 @@ extension KeyboardViewController {
                 .map(wordCell)
             return board(cells)
         case .letters:
-            var rows: [[ContentCell?]] = [
-                "qwertyuiop".map { Optional(ContentCell(.char(String($0)), String($0))) },
-                "asdfghjkl".map { Optional(ContentCell(.char(String($0)), String($0))) } + [Optional(ContentCell(.shift, "⇧"))],
-                "zxcvbnm".map { Optional(ContentCell(.char(String($0)), String($0))) }
-                    + [Optional(ContentCell(.char(","), ",")), Optional(ContentCell(.char("."), ".")), Optional(ContentCell(.char("?"), "?"))],
-                typingBottomRow(switchingTo: ContentCell(.toNumbers, "123", colSpan: 2)),
-            ]
-            rows[2] += Array(repeating: nil, count: 10 - rows[2].count)
-            return rows
+            return TypingLayout.letters.map { $0.map(contentCell) }
         case .numbers:
-            var rows: [[ContentCell?]] = [
-                "1234567890".map { Optional(ContentCell(.char(String($0)), String($0))) },
-                ["-", "/", ":", ";", "(", ")", "$", "&", "@", "\""].map { Optional(ContentCell(.char($0), $0)) },
-                [".", ",", "?", "!", "'"].map { Optional(ContentCell(.char($0), $0)) },
-                typingBottomRow(switchingTo: ContentCell(.toLetters, "abc", colSpan: 2)),
-            ]
-            rows[2] += Array(repeating: nil, count: 10 - rows[2].count)
-            return rows
+            return TypingLayout.numbers.map { $0.map(contentCell) }
         }
     }
 
@@ -417,13 +392,15 @@ extension KeyboardViewController {
         return ContentCell(isMine ? .toCategories : .toWords(1), hint, colSpan: contentColumns)
     }
 
-    /// Cursor right occupies the bottom-right content cell. Cursor left is
-    /// reserved for the typing levels; word boards use every other cell.
+    /// The two bottom corners are the cursor keys, as the app's board editor
+    /// has always drawn them. Cursor left used to be omitted here, which is
+    /// why the two boards disagreed about how many words fit.
     ///
     /// `board` lays these down before any word, so a word can never be
     /// silently overwritten by one — which is how cells used to vanish.
     func gridControls(rows rowCount: Int) -> [(cell: ContentCell, row: Int, col: Int)] {
-        [(ContentCell(.cursorRight, "Cursor right"), rowCount - 1, contentColumns - 1)]
+        [(ContentCell(.cursorLeft, "Cursor left"), rowCount - 1, 0),
+         (ContentCell(.cursorRight, "Cursor right"), rowCount - 1, contentColumns - 1)]
     }
 
     /// How many word cells a board actually has, once the design's
@@ -497,16 +474,6 @@ extension KeyboardViewController {
     /// produces whole words, so whole-word delete is the right unit there;
     /// the moment you are spelling something out, one wrong letter is the
     /// likeliest mistake and the cursor has to be able to go back to it.
-    func typingBottomRow(switchingTo other: ContentCell) -> [ContentCell?] {
-        var row: [ContentCell?] = Array(repeating: nil, count: 10)
-        row[0] = ContentCell(.space, "space", colSpan: 3)
-        row[3] = other
-        row[5] = ContentCell(.delete, "⌫")
-        row[6] = ContentCell(.cursorLeft, "Cursor left")
-        row[7] = ContentCell(.cursorRight, "Cursor right")
-        return row
-    }
-
     /// Four rows, as drawn. The extra height at Large buys taller keys
     /// rather than more of them — at 640pt a row is about 146pt, which is
     /// the easiest target this board has ever had (team decision, 8 Aug).
