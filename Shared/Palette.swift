@@ -75,6 +75,13 @@ enum Palette {
     /// "is this being remembered?" must be answerable without reading
     /// anything — the keys themselves stay exactly as they were.
     static let privateBoard = adaptive(light: (0.36, 0.31, 0.47), dark: (0.18, 0.14, 0.24))
+    /// The tray while a board is being arranged. Same reasoning as private
+    /// mode, for the same kind of question: "will this key talk, or will it
+    /// open the editor?" has to be answerable before the finger lands, not
+    /// after. The keys themselves stay exactly as they were — what changed
+    /// is what the board is for, not what any key says.
+    static let editingBoard = adaptive(light: (0.28, 0.45, 0.66), dark: (0.12, 0.21, 0.33))
+
     /// Suggestion pill: near-white blue with a blue hairline and blue text.
     static let suggestionFill = adaptive(light: (0.95, 0.97, 1.00), dark: (0.12, 0.15, 0.19))
     static let suggestionBorder = adaptive(light: (0.68, 0.82, 0.98), dark: (0.13, 0.42, 0.68))

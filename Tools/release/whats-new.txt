@@ -1,11 +1,11 @@
-The board follows the sentence again.
+Edit Page edits again.
 
-Tapping "I" used to change the word keys around it — "go" became "going", "be" became "am" — without any key moving. That stopped working, and the board looked normal while it happened, so there was nothing to see except that it had gone quiet.
+It had stopped opening the button editor. Tapping "Edit Page" still let you rename the page, so it looked like it was working — but tapping a key on the board did nothing at all, and there was no way to change what any key says.
 
-The cause was the app, not the keyboard. Opening the board editor and saving anything at all — adding a page, renaming one — wrote a copy of the shipped home board into the shared container, and the keyboard read that copy as a board somebody had arranged by hand. It stops rearranging those, on purpose. It just could not tell the difference between a board that was arranged and a copy of its own.
+Tapping a key while editing now opens the editor, and the key stays ringed while it is open. Blank cells appear while editing too, so a new page is something you can actually put keys on rather than an empty board with nothing to touch.
 
-Devices carrying one of those copies recover on this update. Nothing to reset.
+Being in edit mode is now visible before you tap anything: the Edit Page button fills in, and the tray behind the keys turns blue, the same way it changes colour for private mode. The keys themselves never change — same words, same colours, same places.
 
-Boards you really did arrange now relabel their verbs in place too, which they should have done all along.
+Two smaller things: a key set to open another page now opens it here as it already did on the keyboard, instead of typing its own name. And empty cells now announce themselves to VoiceOver rather than being silent.
 
-Please try: tap "I", then ABC and type "am", then Home — "go" should read "going", in the same place it was. Tap "you" and "be" should read "are". Then arrange a board of your own and check the same thing still happens on it.
+Please try: Edit Page, then tap any key and change its label. Then Add New Page and put a few keys on it. Check the blue tray makes it obvious which mode you are in.

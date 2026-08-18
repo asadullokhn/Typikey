@@ -12,7 +12,11 @@ struct PracticeBoard: UIViewRepresentable {
     let currentPage: KeyboardPage?
     let shifted: Bool
     let editing: Bool
+    /// The content cell whose editor is open, so the board can ring it.
+    let selected: Int?
     let onKey: (KeyAction) -> Void
+    /// A content cell tapped while editing. Editing never types.
+    let onEditCell: (Int) -> Void
 
     func makeUIView(context: Context) -> BoardGridView {
         let grid = BoardGridView()
@@ -23,7 +27,15 @@ struct PracticeBoard: UIViewRepresentable {
     }
 
     func updateUIView(_ grid: BoardGridView, context: Context) {
-        grid.onCommit = onKey
+        grid.onCommit = { key in
+            // The edges stay live while editing — that is how you reach the
+            // page you want to change. Only the content cells become targets.
+            if editing, let index = Self.contentIndex(of: key) {
+                onEditCell(index)
+            } else {
+                onKey(key.action)
+            }
+        }
         grid.context.shifted = shifted
         grid.context.isTypingLevel = level.isTyping
         grid.geometry = BoardGridView.Geometry(
@@ -33,6 +45,19 @@ struct PracticeBoard: UIViewRepresentable {
             isCompact: false,
             bottomInset: KeyboardFit.outerInset)
         grid.setKeys(placements)
+        grid.selectedKey = selected.flatMap {
+            grid.keyIndex(row: $0 / KeyboardPage.columns, col: $0 % KeyboardPage.columns + 1)
+        }
+    }
+
+    /// Which cell of the page a key belongs to, or nil for the keyboard's own
+    /// furniture — the two edge columns and the cursor keys, which belong to
+    /// the keyboard rather than to the page and are not hers to move.
+    private static func contentIndex(of key: BoardGridView.Key) -> Int? {
+        let column = key.col - 1
+        guard (0..<KeyboardPage.columns).contains(column) else { return nil }
+        let index = key.row * KeyboardPage.columns + column
+        return BoardFrame.cursorAction(atContentIndex: index) == nil ? index : nil
     }
 
     private var placements: [(cell: ContentCell, row: Int, col: Int)] {
@@ -87,8 +112,15 @@ struct PracticeBoard: UIViewRepresentable {
             if let cursor = BoardFrame.cursorAction(atContentIndex: index) {
                 rows[row][column] = ContentCell(
                     cursor, cursor == .cursorLeft ? "Cursor left" : "Cursor right")
-            } else if let button = currentPage?.cells[safe: index] ?? nil, !button.label.isEmpty {
-                rows[row][column] = ContentCell(.word(button.label), button.label)
+            } else if let button = currentPage?.cells[safe: index] ?? nil,
+                      !button.label.isEmpty {
+                // A key with a destination is a doorway, here as on the
+                // keyboard — it opens the page rather than writing its name.
+                rows[row][column] = button.destination.map {
+                    ContentCell(.toPage($0), button.label)
+                } ?? ContentCell(.word(button.label), button.label)
+            } else if editing {
+                rows[row][column] = ContentCell(.word(""), "")
             }
         }
         return rows

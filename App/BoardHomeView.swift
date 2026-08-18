@@ -48,6 +48,14 @@ struct BoardHomeView: View {
             Text("This will delete the keyboard page along with all its contents or buttons.")
         }
         .sheet(isPresented: $showingSetup) { SetupView() }
+        .sheet(isPresented: Binding(get: { selected != nil },
+                                    set: { if !$0 { selected = nil } })) {
+            if let index = selected {
+                ButtonEditor(button: store.binding(at: index),
+                             pages: store.pages,
+                             currentPageID: store.currentPageID) { selected = nil }
+            }
+        }
         .fullScreenCover(isPresented: $showingOnboarding) { OnboardingView() }
         .onAppear {
             guard !onboardingSeen,
@@ -68,12 +76,23 @@ struct BoardHomeView: View {
                         Image(systemName: action.symbol)
                             .font(.system(size: 58 * fit.scale, weight: .regular))
                             .frame(width: column, height: 92 * fit.scale)
+                            .background {
+                                if action.active {
+                                    RoundedRectangle(cornerRadius: 24 * fit.scale,
+                                                     style: .continuous)
+                                        .fill(Color(uiColor: Palette.action))
+                                        .frame(width: 124 * fit.scale, height: 92 * fit.scale)
+                                }
+                            }
                             .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
                     .disabled(!action.enabled)
-                    .foregroundStyle(action.enabled ? Color.primary : Color(.tertiaryLabel))
+                    .foregroundStyle(glyphColor(action))
                     .accessibilityLabel(action.title)
+                    // Colour alone cannot carry state on a board somebody
+                    // may not see in colour, or at all.
+                    .accessibilityAddTraits(action.active ? [.isSelected] : [])
                 }
             }
             .padding(pad)
@@ -86,13 +105,24 @@ struct BoardHomeView: View {
             HStack(spacing: 0) {
                 ForEach(pageActions) { action in
                     Text(action.title)
-                        .font(.system(size: 26 * fit.scale))
-                        .foregroundStyle(action.enabled ? Color(uiColor: Palette.homeGlyph) : Color(.tertiaryLabel))
+                        .font(.system(size: 26 * fit.scale,
+                                      weight: action.active ? .semibold : .regular))
+                        .foregroundStyle(captionColor(action))
                         .frame(width: column)
                 }
             }
             .padding(.horizontal, pad)
         }
+    }
+
+    private func glyphColor(_ action: PageAction) -> Color {
+        if action.active { return .white }
+        return action.enabled ? .primary : Color(.tertiaryLabel)
+    }
+
+    private func captionColor(_ action: PageAction) -> Color {
+        if action.active { return Color(uiColor: Palette.action) }
+        return action.enabled ? Color(uiColor: Palette.homeGlyph) : Color(.tertiaryLabel)
     }
 
     private var pageActions: [PageAction] {
@@ -106,7 +136,7 @@ struct BoardHomeView: View {
                 editing = true
             },
             PageAction(title: "Edit Page", symbol: "square.and.pencil",
-                       enabled: store.canEditCurrentPage) {
+                       enabled: store.canEditCurrentPage, active: editing) {
                 editing.toggle()
                 if !editing { selected = nil }
             },
@@ -170,7 +200,7 @@ struct BoardHomeView: View {
     private func board(_ fit: HomeFit) -> some View {
         ZStack {
             RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .fill(Color(uiColor: Palette.board))
+                .fill(Color(uiColor: editing ? Palette.editingBoard : Palette.board))
                 .shadow(color: .black.opacity(0.16), radius: 8, y: -2)
             // Not built while a sheet covers it. Nothing behind a modal is
             // reachable, and these keys carry the real keyboard's labels —
@@ -178,7 +208,8 @@ struct BoardHomeView: View {
             if !showingSetup && !showingOnboarding {
                 PracticeBoard(level: level, pages: store.pages,
                               currentPage: store.currentPage, shifted: shifted,
-                              editing: editing, onKey: press)
+                              editing: editing, selected: selected, onKey: press,
+                              onEditCell: { selected = $0 })
             }
         }
     }
@@ -187,9 +218,7 @@ struct BoardHomeView: View {
     /// document proxy and learns; this types into the practice line.
     private func press(_ action: KeyAction) {
         switch action {
-        case .word(let w):
-            if editing { return }
-            composer.insertWord(w)
+        case .word(let w): composer.insertWord(w)
         case .char(let c):
             composer.insertCharacter(shifted ? c.uppercased() : c)
             shifted = false
@@ -250,6 +279,10 @@ private struct PageAction: Identifiable {
     let title: String
     let symbol: String
     let enabled: Bool
+    /// The action is currently on. Editing changes what every key on the
+    /// board does, so it has to be visible without tapping anything to find
+    /// out — and without reading, which is the whole premise here.
+    var active = false
     let run: () -> Void
 
     var id: String { title }
