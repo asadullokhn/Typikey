@@ -10,7 +10,7 @@ final class PracticeBoardTests: XCTestCase {
         app.launchArguments += ["-skipOnboarding", "-uiTestFullAccess", "-uiTestPages", "none"]
         app.launch()
         XCUIDevice.shared.orientation = .landscapeLeft
-        XCTAssertTrue(app.buttons["Home"].firstMatch.waitForExistence(timeout: 10),
+        XCTAssertTrue(app.staticTexts["Home"].firstMatch.waitForExistence(timeout: 10),
                       "board did not render")
         return app
     }
@@ -24,8 +24,8 @@ final class PracticeBoardTests: XCTestCase {
 
     func testWordKeysTypeIntoThePracticeLine() {
         let app = launch()
-        app.buttons["I"].firstMatch.tap()
-        app.buttons["want"].firstMatch.tap()
+        app.staticTexts["I"].firstMatch.tap()
+        app.staticTexts["want"].firstMatch.tap()
         XCTAssertEqual(line(app), "I want ", "word keys should compose a sentence")
         XCTAssertEqual(app.keyboards.count, 0,
                        "the system keyboard must never open over the board")
@@ -33,30 +33,30 @@ final class PracticeBoardTests: XCTestCase {
 
     func testDeleteWordAndClearBothWork() {
         let app = launch()
-        app.buttons["I"].firstMatch.tap()
-        app.buttons["want"].firstMatch.tap()
-        app.buttons["Delete word"].firstMatch.tap()
+        app.staticTexts["I"].firstMatch.tap()
+        app.staticTexts["want"].firstMatch.tap()
+        app.staticTexts["Delete word"].firstMatch.tap()
         XCTAssertEqual(line(app), "I ", "Delete word removes the last word only")
 
-        app.buttons["Clear"].firstMatch.tap()
+        app.staticTexts["Clear"].firstMatch.tap()
         XCTAssertEqual(line(app), "", "Clear erases on one tap")
     }
 
     func testABCOpensTheLetterBoardAndTypes() {
         let app = launch()
-        app.buttons["ABC"].firstMatch.tap()
+        app.staticTexts["ABC"].firstMatch.tap()
 
-        let q = app.buttons["q"].firstMatch
+        let q = app.staticTexts["q"].firstMatch
         XCTAssertTrue(q.waitForExistence(timeout: 5), "ABC should open the letter board")
         q.tap()
-        app.buttons["u"].firstMatch.tap()
+        app.staticTexts["u"].firstMatch.tap()
         XCTAssertEqual(line(app), "qu", "letter keys type single characters")
 
         // The right edge offers 123 once you are already on abc.
-        XCTAssertTrue(app.buttons["123"].firstMatch.exists,
+        XCTAssertTrue(app.staticTexts["123"].firstMatch.exists,
                       "the right edge should offer 123 from the letter board")
-        app.buttons["123"].firstMatch.tap()
-        XCTAssertTrue(app.buttons["1"].firstMatch.waitForExistence(timeout: 5),
+        app.staticTexts["123"].firstMatch.tap()
+        XCTAssertTrue(app.staticTexts["1"].firstMatch.waitForExistence(timeout: 5),
                       "123 should open the number board")
         XCTAssertEqual(app.keyboards.count, 0,
                        "the system keyboard must never open over the board")
@@ -64,27 +64,27 @@ final class PracticeBoardTests: XCTestCase {
 
     func testCategoriesOpensTheBoardListAndNavigates() {
         let app = launch()
-        app.buttons["Categories"].firstMatch.tap()
+        app.staticTexts["Categories"].firstMatch.tap()
 
-        let core = app.buttons["Core"].firstMatch
+        let core = app.staticTexts["Core"].firstMatch
         XCTAssertTrue(core.waitForExistence(timeout: 5),
                       "Categories should list the boards, not jump past them")
-        XCTAssertTrue(app.buttons["Food"].firstMatch.exists,
+        XCTAssertTrue(app.staticTexts["Food"].firstMatch.exists,
                       "every category should be listed")
         core.tap()
 
-        XCTAssertTrue(app.buttons["Home"].firstMatch.waitForExistence(timeout: 5),
+        XCTAssertTrue(app.staticTexts["Home"].firstMatch.waitForExistence(timeout: 5),
                       "tapping a category should open it")
-        XCTAssertFalse(app.buttons["Food"].firstMatch.exists,
+        XCTAssertFalse(app.staticTexts["Food"].firstMatch.exists,
                        "the category list should be replaced by the board")
     }
 
     func testHomeReturnsFromTheLetterBoard() {
         let app = launch()
-        app.buttons["ABC"].firstMatch.tap()
-        XCTAssertTrue(app.buttons["q"].firstMatch.waitForExistence(timeout: 5))
-        app.buttons["Home"].firstMatch.tap()
-        XCTAssertTrue(app.buttons["want"].firstMatch.waitForExistence(timeout: 5),
+        app.staticTexts["ABC"].firstMatch.tap()
+        XCTAssertTrue(app.staticTexts["q"].firstMatch.waitForExistence(timeout: 5))
+        app.staticTexts["Home"].firstMatch.tap()
+        XCTAssertTrue(app.staticTexts["want"].firstMatch.waitForExistence(timeout: 5),
                       "Home should come back to the word board")
     }
 }

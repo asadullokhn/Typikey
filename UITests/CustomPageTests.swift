@@ -54,13 +54,18 @@ final class CustomPageTests: XCTestCase {
             NSPredicate(format: "label CONTAINS[c] 'Keyboard Home Pg 1'")).firstMatch.exists,
                       "the reference home-page name is missing")
 
-        let home = app.buttons["Home"].firstMatch
+        let home = app.staticTexts["Home"].firstMatch
         XCTAssertTrue(home.waitForExistence(timeout: 5), "home board did not render")
-        XCTAssertEqual(home.frame.width, app.frame.width / 10, accuracy: 12,
-                       "the reference uses ten approximately equal 1:1 columns")
-        XCTAssertEqual(app.buttons["Categories"].frame.minX, home.frame.minX, accuracy: 1,
+        // Ten equal 1:1 columns. Measured against the board rather than the
+        // screen: a column is the board's width less the outer inset and the
+        // nine gaps, divided by ten, so it is narrower than screenWidth/10.
+        XCTAssertEqual(home.frame.width, home.frame.height, accuracy: 3,
+                       "columns are 1:1")
+        XCTAssertEqual(app.staticTexts["ABC"].frame.width, home.frame.width, accuracy: 1,
+                       "both pinned edges use the same column width")
+        XCTAssertEqual(app.staticTexts["Categories"].frame.minX, home.frame.minX, accuracy: 1,
                        "Categories belongs directly under Home on the left edge")
-        XCTAssertGreaterThan(app.buttons["ABC"].frame.midX, app.frame.width * 0.9,
+        XCTAssertGreaterThan(app.staticTexts["ABC"].frame.midX, app.frame.width * 0.9,
                              "ABC belongs in the right edge column")
     }
 
@@ -73,7 +78,7 @@ final class CustomPageTests: XCTestCase {
         // The practice line is a label now, not a field: the board below it
         // is a working keyboard, and a real field would raise the system one
         // over the very thing it demonstrates.
-        XCTAssertTrue(app.buttons["Home"].firstMatch.waitForExistence(timeout: 10),
+        XCTAssertTrue(app.staticTexts["Home"].firstMatch.waitForExistence(timeout: 10),
                       "board did not render")
         XCTAssertEqual(app.textFields.count + app.textViews.count, 0,
                        "the home screen must have no editable field")

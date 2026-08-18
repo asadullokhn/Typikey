@@ -55,6 +55,9 @@ final class BoardGridView: UIView {
     var onTouchEvidence: (TouchEvidence?) -> Void = { _ in }
 
     private(set) var keys: [Key] = []
+    /// What the current keys were built from, so a rebuild that would draw
+    /// exactly the same board is skipped — rebuilding drops a slide.
+    private var signature: [String] = []
     private var highlightedIndex: Int?
     private var lastCommit: (action: KeyAction, at: Date)?
     private var intent = TouchIntentFilter()
@@ -65,6 +68,9 @@ final class BoardGridView: UIView {
     // MARK: Content
 
     func setKeys(_ placements: [(cell: ContentCell, row: Int, col: Int)]) {
+        let incoming = placements.map { "\($0.cell.label)|\($0.row)|\($0.col)|\($0.cell.colSpan)" }
+        guard incoming != signature else { return }
+        signature = incoming
         keys.forEach { $0.view.removeFromSuperview() }
         keys = []
         // A rebuild can shrink the array while a touch is still moving; a
@@ -82,6 +88,7 @@ final class BoardGridView: UIView {
         restyleAll()
         setNeedsLayout()
     }
+
 
     func restyleAll() {
         for (i, key) in keys.enumerated() {
