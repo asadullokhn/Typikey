@@ -1,0 +1,11 @@
+The app's board and the keyboard are now the same board.
+
+They used to be two implementations that mirrored each other's numbers by hand. There is one now, so the practice board on the home screen behaves exactly like the real keyboard:
+
+- Slide your finger across the keys — nothing happens until you lift, and the key under your finger gets a ring.
+- Every point maps to the nearest key, so you never have to hit a target exactly.
+- A repeated key inside half a second is ignored.
+
+The practice board had none of that before. It also means anything fixed in one place is fixed in both from now on.
+
+Please try: sliding across the practice board on the home screen rather than tapping, and check it feels the same as the keyboard.
