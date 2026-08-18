@@ -113,30 +113,27 @@ final class PinnedFrameTests: XCTestCase {
                        "the keyboard-switch button must be removed")
         let deleteWord = app.staticTexts["Delete word"]
         XCTAssertTrue(deleteWord.exists, "the left edge column must not move")
-        guard let firstContentColumn = gridText("I", in: app),
-              let formerSlotWord = gridText("what", in: app) else {
+        guard let bottomRowWord = gridText("that", in: app) else {
             return XCTFail("the Home board words are missing")
         }
-        XCTAssertEqual(formerSlotWord.frame.midX, firstContentColumn.frame.midX, accuracy: 4,
-                       "a word must occupy the former switcher column")
-        XCTAssertEqual(formerSlotWord.frame.midY, deleteWord.frame.midY, accuracy: 12,
-                       "the former switcher column must be filled on the bottom row")
-        guard let addedWord = gridText("now", in: app) else {
-            return XCTFail("the freed capacity must add another Home word")
-        }
-        XCTAssertEqual(addedWord.frame.midY, deleteWord.frame.midY, accuracy: 12,
-                       "the additional word must occupy the freed bottom row")
+        XCTAssertEqual(bottomRowWord.frame.midY, deleteWord.frame.midY, accuracy: 12,
+                       "words must reach the bottom row of the content grid")
+        // The two bottom corners are the cursor keys on every board, which
+        // is what the app's page model has always reserved.
+        XCTAssertTrue(app.staticTexts["Cursor left"].exists,
+                      "the bottom-left content control must not move")
         XCTAssertTrue(app.staticTexts["Cursor right"].exists,
                       "the bottom-right content control must not move")
         XCTAssertGreaterThan(app.staticTexts["ABC"].frame.midX, app.frame.width * 0.9,
                              "the right edge column must not move")
     }
 
-    // Character-level repair belongs to the levels where characters are
-    // typed: the word boards have no ⌫ or ←, the letters level has both.
+    // Both cursor keys sit in the bottom corners of every board (19 Aug
+    // 2026); ⌫ belongs only to the levels where characters are typed.
     func testCharacterToolsLiveOnTheTypingLevels() {
         let app = launchToTypikey()
-        XCTAssertFalse(app.staticTexts["Cursor left"].exists, "no cursor-left on a word board")
+        XCTAssertTrue(app.staticTexts["Cursor left"].exists, "cursor-left pins the bottom-left")
+        XCTAssertFalse(app.staticTexts["⌫"].exists, "no single-character delete on a word board")
         app.staticTexts["ABC"].tap()
         XCTAssertTrue(app.staticTexts["q"].waitForExistence(timeout: 3), "letters level did not open")
         XCTAssertTrue(app.staticTexts["⌫"].exists, "single-character delete missing on letters")
