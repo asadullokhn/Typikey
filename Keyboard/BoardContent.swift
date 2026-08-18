@@ -305,9 +305,15 @@ extension KeyboardViewController {
             let row = index / KeyboardPage.columns
             let column = index % KeyboardPage.columns
             guard row < wordBoardRows, column < cols else { continue }
-            let action: KeyAction = button.destination.map { KeyAction.toPage($0) }
-                ?? .word(button.label)
-            rows[row][column] = ContentCell(action, button.label)
+            if let destination = button.destination {
+                rows[row][column] = ContentCell(.toPage(destination), button.label)
+            } else if let word = vocabIndex[button.label] {
+                // Relabelled where it stands, never moved: she placed this
+                // key, so reshaping stays off, but "go" still becomes "going".
+                rows[row][column] = wordCell(word)
+            } else {
+                rows[row][column] = ContentCell(.word(button.label), button.label)
+            }
         }
         // The design's controls go on last so a key can never bury one.
         for control in gridControls(rows: wordBoardRows) {
@@ -342,11 +348,14 @@ extension KeyboardViewController {
             guard let page = customPage(id) else { return contentRows(for: .home) }
             return pageRows(page)
         case .home:
-            // An edited home board replaces the shipped one. Everything
-            // else about the keyboard — grammar, prediction, the spare
-            // cells — is unchanged, because those read the text rather
-            // than the board.
-            if let home = customPage("home") { return pageRows(home) }
+            // A home board she arranged replaces the shipped one, keys and
+            // order both. Grammar and prediction survive that — they read
+            // the text, not the board — but the spare-cell reshaping does
+            // not, because it works by moving words and she put those keys
+            // where they are.
+            if let home = customPage("home"), BoardLayout.isArranged(home) {
+                return pageRows(home)
+            }
             let cells = plan.reshaped(BoardPlan.homeWords, after: contextBefore())
                 .prefix(wordSlots)
                 .map(wordCell)

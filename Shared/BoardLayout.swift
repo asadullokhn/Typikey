@@ -127,6 +127,13 @@ struct KeyboardPage: Codable, Equatable, Identifiable {
     var id: String
     var name: String
     var cells: [BoardButton?]
+    /// Set when somebody places, relabels or clears a key here.
+    ///
+    /// The keyboard stands its reshaping down for an arranged board, since
+    /// words must not move under a person who laid them out by hand. A page
+    /// that was only renamed is not that, and neither is an untouched copy
+    /// the editor happened to write out.
+    var arranged = false
 
     /// Eight editable columns sit between the two fixed edge columns.
     /// Together they form the reference's ten equal-width columns.
@@ -134,11 +141,22 @@ struct KeyboardPage: Codable, Equatable, Identifiable {
     static let rows = 4
     static var cellCount: Int { columns * rows }
 
-    init(id: String, name: String, cells: [BoardButton?] = []) {
+    init(id: String, name: String, cells: [BoardButton?] = [], arranged: Bool = false) {
         self.id = id
         self.name = name
         self.cells = cells
+        self.arranged = arranged
         self.cells += Array(repeating: nil, count: max(0, Self.cellCount - self.cells.count))
+    }
+
+    init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        id = try values.decode(String.self, forKey: .id)
+        name = try values.decode(String.self, forKey: .name)
+        cells = try values.decode([BoardButton?].self, forKey: .cells)
+        // Absent from boards saved before this was tracked. Their shape has
+        // to answer for them; see `isArranged`.
+        arranged = try values.decodeIfPresent(Bool.self, forKey: .arranged) ?? false
     }
 
     /// A page seeded from a list of words, laid around the keyboard's own
@@ -173,7 +191,9 @@ extension BoardLayout {
     /// Home first and named as the design names it. Each category becomes a
     /// page, and each of its words a key — which is what makes the built-in
     /// vocabulary a starting point rather than a wall.
-    static var builtInPages: [KeyboardPage] {
+    /// Built once: the keyboard compares against these on every rebuild,
+    /// and rebuilds happen whenever the sentence moves the verb keys.
+    static let builtInPages: [KeyboardPage] = {
         let home = KeyboardPage(
             id: "home", name: "Keyboard Home Pg 1",
             words: BoardPlan.homeSelection.map { BoardButton(id: "home.\($0)", label: $0) })
@@ -184,6 +204,33 @@ extension BoardLayout {
                                          label: $0.text, image: $0.emoji)
                          })
         }
+    }()
+
+    /// Whether anything about this page differs from the board we ship, and
+    /// so is worth keeping. The editor is handed the shipped boards to work
+    /// on, and writing one back untouched is how the keyboard's home board
+    /// came to be frozen.
+    static func isEdited(_ page: KeyboardPage) -> Bool {
+        page != builtInPages.first { $0.id == page.id }
+    }
+
+    /// Whether the keys on this page were placed by hand.
+    ///
+    /// A narrower question than `isEdited`, and the one reshaping turns on:
+    /// moving words between cells is fine on a board we generated and never
+    /// acceptable on a board somebody laid out. Renaming a page is not
+    /// laying it out.
+    static func isArranged(_ page: KeyboardPage) -> Bool {
+        if page.arranged { return true }
+        // Boards saved before that flag existed answer with their shape
+        // instead, which works whatever build wrote them: a generated board
+        // has its keys where the packer puts them — gapless, clear of the
+        // reserved cells — and names every key after its own word. Placing,
+        // clearing or relabelling one breaks one of those.
+        let repacked = KeyboardPage(id: page.id, name: page.name,
+                                    words: page.cells.compactMap { $0 })
+        guard page.cells == repacked.cells else { return true }
+        return page.cells.contains { $0 != nil && $0!.id != "\(page.id).\($0!.label)" }
     }
 
     static func loadPages(from store: UserDefaults) -> [KeyboardPage] {

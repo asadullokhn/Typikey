@@ -1,11 +1,11 @@
-The app's board and the keyboard are now the same board.
+The board follows the sentence again.
 
-They used to be two implementations that mirrored each other's numbers by hand. There is one now, so the practice board on the home screen behaves exactly like the real keyboard:
+Tapping "I" used to change the word keys around it — "go" became "going", "be" became "am" — without any key moving. That stopped working, and the board looked normal while it happened, so there was nothing to see except that it had gone quiet.
 
-- Slide your finger across the keys — nothing happens until you lift, and the key under your finger gets a ring.
-- Every point maps to the nearest key, so you never have to hit a target exactly.
-- A repeated key inside half a second is ignored.
+The cause was the app, not the keyboard. Opening the board editor and saving anything at all — adding a page, renaming one — wrote a copy of the shipped home board into the shared container, and the keyboard read that copy as a board somebody had arranged by hand. It stops rearranging those, on purpose. It just could not tell the difference between a board that was arranged and a copy of its own.
 
-The practice board had none of that before. It also means anything fixed in one place is fixed in both from now on.
+Devices carrying one of those copies recover on this update. Nothing to reset.
 
-Please try: sliding across the practice board on the home screen rather than tapping, and check it feels the same as the keyboard.
+Boards you really did arrange now relabel their verbs in place too, which they should have done all along.
+
+Please try: tap "I", then ABC and type "am", then Home — "go" should read "going", in the same place it was. Tap "you" and "be" should read "are". Then arrange a board of your own and check the same thing still happens on it.
