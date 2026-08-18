@@ -87,16 +87,7 @@ final class RephraseTests: XCTestCase {
         app.launchArguments += ["-skipOnboarding"]
         app.launch()
         XCUIDevice.shared.orientation = .portrait
-        let field = app.textFields.firstMatch.exists ? app.textFields.firstMatch : app.textViews.firstMatch
-        XCTAssertTrue(field.waitForExistence(timeout: 10), "practice field not found")
-        field.tap()
-        let continueButton = app.buttons["Continue"]
-        if continueButton.waitForExistence(timeout: 3) {
-            continueButton.tap()
-            field.tap()
-        }
-        XCTAssertTrue(app.staticTexts["Home"].waitForExistence(timeout: 10),
-                      "Typikey home board not visible — is Typikey the active keyboard?")
+        app.focusRealKeyboard()
         return app
     }
 }

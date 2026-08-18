@@ -53,7 +53,11 @@ final class PinnedFrameTests: XCTestCase {
         app.staticTexts["ABC"].tap()
         assertFrames(baseline, in: app, level: "letters")
 
-        app.staticTexts["123"].tap()
+        let toNumbers = app.staticTexts.matching(identifier: "123").allElementsBoundByIndex
+            .filter(\.exists)
+            .max { $0.frame.midX < $1.frame.midX }
+        XCTAssertNotNil(toNumbers, "no 123 key on the letters board")
+        toNumbers?.tap()
         assertFrames(baseline, in: app, level: "numbers")
     }
 
@@ -154,21 +158,20 @@ final class PinnedFrameTests: XCTestCase {
                       "tapping '\(tappedWord)' should insert that word, got: \(value)")
     }
 
-    func testClearAllRequiresArmingTap() {
+    // Clear erases on one tap (team decision, 18 Aug 2026). It used to arm
+    // first and relabel to "tap again".
+    func testClearAllErasesOnOneTap() {
         let app = launchToTypikey()
-        app.buttons["want"].tap()
+        // "want" is also a suggestion chip; the grid key is the lower match.
+        gridText("want", in: app)?.tap()
         var value = practiceField(in: app).value as? String ?? ""
         XCTAssertTrue(value.contains("Want"), "setup: word not inserted")
 
         app.staticTexts["Clear"].tap()
         value = practiceField(in: app).value as? String ?? ""
-        XCTAssertTrue(value.contains("Want"), "first tap must only arm, not clear")
-        XCTAssertTrue(app.staticTexts["tap again"].waitForExistence(timeout: 2),
-                      "armed clear-all should relabel to 'tap again'")
-
-        app.staticTexts["tap again"].tap()
-        value = practiceField(in: app).value as? String ?? ""
-        XCTAssertFalse(value.contains("Want"), "second tap should clear the text")
+        XCTAssertFalse(value.contains("Want"), "one tap should clear the text")
+        XCTAssertFalse(app.staticTexts["tap again"].exists,
+                       "Clear no longer arms, so it must never relabel")
     }
 
     func testManualLevelSurvivesReshow() {
@@ -215,16 +218,7 @@ final class PinnedFrameTests: XCTestCase {
         app.launchArguments += ["-skipOnboarding"]
         app.launch()
         XCUIDevice.shared.orientation = .portrait
-        let field = practiceField(in: app)
-        XCTAssertTrue(field.waitForExistence(timeout: 10), "practice field not found")
-        field.tap()
-        let continueButton = app.buttons["Continue"]
-        if continueButton.waitForExistence(timeout: 3) {
-            continueButton.tap()
-            practiceField(in: app).tap()
-        }
-        XCTAssertTrue(app.staticTexts["Home"].waitForExistence(timeout: 5),
-                      "Typikey home level not visible — is Typikey the active keyboard?")
+        app.focusRealKeyboard()
         return app
     }
 

@@ -40,8 +40,14 @@ final class CustomPageTests: XCTestCase {
                        "Setup must leave the fully configured reference state")
         XCTAssertFalse(app.staticTexts["The keyboard cannot see these boards yet"].exists,
                        "permission warning must leave the fully configured reference state")
-        XCTAssertGreaterThan(delete.frame.minX, app.frame.width / 2,
-                             "the three actions belong in the upper-right cluster")
+        // The reference moved the actions from an upper-right cluster into
+        // one centred capsule (18 Aug 2026). Centred as a group is the
+        // invariant; the individual positions follow from it.
+        let edit = app.staticTexts["Edit Page"]
+        XCTAssertEqual((delete.frame.midX + edit.frame.midX) / 2, app.frame.midX,
+                       accuracy: 12, "the three actions are one centred cluster")
+        XCTAssertLessThan(delete.frame.maxX, edit.frame.minX,
+                          "Delete, Add and Edit read left to right")
 
         XCTAssertTrue(app.staticTexts["Name of Page"].exists, "page-name caption missing")
         XCTAssertTrue(app.buttons.matching(
@@ -64,14 +70,15 @@ final class CustomPageTests: XCTestCase {
         app.launch()
         XCUIDevice.shared.orientation = .landscapeLeft
 
-        let field = app.textFields.firstMatch.exists
-            ? app.textFields.firstMatch
-            : app.textViews.firstMatch
-        XCTAssertTrue(field.waitForExistence(timeout: 10), "practice field not found")
-        XCTAssertEqual(field.value as? String ?? "", "",
-                       "the example sentence must not be pre-entered text")
-        XCTAssertTrue(app.staticTexts["I like to drink coffee"].exists,
-                      "the example sentence should remain visible as a placeholder")
+        // The practice line is a label now, not a field: the board below it
+        // is a working keyboard, and a real field would raise the system one
+        // over the very thing it demonstrates.
+        XCTAssertTrue(app.buttons["Home"].firstMatch.waitForExistence(timeout: 10),
+                      "board did not render")
+        XCTAssertEqual(app.textFields.count + app.textViews.count, 0,
+                       "the home screen must have no editable field")
+        XCTAssertTrue(app.staticTexts["Tap a key from the keyboard."].exists,
+                      "the prompt should remain visible as a placeholder")
     }
 
     /// The common case, and the one that must be indistinguishable from
@@ -161,16 +168,7 @@ final class CustomPageTests: XCTestCase {
         app.launchArguments += ["-skipOnboarding"]
         app.launch()
         XCUIDevice.shared.orientation = .portrait
-        let field = app.textFields.firstMatch.exists ? app.textFields.firstMatch : app.textViews.firstMatch
-        XCTAssertTrue(field.waitForExistence(timeout: 10), "practice field not found")
-        field.tap()
-        let continueButton = app.buttons["Continue"]
-        if continueButton.waitForExistence(timeout: 3) {
-            continueButton.tap()
-            field.tap()
-        }
-        XCTAssertTrue(app.staticTexts["Home"].waitForExistence(timeout: 10),
-                      "Typikey home board not visible — is Typikey the active keyboard?")
+        app.focusRealKeyboard()
         return app
     }
 }

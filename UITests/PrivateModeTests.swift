@@ -20,12 +20,9 @@ final class PrivateModeTests: XCTestCase {
         }
         XCTAssertEqual(toggle.value as? String, "1", "private mode should be on")
 
-        // Type into the practice field with Typikey itself — back out on
-        // the home screen, where the field now is.
+        // Type with Typikey itself, in the practice conversation.
         app.closeSetup()
-        let field = app.textViews.firstMatch
-        XCTAssertTrue(field.waitForExistence(timeout: 5), "practice field not found")
-        field.tap()
+        let field = app.focusRealKeyboard()
 
         let continueButton = app.buttons["Continue"]
         if continueButton.waitForExistence(timeout: 3) {
