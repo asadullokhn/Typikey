@@ -29,6 +29,7 @@ struct ButtonEditor: View {
 
                 field("Button Label") {
                     TextField("", text: $button.label)
+                        .accessibilityIdentifier("buttonLabelField")
                         .font(.title3)
                         .padding(12)
                         .background(Color(.systemBackground), in: RoundedRectangle(cornerRadius: 10))

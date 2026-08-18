@@ -18,6 +18,7 @@
 		14DE37B187A93DF5D4C5F08E /* KeyboardFit.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30AE72E91A8C9C4399ABC7D3 /* KeyboardFit.swift */; };
 		175F797B564F6E8575588F49 /* FieldIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C10B8DBBF15A98B9B9272A7 /* FieldIntent.swift */; };
 		1813404CD5357F40840CF472 /* PredictionTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32FB74CF8EBEF100DB4F617C /* PredictionTypes.swift */; };
+		1C311E29C5F8E9939DFBDADA /* PageEditingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FC89BF4ACDF0C10EEEA3237 /* PageEditingTests.swift */; };
 		1F538CFAEDD2F96B06E6D62B /* CompletionSanitizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC933A22B1A0F240A3230016 /* CompletionSanitizer.swift */; };
 		20D6D96A8ED8616DF98EB53D /* PredictionTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32FB74CF8EBEF100DB4F617C /* PredictionTypes.swift */; };
 		20E5A46D92D05BB8947EB632 /* Preferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC0AA28FDABCFE29ADC640C4 /* Preferences.swift */; };
@@ -284,6 +285,7 @@
 		882E752E27FA8543406D0810 /* DoubleMetaphone.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DoubleMetaphone.swift; sourceTree = "<group>"; };
 		8A0596DADB8E2918F9CB0FF9 /* Typikey.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Typikey.entitlements; sourceTree = "<group>"; };
 		8B324A924FE66DC05CD87923 /* KeyboardViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardViewController.swift; sourceTree = "<group>"; };
+		8FC89BF4ACDF0C10EEEA3237 /* PageEditingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageEditingTests.swift; sourceTree = "<group>"; };
 		9719E1B6857194502D657B40 /* TypingLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TypingLayout.swift; sourceTree = "<group>"; };
 		9816A74EA5A0AF0DFAA4189F /* ExternalModelRemovalTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExternalModelRemovalTests.swift; sourceTree = "<group>"; };
 		99954A75E4A3461FE7370C40 /* SentenceShape.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SentenceShape.swift; sourceTree = "<group>"; };
@@ -478,6 +480,7 @@
 				0620AC89CD9C9348E302DDBC /* GrammarTests.swift */,
 				D977763A87F89006584A3902 /* KeyboardHeightTests.swift */,
 				167A2498198387A80DD85FC1 /* MyWordsTests.swift */,
+				8FC89BF4ACDF0C10EEEA3237 /* PageEditingTests.swift */,
 				2F4B7442BDF523BAC5B0E4C2 /* PinnedFrameTests.swift */,
 				3428F691C78D882874DAB636 /* PracticeBoardTests.swift */,
 				7C9F1F5FD052E4FFDD9A120E /* PrivateModeTests.swift */,
@@ -898,6 +901,7 @@
 				88CE9D5420FB39F79D63A53C /* GrammarTests.swift in Sources */,
 				C5DE9CF6E675B6572A25B3F0 /* KeyboardHeightTests.swift in Sources */,
 				9C862CD8CF1738B5038563A8 /* MyWordsTests.swift in Sources */,
+				1C311E29C5F8E9939DFBDADA /* PageEditingTests.swift in Sources */,
 				FB44BAC1AC5A3F6C433CD88D /* PinnedFrameTests.swift in Sources */,
 				20ED2F80357C283792D12B7C /* PracticeBoardTests.swift in Sources */,
 				E874D9C73C6F3FA438850492 /* PrivateModeTests.swift in Sources */,
