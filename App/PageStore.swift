@@ -72,6 +72,7 @@ final class PageStore: ObservableObject {
                 let emptied = newValue.label.isEmpty && newValue.image == nil
                     && newValue.destination == nil
                 self.pages[self.currentIndex].cells[index] = emptied ? nil : newValue
+                self.pages[self.currentIndex].arranged = true
                 self.save()
             })
     }
@@ -91,7 +92,7 @@ final class PageStore: ObservableObject {
         var n = pages.count
         var id = "page.\(n)"
         while pages.contains(where: { $0.id == id }) { n += 1; id = "page.\(n)" }
-        pages.append(KeyboardPage(id: id, name: "New Page"))
+        pages.append(KeyboardPage(id: id, name: "New Page", arranged: true))
         currentIndex = pages.count - 1
         save()
     }
@@ -114,7 +115,13 @@ final class PageStore: ObservableObject {
     }
 
     private func save() {
-        BoardLayout.savePages(pages, to: store)
+        // `withHome` hands the editor the shipped home so there is something
+        // to arrange, and any edit anywhere writes the whole list. Writing an
+        // untouched home would freeze the keyboard's home board: a stored
+        // page opts out of the reshaping that moves words to the spare cells.
+        BoardLayout.savePages(
+            pages.filter { $0.id != Self.homeID || BoardLayout.isEdited($0) },
+            to: store)
     }
 
     // MARK: The keyboard's fixed furniture, which the editor shows and does not change
