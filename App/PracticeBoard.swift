@@ -29,8 +29,10 @@ struct PracticeBoard: UIViewRepresentable {
     func updateUIView(_ grid: BoardGridView, context: Context) {
         grid.onCommit = { key in
             // The edges stay live while editing — that is how you reach the
-            // page you want to change. Only the content cells become targets.
-            if editing, let index = Self.contentIndex(of: key) {
+            // page you want to change. Only a page's own cells become
+            // targets: the letters are the keyboard's, not hers, and a tap
+            // on "a" is a letter even mid-edit.
+            if editing, level == .page, let index = Self.contentIndex(of: key) {
                 onEditCell(index)
             } else {
                 onKey(key.action)
@@ -57,7 +59,7 @@ struct PracticeBoard: UIViewRepresentable {
         let column = key.col - 1
         guard (0..<KeyboardPage.columns).contains(column) else { return nil }
         let index = key.row * KeyboardPage.columns + column
-        return BoardFrame.cursorAction(atContentIndex: index) == nil ? index : nil
+        return BoardFrame.stepAction(atContentIndex: index) == nil ? index : nil
     }
 
     private var placements: [(cell: ContentCell, row: Int, col: Int)] {
@@ -109,9 +111,8 @@ struct PracticeBoard: UIViewRepresentable {
             count: KeyboardPage.rows)
         for index in 0..<(KeyboardPage.rows * KeyboardPage.columns) {
             let row = index / KeyboardPage.columns, column = index % KeyboardPage.columns
-            if let cursor = BoardFrame.cursorAction(atContentIndex: index) {
-                rows[row][column] = ContentCell(
-                    cursor, cursor == .cursorLeft ? "Cursor left" : "Cursor right")
+            if let step = BoardFrame.stepAction(atContentIndex: index) {
+                rows[row][column] = ContentCell(step, BoardFrame.stepLabel(for: step))
             } else if let button = currentPage?.cells[safe: index] ?? nil,
                       !button.label.isEmpty {
                 // A key with a destination is a doorway, here as on the

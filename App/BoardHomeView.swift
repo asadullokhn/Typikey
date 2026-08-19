@@ -12,6 +12,8 @@ struct BoardHomeView: View {
     @State private var composer = PracticeComposer()
     @State private var level: PracticeLevel = .page
     @State private var shifted = false
+    @State private var namingFocused = false
+    @State private var nameBeforeEdit = ""
     @State private var showingSetup = false
     @State private var showingOnboarding = false
     @AppStorage("onboardingSeen") private var onboardingSeen = false
@@ -138,7 +140,7 @@ struct BoardHomeView: View {
             PageAction(title: "Edit Page", symbol: "square.and.pencil",
                        enabled: store.canEditCurrentPage, active: editing) {
                 editing.toggle()
-                if !editing { selected = nil }
+                if !editing { selected = nil; focusName(false); level = .page }
             },
         ]
     }
@@ -157,15 +159,47 @@ struct BoardHomeView: View {
     @ViewBuilder
     private func pageIdentity(_ fit: HomeFit) -> some View {
         if editing {
-            VStack(spacing: 4 * fit.scale) {
-                Text("Name of Page")
-                    .font(.system(size: 23 * fit.scale))
-                    .foregroundStyle(Color(uiColor: Palette.homeGlyph))
-                TextField("Name of Page", text: $store.currentName)
-                    .font(.system(size: 24 * fit.scale, weight: .semibold))
-                    .multilineTextAlignment(.center)
-                    .frame(width: 360 * fit.scale)
+            // Not a TextField: one would raise the system keyboard over the
+            // board that exists to replace it. The name is typed on the
+            // board, like everything else here, so this is a field-shaped
+            // target that takes focus and lets the keys do the writing.
+            Button {
+                focusName(!namingFocused)
+                if namingFocused { level = .letters }
+            } label: {
+                VStack(spacing: 4 * fit.scale) {
+                    Text("Name of Page")
+                        .font(.system(size: 23 * fit.scale))
+                        .foregroundStyle(Color(uiColor: Palette.homeGlyph))
+                    HStack(spacing: 3 * fit.scale) {
+                        Text(store.currentName)
+                            .font(.system(size: 24 * fit.scale, weight: .semibold))
+                            .foregroundStyle(.primary)
+                        if namingFocused {
+                            RoundedRectangle(cornerRadius: 1)
+                                .fill(Color(uiColor: Palette.action))
+                                .frame(width: 3 * fit.scale, height: 28 * fit.scale)
+                        }
+                    }
+                    .padding(.horizontal, 22 * fit.scale)
+                    .frame(minWidth: 360 * fit.scale, minHeight: 56 * fit.scale)
+                    .background(
+                        RoundedRectangle(cornerRadius: 14 * fit.scale, style: .continuous)
+                            .fill(Color(.secondarySystemGroupedBackground)))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 14 * fit.scale, style: .continuous)
+                            .stroke(namingFocused
+                                    ? Color(uiColor: Palette.action)
+                                    : Color(uiColor: Palette.homeGlyph).opacity(0.5),
+                                    lineWidth: namingFocused ? 3 : 1.5))
+                    .contentShape(Rectangle())
+                }
             }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Name of Page, \(store.currentName)")
+            .accessibilityHint("Types on the board below")
+            .accessibilityAddTraits(namingFocused ? [.isSelected] : [])
+            .accessibilityIdentifier("pageNameField")
         } else {
             Menu {
                 ForEach(store.pages) { page in
@@ -214,9 +248,44 @@ struct BoardHomeView: View {
         }
     }
 
+    /// The one way the name gains or loses focus, so a blank name can never
+    /// escape by an route that forgot to check.
+    private func focusName(_ on: Bool) {
+        guard namingFocused != on else { return }
+        if on { nameBeforeEdit = store.currentName }
+        else { store.commitName(fallback: nameBeforeEdit) }
+        namingFocused = on
+    }
+
+    /// Renaming a page, on the board rather than over it.
+    ///
+    /// Returns false for anything that is not text, so the edges still
+    /// navigate mid-rename and the caller can drop focus.
+    private func renameWith(_ action: KeyAction) -> Bool {
+        switch action {
+        case .char(let c):
+            store.currentName += shifted ? c.uppercased() : c
+            shifted = false
+        case .shift:       shifted.toggle()
+        case .space:       store.currentName += " "
+        case .punct(let p): store.currentName += p
+        case .delete:      store.currentName = String(store.currentName.dropLast())
+        case .deleteWord, .clearAll: store.currentName = ""
+        case .ret, .dismiss:
+            focusName(false)
+            level = .page
+        default: return false
+        }
+        return true
+    }
+
     /// What a key does here. The keyboard's own `commit` types into the
     /// document proxy and learns; this types into the practice line.
     private func press(_ action: KeyAction) {
+        if namingFocused {
+            if renameWith(action) { return }
+            focusName(false)   // anything that is not text leaves the name
+        }
         switch action {
         case .word(let w): composer.insertWord(w)
         case .char(let c):
@@ -230,6 +299,8 @@ struct BoardHomeView: View {
         case .clearAll:    composer.clear()
         case .cursorLeft:  composer.moveLeft()
         case .cursorRight: composer.moveRight()
+        case .pageBack:    store.step(by: -1); level = .page; selected = nil
+        case .pageForward: store.step(by: 1); level = .page; selected = nil
         case .punct(let p): composer.insertWord(p)
         case .home:        level = .page; store.goHome(); selected = nil
         case .toCategories: level = .categories; selected = nil

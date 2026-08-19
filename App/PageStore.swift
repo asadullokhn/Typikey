@@ -16,9 +16,26 @@ final class PageStore: ObservableObject {
 
     private let store: UserDefaults
 
+    private var resetObserver: NSObjectProtocol?
+
     init(store: UserDefaults = UserDefaults(suiteName: "group.com.asadullokh.ch5.typikey") ?? .standard) {
         self.store = store
         pages = Self.withHome(BoardLayout.loadPages(from: store))
+        // A reset that leaves the editor showing boards which no longer
+        // exist anywhere is a reset that looks like it failed.
+        resetObserver = NotificationCenter.default.addObserver(
+            forName: FactoryReset.didReset, object: nil, queue: .main) { [weak self] _ in
+                MainActor.assumeIsolated { self?.reload() }
+            }
+    }
+
+    deinit {
+        if let resetObserver { NotificationCenter.default.removeObserver(resetObserver) }
+    }
+
+    func reload() {
+        pages = Self.withHome(BoardLayout.loadPages(from: store))
+        currentIndex = 0
     }
 
     /// Add the shipped home page until the user saves an edited copy.
@@ -44,6 +61,21 @@ final class PageStore: ObservableObject {
             pages[currentIndex].name = newValue
             save()
         }
+    }
+
+    /// Settles the name once somebody stops typing it.
+    ///
+    /// It is allowed to be empty while being typed — clearing it is how you
+    /// replace it — but a page with no name is one nobody can pick out of
+    /// the menu, so a blank one goes back to what it was called before.
+    func commitName(fallback: String) {
+        guard pages.indices.contains(currentIndex) else { return }
+        let typed = pages[currentIndex].name.trimmingCharacters(in: .whitespacesAndNewlines)
+        let previous = fallback.trimmingCharacters(in: .whitespacesAndNewlines)
+        let settled = typed.isEmpty ? (previous.isEmpty ? "New Page" : previous) : typed
+        guard settled != pages[currentIndex].name else { return }
+        pages[currentIndex].name = settled
+        save()
     }
 
     /// Home cannot be deleted. Every other page is reachable only through
@@ -87,6 +119,13 @@ final class PageStore: ObservableObject {
     }
 
     func goHome() { go(to: Self.homeID) }
+
+    /// One board along, wrapping. The two bottom corners of every board walk
+    /// this list, so every page is reachable without going home first.
+    func step(by delta: Int) {
+        guard !pages.isEmpty else { return }
+        currentIndex = ((currentIndex + delta) % pages.count + pages.count) % pages.count
+    }
 
     func addPage() {
         var n = pages.count
