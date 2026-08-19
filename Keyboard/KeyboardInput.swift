@@ -91,6 +91,11 @@ extension KeyboardViewController {
             typedToken = ""
             completionWords = []
             handleClearAll()
+        case .pageBack, .pageForward:
+            typedToken = ""
+            completionWords = []
+            level = steppedLevel(by: action == .pageForward ? 1 : -1)
+            buildKeys()
         case .cursorLeft:
             typedToken = ""
             textDocumentProxy.adjustTextPosition(byCharacterOffset: -1)
@@ -148,6 +153,8 @@ extension KeyboardViewController {
     /// Clears everything the field exposes. Extensions only see a context
     /// window; in his real use (messages, search) that is the whole text.
     func clearAllText() {
+        // The selection goes first, then the rest — Clear means all of it.
+        deleteSelection()
         if let after = textDocumentProxy.documentContextAfterInput, !after.isEmpty {
             textDocumentProxy.adjustTextPosition(byCharacterOffset: after.count)
         }
@@ -247,7 +254,22 @@ extension KeyboardViewController {
         textDocumentProxy.insertText(separator + replacement + " ")
     }
 
+    /// Takes the selection, if there is one.
+    ///
+    /// A selection empties `documentContextBeforeInput`, so every key that
+    /// works by reading the text in front of the caret finds nothing to do
+    /// and quietly does nothing — which is why Clear and word-delete looked
+    /// dead whenever anything was highlighted. One `deleteBackward` removes
+    /// the selection itself, and that is what both keys mean here.
+    @discardableResult
+    func deleteSelection() -> Bool {
+        guard let selected = textDocumentProxy.selectedText, !selected.isEmpty else { return false }
+        textDocumentProxy.deleteBackward()
+        return true
+    }
+
     func deleteLastWord() {
+        if deleteSelection() { return }
         var context = contextBefore()
         guard !context.isEmpty else { return }
         while let last = context.last, last == " " {
