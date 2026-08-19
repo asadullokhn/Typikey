@@ -13,27 +13,34 @@ import UIKit
 /// The class hues and positions stay stable between appearances; only their
 /// luminance changes so the board follows the iPad without losing the AAC
 /// colour map the user navigates by memory.
+///
+/// The word-class tints are sampled from TouchChat's own board (screenshots,
+/// 19 Aug 2026) rather than chosen, because he already navigates that board
+/// by colour and a different yellow for "I" is a different key to him. The
+/// class-to-hue assignment is the Modified Fitzgerald Key, which both boards
+/// follow; what changed here is the exact tint of each hue.
 enum Palette {
 
     // MARK: Word classes (Fitzgerald key, softened to match the design)
 
-    static let pronoun = adaptive(light: (0.98, 0.96, 0.72), dark: (0.43, 0.38, 0.12))
-    static let verb = adaptive(light: (0.80, 0.91, 0.72), dark: (0.19, 0.37, 0.22))
-    static let descriptor = adaptive(light: (0.86, 0.93, 0.98), dark: (0.15, 0.31, 0.43))
-    static let noun = adaptive(light: (1.00, 0.87, 0.72), dark: (0.43, 0.29, 0.14))
-    static let social = adaptive(light: (0.99, 0.85, 0.91), dark: (0.42, 0.22, 0.31))
-    static let question = adaptive(light: (0.90, 0.85, 0.98), dark: (0.31, 0.23, 0.42))
-    static let negative = adaptive(light: (0.98, 0.72, 0.72), dark: (0.48, 0.19, 0.19))
+    static let pronoun = adaptive(light: (1.00, 1.00, 0.69), dark: (0.43, 0.43, 0.12))
+    static let verb = adaptive(light: (0.71, 0.88, 0.72), dark: (0.19, 0.37, 0.20))
+    static let descriptor = adaptive(light: (0.73, 0.94, 0.92), dark: (0.15, 0.43, 0.40))
+    static let noun = adaptive(light: (0.98, 0.87, 0.64), dark: (0.43, 0.34, 0.14))
+    static let social = adaptive(light: (0.98, 0.88, 0.90), dark: (0.42, 0.22, 0.27))
+    static let question = adaptive(light: (0.80, 0.80, 0.95), dark: (0.23, 0.23, 0.42))
+    static let negative = adaptive(light: (0.96, 0.79, 0.78), dark: (0.48, 0.20, 0.19))
     /// Prepositions, conjunctions, articles — the Fitzgerald key's white
-    /// class. Warm off-white so it separates from the punctuation keys
-    /// without leaving the "light writes" family: these words do write,
-    /// they just carry grammar rather than meaning.
-    static let function = adaptive(light: (0.96, 0.95, 0.91), dark: (0.23, 0.23, 0.24))
+    /// class, which TouchChat renders as a pale cyan (`and`, `at`, `all`,
+    /// `for`, `with`). It sits close to the punctuation keys, and it does
+    /// there too: these words write, they just carry grammar rather than
+    /// meaning, and that is the distinction the near-match is drawing.
+    static let function = adaptive(light: (0.87, 1.00, 1.00), dark: (0.23, 0.24, 0.24))
 
     /// Types a character — letters, numbers, punctuation. Word cells carry
     /// their class colour instead, but sit in the same light family, so
     /// "light writes" holds for all of them.
-    static let paper = adaptive(light: (1.00, 1.00, 1.00), dark: (0.17, 0.17, 0.18))
+    static let paper = adaptive(light: (1.00, 1.00, 1.00), dark: (0.18, 0.18, 0.18))
 
     static func color(for wordClass: WordClass) -> UIColor {
         switch wordClass {
