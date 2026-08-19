@@ -115,7 +115,8 @@ final class BoardGridView: UIView {
         case .word, .punct, .char, .space: return .write
         case .ret: return .action
         case .home, .toCategories, .toWords, .toPage, .toLetters, .toNumbers,
-             .shift, .cursorLeft, .cursorRight, .dismiss: return .navigate
+             .shift, .cursorLeft, .cursorRight, .pageBack, .pageForward,
+             .dismiss: return .navigate
         case .delete, .deleteWord, .clearAll: return .erase
         }
     }
@@ -375,7 +376,8 @@ extension BoardGridView {
 
     private func isRepeatable(_ action: KeyAction) -> Bool {
         switch action {
-        case .delete, .deleteWord, .clearAll, .cursorLeft, .cursorRight: return true
+        case .delete, .deleteWord, .clearAll, .cursorLeft, .cursorRight,
+             .pageBack, .pageForward: return true
         default: return false
         }
     }

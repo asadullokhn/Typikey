@@ -97,7 +97,7 @@ final class PinnedFrameTests: XCTestCase {
             XCTAssertTrue(app.staticTexts["Hide keyboard"].exists
                             || app.staticTexts["Hide\nkeyboard"].exists,
                           "hide-keyboard missing on \(level)")
-            XCTAssertTrue(app.staticTexts["Cursor right"].exists, "cursor-right missing on \(level)")
+            XCTAssertTrue(app.staticTexts["Next page"].exists, "page-forward missing on \(level)")
             XCTAssertTrue(app.staticTexts["Enter"].exists || app.staticTexts["Done"].exists
                             || app.staticTexts["Go"].exists || app.staticTexts["Send"].exists
                             || app.staticTexts["Search"].exists,
@@ -118,26 +118,45 @@ final class PinnedFrameTests: XCTestCase {
         }
         XCTAssertEqual(bottomRowWord.frame.midY, deleteWord.frame.midY, accuracy: 12,
                        "words must reach the bottom row of the content grid")
-        // The two bottom corners are the cursor keys on every board, which
-        // is what the app's page model has always reserved.
-        XCTAssertTrue(app.staticTexts["Cursor left"].exists,
+        // The two bottom corners are the page-step keys on a word board,
+        // in the cells the app's page model has always reserved.
+        XCTAssertTrue(app.staticTexts["Previous page"].exists,
                       "the bottom-left content control must not move")
-        XCTAssertTrue(app.staticTexts["Cursor right"].exists,
+        XCTAssertTrue(app.staticTexts["Next page"].exists,
                       "the bottom-right content control must not move")
         XCTAssertGreaterThan(app.staticTexts["ABC"].frame.midX, app.frame.width * 0.9,
                              "the right edge column must not move")
     }
 
-    // Both cursor keys sit in the bottom corners of every board (19 Aug
-    // 2026); ⌫ belongs only to the levels where characters are typed.
+    // Moving the text cursor belongs to the levels where text is typed, and
+    // that is where the cursor keys are (19 Aug 2026). A word board spends
+    // its two bottom corners on walking the categories instead, which is
+    // what makes every one of them a single tap away.
     func testCharacterToolsLiveOnTheTypingLevels() {
         let app = launchToTypikey()
-        XCTAssertTrue(app.staticTexts["Cursor left"].exists, "cursor-left pins the bottom-left")
+        XCTAssertTrue(app.staticTexts["Previous page"].exists, "page-back pins the bottom-left")
+        XCTAssertFalse(app.staticTexts["Cursor left"].exists,
+                       "the text cursor has no business on a word board")
         XCTAssertFalse(app.staticTexts["⌫"].exists, "no single-character delete on a word board")
         app.staticTexts["ABC"].tap()
         XCTAssertTrue(app.staticTexts["q"].waitForExistence(timeout: 3), "letters level did not open")
         XCTAssertTrue(app.staticTexts["⌫"].exists, "single-character delete missing on letters")
         XCTAssertTrue(app.staticTexts["Cursor left"].exists, "cursor-left missing on letters")
+    }
+
+    // The point of spending those two cells: every category is one tap from
+    // every other, instead of three through Home and the grid.
+    func testTheCornersWalkTheCategories() {
+        let app = launchToTypikey()
+        XCTAssertTrue(app.staticTexts["I"].firstMatch.exists, "setup: not on the home board")
+        app.staticTexts["Next page"].firstMatch.tap()
+        XCTAssertTrue(app.staticTexts["Previous page"].firstMatch.waitForExistence(timeout: 5),
+                      "the step keys must survive the step")
+        XCTAssertFalse(app.staticTexts["yesterday"].exists,
+                       "forward from home should have left the home board")
+        app.staticTexts["Previous page"].firstMatch.tap()
+        XCTAssertTrue(app.staticTexts["yesterday"].waitForExistence(timeout: 5),
+                      "stepping back should return to home")
     }
 
     func testVisibleWordTapInsertsWord() {

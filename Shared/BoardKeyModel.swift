@@ -15,6 +15,13 @@ enum KeyAction: Equatable {
     case clearAll
     case cursorLeft
     case cursorRight
+    /// Steps to the board before or after this one. On a word board the two
+    /// bottom corners walk the categories in order rather than the text
+    /// cursor: reaching a category was three taps through Home and the
+    /// grid, and the letters keep their own cursor keys, so nothing is
+    /// given up by spending these two cells on the journey instead.
+    case pageBack
+    case pageForward
     case home
     case toCategories
     /// Index into `allCategories()`.
@@ -77,14 +84,19 @@ enum BoardFrame {
     static let rightDismiss = ContentCell(.dismiss, "Hide keyboard")
 
     /// The two bottom corners of the editable area stay cursor keys.
+    /// The two bottom corners a word board keeps for itself.
     static let cursorCells: Set<Int> = [24, 31]
 
-    static func cursorAction(atContentIndex index: Int) -> KeyAction? {
+    static func stepAction(atContentIndex index: Int) -> KeyAction? {
         switch index {
-        case 24: return .cursorLeft
-        case 31: return .cursorRight
+        case 24: return .pageBack
+        case 31: return .pageForward
         default: return nil
         }
+    }
+
+    static func stepLabel(for action: KeyAction) -> String {
+        action == .pageBack ? "Previous page" : "Next page"
     }
 
     /// The controls the design draws as a glyph rather than a word.
@@ -93,8 +105,8 @@ enum BoardFrame {
         case .home: return "house.fill"
         case .toCategories: return "square.grid.2x2.fill"
         case .dismiss: return "keyboard.chevron.compact.down"
-        case .cursorRight: return "arrow.right"
-        case .cursorLeft: return "arrow.left"
+        case .cursorRight, .pageForward: return "arrow.right"
+        case .cursorLeft, .pageBack: return "arrow.left"
         default: return nil
         }
     }
