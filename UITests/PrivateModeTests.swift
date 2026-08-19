@@ -20,6 +20,17 @@ final class PrivateModeTests: XCTestCase {
         }
         XCTAssertEqual(toggle.value as? String, "1", "private mode should be on")
 
+        // Put it back. Private mode lives in the shared container, so leaving
+        // it on outlives this test: everything that runs afterwards then
+        // exercises learning with learning switched off, and every look at
+        // the keyboard shows a purple tray nobody asked for.
+        addTeardownBlock {
+            let restore = XCUIApplication()
+            restore.launchArguments = ["-skipOnboarding", "-uiTestPrivateMode", "off"]
+            restore.launch()
+            restore.terminate()
+        }
+
         // Type with Typikey itself, in the practice conversation.
         app.closeSetup()
         let field = app.focusRealKeyboard()
