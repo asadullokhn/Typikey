@@ -110,7 +110,7 @@ struct BoardPlan {
         "want", "like", "go", "help", "stop",
         "not", "more",
         "to", "for", "with", "in",
-        "and", "my", "a", "the", "yesterday",
+        "and", "my", "how to", "the", "yesterday",
         "what", "yes", "no", ".", "?",
         // Appended, never inserted (invariant 1). Hide keyboard moving to
         // the pinned column freed a grid cell, and this is what the
@@ -120,7 +120,16 @@ struct BoardPlan {
         //
         // Appended, never inserted: the reference has stable word
         // positions between its fixed controls.
-        "that",
+        //
+        // 19 Aug 2026: `a` and `that` gave up their cells to the two frames
+        // the recorded sentences actually reuse. Home has thirty cells and
+        // thirty words, so anything arriving displaces something, and these
+        // were the cheapest to lose: `a` appears in none of the recorded
+        // sentences, and `that` was the most recent arrival, so its position
+        // is the least learned. Both stay one tap away on Little words.
+        // Raised rather than settled — moving a key he has already learned
+        // is the exact thing invariant 1 exists to prevent.
+        "let's go to",
         // `now` was added when removing the keyboard-switch button freed a
         // cell. Cursor-left has that cell back — the app's board always
         // reserved both bottom corners and the keyboard now agrees — so the

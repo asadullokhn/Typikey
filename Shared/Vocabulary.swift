@@ -74,6 +74,9 @@ let vocabulary: [Category] = [
         VocabWord("friend", emoji: "🧑‍🤝‍🧑", .noun), VocabWord("teacher", emoji: "🧑‍🏫", .noun),
         VocabWord("doctor", emoji: "🧑‍⚕️", .noun), VocabWord("everyone", emoji: "👥", .noun),
         VocabWord("we", .pronoun), VocabWord("they", .pronoun),
+        // The two names he uses most, and cannot spell cheaply.
+        VocabWord("Sayfullah", emoji: "🙋", .noun),
+        VocabWord("Fadillah", emoji: "👧", .noun),
     ]),
     Category(name: "Actions", words: [
         VocabWord("eat", emoji: "🍽️", .verb), VocabWord("drink", emoji: "🥤", .verb),
@@ -168,6 +171,12 @@ let vocabulary: [Category] = [
         VocabWord("bed", emoji: "🛏️", .noun), VocabWord("room", .noun),
         VocabWord("nurse", emoji: "🧑‍⚕️", .noun),
         VocabWord("here", .descriptor), VocabWord("there", .descriptor),
+        // Straight off the recorded sentences: every one of these was
+        // spelled a letter at a time.
+        VocabWord("Tashkent", emoji: "🕌", .noun), VocabWord("Moscow", emoji: "🏛️", .noun),
+        VocabWord("Kuala Kangsar", emoji: "🏙️", .noun),
+        VocabWord("Kuala Lumpur", emoji: "🏙️", .noun),
+        VocabWord("Johor", emoji: "🏙️", .noun), VocabWord("Penang", emoji: "🏝️", .noun),
     ]),
     Category(name: "Art", words: [
         VocabWord("draw", emoji: "🎨", .verb), VocabWord("paint", emoji: "🖌️", .verb),
@@ -189,26 +198,61 @@ let vocabulary: [Category] = [
     // or a video are almost none of the words you use to talk to a person,
     // and typing them letter by letter is exactly the cost this keyboard
     // exists to remove.
+    // Ordered by what a search actually needs, most-used first, rather than
+    // appended in the order words arrived (19 Aug 2026, team decision).
+    // Invariant 1 says new words go at the end so nothing he has learned
+    // moves; this board is the exception, because a search field opens
+    // straight onto it and the words that matter were sitting in the last
+    // row. `next` and `back` went: he browses with the app's own controls,
+    // not by typing the words.
     Category(name: "Web", words: [
-        VocabWord("search", emoji: "🔍", .verb), VocabWord("open", .verb),
-        VocabWord("watch", emoji: "📺", .verb), VocabWord("play", emoji: "▶️", .verb),
-        VocabWord("next", emoji: "⏭️", .descriptor), VocabWord("back", emoji: "◀️", .descriptor),
-        VocabWord("video", emoji: "🎬", .noun), VocabWord("music", emoji: "🎵", .noun),
-        VocabWord("news", emoji: "📰", .noun), VocabWord("game", emoji: "🎮", .noun),
+        // A match query is two club names and the word between them, and
+        // `vs` is produced by nothing else on any board.
+        VocabWord("vs", emoji: "⚔️", .function),
+        VocabWord("match", emoji: "⚽", .noun),
+        VocabWord("score", emoji: "🔢", .noun),
+        VocabWord("highlights", emoji: "🎬", .noun),
+        VocabWord("live", emoji: "🔴", .descriptor),
         VocabWord("YouTube", emoji: "▶️", .noun), VocabWord("Google", emoji: "🔎", .noun),
-        VocabWord("link", emoji: "🔗", .noun), VocabWord("page", emoji: "📄", .noun),
-        VocabWord("share", emoji: "📤", .verb), VocabWord("download", emoji: "⬇️", .verb),
         VocabWord("www.", .noun), VocabWord(".com", .noun),
         VocabWord("how to", .question), VocabWord("what is", .question),
-        VocabWord("computer", emoji: "💻", .noun),
+        VocabWord("search", emoji: "🔍", .verb), VocabWord("watch", emoji: "📺", .verb),
+        VocabWord("video", emoji: "🎬", .noun), VocabWord("music", emoji: "🎵", .noun),
+        VocabWord("news", emoji: "📰", .noun), VocabWord("game", emoji: "🎮", .noun),
+        VocabWord("play", emoji: "▶️", .verb), VocabWord("open", .verb),
+        VocabWord("share", emoji: "📤", .verb), VocabWord("download", emoji: "⬇️", .verb),
+        VocabWord("link", emoji: "🔗", .noun), VocabWord("page", emoji: "📄", .noun),
         VocabWord("answer", .noun), VocabWord("question", emoji: "❓", .noun),
-        // Third measured pass, 200 sentences. Malay unverified.
-        VocabWord("name", .noun), VocabWord("day", .noun),
-        VocabWord("thing", .noun), VocabWord("joke", emoji: "😄", .noun),
-        VocabWord("weather", emoji: "🌤️", .noun), VocabWord("birthday", emoji: "🎂", .noun),
+        VocabWord("name", .noun), VocabWord("weather", emoji: "🌤️", .noun),
         VocabWord("photo", emoji: "📷", .noun),
     ]),
+    // The address bar, which used to open on the letters because "an address
+    // is spelled, not chosen from a board". That was true when there was no
+    // board to choose from: an address is almost entirely proper nouns, and
+    // those are the single most expensive thing on this keyboard to spell.
+    // Search words are the wrong ones here — `highlights` is noise in an
+    // address bar — which is why this is its own board and not Web.
+    Category(name: "Sites", words: [
+        VocabWord("www.", .noun), VocabWord(".com", .noun),
+        VocabWord(".sg", .noun), VocabWord(".org", .noun),
+        VocabWord(".net", .noun), VocabWord("/", .punct),
+        VocabWord("YouTube", emoji: "▶️", .noun), VocabWord("Google", emoji: "🔎", .noun),
+        VocabWord("ChatGPT", emoji: "💬", .noun), VocabWord("Wikipedia", emoji: "📚", .noun),
+        VocabWord("WhatsApp", emoji: "💬", .noun), VocabWord("Facebook", emoji: "📘", .noun),
+        VocabWord("Instagram", emoji: "📷", .noun), VocabWord("TikTok", emoji: "🎵", .noun),
+        VocabWord("Netflix", emoji: "🎬", .noun), VocabWord("Spotify", emoji: "🎧", .noun),
+        VocabWord("Amazon", emoji: "📦", .noun), VocabWord("Shopee", emoji: "🛒", .noun),
+        VocabWord("Lazada", emoji: "🛒", .noun), VocabWord("Grab", emoji: "🚕", .noun),
+        VocabWord("Gmail", emoji: "✉️", .noun), VocabWord("Maps", emoji: "🗺️", .noun),
+        VocabWord("BBC", emoji: "📰", .noun), VocabWord("CNN", emoji: "📰", .noun),
+        VocabWord("Reddit", emoji: "👽", .noun), VocabWord("Twitter", emoji: "🐦", .noun),
+        VocabWord("livescore", emoji: "⚽", .noun), VocabWord("ESPN", emoji: "⚽", .noun),
+    ]),
     Category(name: "Chat", words: [
+        // A frame, not a word. The recorded sentences reuse two of these —
+        // "How to get to X", "Let's go to X" — and the one time he only had
+        // to change X it cost twenty seconds against a hundred.
+        VocabWord("let's go to", emoji: "🚕", .social),
         VocabWord("hello", emoji: "👋", .social), VocabWord("bye", emoji: "👋", .social),
         VocabWord("please", emoji: "🙏", .social), VocabWord("thank you", emoji: "🙏", .social),
         VocabWord("sorry", .social), VocabWord("how are you", .social),
@@ -277,6 +321,72 @@ let vocabulary: [Category] = [
         VocabWord("yet", .descriptor), VocabWord("one", .descriptor),
         VocabWord("so", .descriptor), VocabWord("until", .function),
         VocabWord("your", .pronoun),
+    ]),
+    // Appended, never inserted (invariant 1): the categories keep the order
+    // he learned them in.
+    //
+    // Both boards below exist because of the tap measurement. Of the twenty
+    // words in Sayfullah's recorded sentences, six had to be spelled a
+    // letter at a time, and every one was a proper noun — Tashkent, Moscow,
+    // Uzbekistan, Kuala Kangsar. No prediction can offer a word it has
+    // never seen, so the answer is to put them on the board.
+    Category(name: "Countries", words: [
+        VocabWord("Singapore", emoji: "🇸🇬", .noun), VocabWord("Malaysia", emoji: "🇲🇾", .noun),
+        VocabWord("Indonesia", emoji: "🇮🇩", .noun), VocabWord("Thailand", emoji: "🇹🇭", .noun),
+        VocabWord("Vietnam", emoji: "🇻🇳", .noun), VocabWord("Philippines", emoji: "🇵🇭", .noun),
+        VocabWord("Uzbekistan", emoji: "🇺🇿", .noun), VocabWord("Russia", emoji: "🇷🇺", .noun),
+        VocabWord("Japan", emoji: "🇯🇵", .noun), VocabWord("Korea", emoji: "🇰🇷", .noun),
+        VocabWord("China", emoji: "🇨🇳", .noun), VocabWord("India", emoji: "🇮🇳", .noun),
+        VocabWord("Pakistan", emoji: "🇵🇰", .noun), VocabWord("Bangladesh", emoji: "🇧🇩", .noun),
+        VocabWord("Sri Lanka", emoji: "🇱🇰", .noun), VocabWord("Nepal", emoji: "🇳🇵", .noun),
+        VocabWord("Myanmar", emoji: "🇲🇲", .noun), VocabWord("Cambodia", emoji: "🇰🇭", .noun),
+        VocabWord("Australia", emoji: "🇦🇺", .noun), VocabWord("Britain", emoji: "🇬🇧", .noun),
+        VocabWord("America", emoji: "🇺🇸", .noun), VocabWord("Canada", emoji: "🇨🇦", .noun),
+        VocabWord("Brazil", emoji: "🇧🇷", .noun), VocabWord("France", emoji: "🇫🇷", .noun),
+        VocabWord("Germany", emoji: "🇩🇪", .noun), VocabWord("Italy", emoji: "🇮🇹", .noun),
+        VocabWord("Spain", emoji: "🇪🇸", .noun), VocabWord("Turkey", emoji: "🇹🇷", .noun),
+        VocabWord("Egypt", emoji: "🇪🇬", .noun), VocabWord("Saudi Arabia", emoji: "🇸🇦", .noun),
+    ]),
+    // What he searches for, from the interview: football matches above all,
+    // then singers and actors. That settles which boards exist. The names
+    // on them are still a starting point — a wrong word in a fixed cell is
+    // worse than an empty one, because he cannot tell the board it is
+    // wrong — so Fadillah should cut and add freely. A name is the most
+    // expensive thing on the board to spell, which is why they are here.
+    // Football is what he searches most, and a match query is mostly things
+    // no keyboard can predict: two club names and the word between them.
+    // `vs` leads because nothing else on any board produces it.
+    Category(name: "Football", words: [
+        VocabWord("vs", emoji: "⚔️", .function), VocabWord("match", emoji: "⚽", .noun),
+        VocabWord("score", emoji: "🔢", .noun), VocabWord("goal", emoji: "🥅", .noun),
+        VocabWord("highlights", emoji: "🎬", .noun), VocabWord("live", emoji: "🔴", .descriptor),
+        VocabWord("result", emoji: "📋", .noun), VocabWord("fixtures", emoji: "📅", .noun),
+        VocabWord("table", emoji: "📊", .noun), VocabWord("final", emoji: "🏆", .noun),
+        VocabWord("team", emoji: "👥", .noun), VocabWord("league", emoji: "🏅", .noun),
+        VocabWord("player", emoji: "🧑", .noun), VocabWord("win", emoji: "✅", .verb),
+        VocabWord("Man United", emoji: "🔴", .noun), VocabWord("Liverpool", emoji: "🔴", .noun),
+        VocabWord("Arsenal", emoji: "🔴", .noun), VocabWord("Chelsea", emoji: "🔵", .noun),
+        VocabWord("Man City", emoji: "🔵", .noun), VocabWord("Tottenham", emoji: "⚪", .noun),
+        VocabWord("Real Madrid", emoji: "⚪", .noun), VocabWord("Barcelona", emoji: "🔵", .noun),
+        VocabWord("Bayern", emoji: "🔴", .noun), VocabWord("PSG", emoji: "🔵", .noun),
+        VocabWord("Juventus", emoji: "⚫", .noun), VocabWord("Inter Milan", emoji: "🔵", .noun),
+        VocabWord("Champions League", emoji: "🏆", .noun),
+        VocabWord("Premier League", emoji: "🏆", .noun),
+        VocabWord("World Cup", emoji: "🌍", .noun), VocabWord("Euro", emoji: "🏆", .noun),
+    ]),
+    Category(name: "Celebrities", words: [
+        VocabWord("Ronaldo", emoji: "⚽", .noun), VocabWord("Messi", emoji: "⚽", .noun),
+        VocabWord("Neymar", emoji: "⚽", .noun), VocabWord("Mbappe", emoji: "⚽", .noun),
+        VocabWord("Haaland", emoji: "⚽", .noun), VocabWord("Salah", emoji: "⚽", .noun),
+        VocabWord("Taylor Swift", emoji: "🎤", .noun), VocabWord("Ed Sheeran", emoji: "🎤", .noun),
+        VocabWord("Bruno Mars", emoji: "🎤", .noun), VocabWord("Adele", emoji: "🎤", .noun),
+        VocabWord("BTS", emoji: "🎤", .noun), VocabWord("Blackpink", emoji: "🎤", .noun),
+        VocabWord("Drake", emoji: "🎤", .noun), VocabWord("JJ Lin", emoji: "🎤", .noun),
+        VocabWord("Stefanie Sun", emoji: "🎤", .noun),
+        VocabWord("Siti Nurhaliza", emoji: "🎤", .noun), VocabWord("Yuna", emoji: "🎤", .noun),
+        VocabWord("Jackie Chan", emoji: "🎬", .noun),
+        VocabWord("Shah Rukh Khan", emoji: "🎬", .noun),
+        VocabWord("MrBeast", emoji: "🎬", .noun), VocabWord("Elon Musk", emoji: "🚀", .noun),
     ]),
 ]
 
