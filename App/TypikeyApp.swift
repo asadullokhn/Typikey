@@ -29,15 +29,25 @@ struct TypikeyApp: App {
     /// ever passes.
     private static func applyTestFixtureIfPresent() {
         let arguments = ProcessInfo.processInfo.arguments
-        guard let flag = arguments.firstIndex(of: "-uiTestPages"),
-              flag + 1 < arguments.count,
-              let store = UserDefaults(suiteName: "group.com.asadullokh.ch5.typikey")
-        else { return }
-        let value = arguments[flag + 1]
-        if value == "none" {
-            store.removeObject(forKey: BoardLayout.pagesKey)
-        } else {
-            store.set(Data(value.utf8), forKey: BoardLayout.pagesKey)
+        if let flag = arguments.firstIndex(of: "-uiTestPages"), flag + 1 < arguments.count,
+           let store = UserDefaults(suiteName: "group.com.asadullokh.ch5.typikey") {
+            let value = arguments[flag + 1]
+            if value == "none" {
+                store.removeObject(forKey: BoardLayout.pagesKey)
+            } else {
+                store.set(Data(value.utf8), forKey: BoardLayout.pagesKey)
+            }
+        }
+        // Private mode outlives the test that switched it on, and it silences
+        // learning for everything that runs afterwards. A test that turns it
+        // on puts it back through here, for the same reason the fixture above
+        // exists: the runner cannot write to the App Group itself. Restoring
+        // it by driving the switch would work too, but it turns on reading a
+        // control's reported value, so it passes whether or not it did
+        // anything — which is the failure mode worth designing out of a
+        // cleanup step nobody watches.
+        if let flag = arguments.firstIndex(of: "-uiTestPrivateMode"), flag + 1 < arguments.count {
+            Preferences.privateMode = arguments[flag + 1] == "on"
         }
     }
 }

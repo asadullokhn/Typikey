@@ -117,13 +117,23 @@ final class KeyView: UIView {
         let available = CGSize(width: max(bounds.width - 8, 1), height: max(bounds.height - 6, 1))
         var size = baseFont.pointSize
         let floorSize = baseFont.pointSize * label.minimumScaleFactor
+        let words = text.split(whereSeparator: \.isWhitespace).map(String.init)
         while size > floorSize {
             let candidate = baseFont.withSize(size)
             let height = (text as NSString).boundingRect(
                 with: CGSize(width: available.width, height: .greatestFiniteMagnitude),
                 options: [.usesLineFragmentOrigin, .usesFontLeading],
                 attributes: [.font: candidate], context: nil).height
-            if height <= available.height { break }
+            // Height alone let a word wider than the key break across lines
+            // instead of shrinking — "yesterday" came out "yesterda / y".
+            // Word wrapping cannot save a word that does not fit, so the
+            // widest one has to fit before the height question is worth
+            // asking. He finds a key by the shape of its word, and a word
+            // cut in half is not that word.
+            let widest = words.reduce(CGFloat(0)) {
+                max($0, ($1 as NSString).size(withAttributes: [.font: candidate]).width)
+            }
+            if height <= available.height, widest <= available.width { break }
             size -= 1
         }
         if label.font.pointSize != size { label.font = baseFont.withSize(size) }

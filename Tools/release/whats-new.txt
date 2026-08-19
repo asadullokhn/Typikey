@@ -1,11 +1,15 @@
-Edit Page edits again.
+The keys are the colours he already knows, and the words are the ones he actually types.
 
-It had stopped opening the button editor. Tapping "Edit Page" still let you rename the page, so it looked like it was working — but tapping a key on the board did nothing at all, and there was no way to change what any key says.
+The word colours are now taken from TouchChat itself, sampled from screenshots rather than matched by eye. He navigates that board by colour, and a different yellow for "I" is a different key to him.
 
-Tapping a key while editing now opens the editor, and the key stays ringed while it is open. Blank cells appear while editing too, so a new page is something you can actually put keys on rather than an empty board with nothing to touch.
+Of the twenty words in his recorded sentences, six had to be spelled letter by letter — and every one was a name: Tashkent, Moscow, Uzbekistan, Kuala Kangsar. No prediction can offer a word it has never seen, so those names are on the board now. New boards for Countries, Football and Celebrities, his own places and people added to the ones that already existed, and a Sites board for the address bar. Football leads because that is what he searches most.
 
-Being in edit mode is now visible before you tap anything: the Edit Page button fills in, and the tray behind the keys turns blue, the same way it changes colour for private mode. The keys themselves never change — same words, same colours, same places.
+A search box and an address bar now open on different boards, because they want opposite words: "highlights" is noise in an address bar, "www." is noise in a search box.
 
-Two smaller things: a key set to open another page now opens it here as it already did on the keyboard, instead of typing its own name. And empty cells now announce themselves to VoiceOver rather than being silent.
+The two bottom arrows walk the categories now. Every board is one tap from every other, instead of three through Home and the grid. Moving the text cursor lives on the letters, where text is actually edited.
 
-Please try: Edit Page, then tap any key and change its label. Then Add New Page and put a few keys on it. Check the blue tray makes it obvious which mode you are in.
+Fixed: keys wrapped mid-word instead of shrinking, so "yesterday" read "yesterda / y" — and worse, "nice to meet you" read "nice to meet", saying something other than what it typed. Editing one key on the home board switched off the word replacement for the whole board. Clear and delete-word did nothing at all when text was selected. Renaming a page raised the system keyboard over the board that exists to replace it; the name is typed on the board now.
+
+New: Setup has a Reset that puts everything back to how it shipped, and says exactly what it will remove before it does.
+
+Please try: tap a search box in YouTube and check the board that opens; then the address bar in Safari and check it differs. Then walk the categories with the two bottom arrows.

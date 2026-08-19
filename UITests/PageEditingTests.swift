@@ -88,6 +88,75 @@ final class PageEditingTests: XCTestCase {
         XCTAssertFalse(edit.isSelected, "leaving edit mode must clear it")
     }
 
+    /// The board on screen is the keyboard. Raising the system one over it
+    /// to rename a page contradicts the whole premise, and it was doing
+    /// exactly that — the name was a plain TextField.
+    func testRenamingTypesOnTheBoardAndNeverRaisesTheSystemKeyboard() {
+        let app = launch()
+        app.buttons["Edit Page"].tap()
+
+        let field = app.buttons["pageNameField"]
+        XCTAssertTrue(field.waitForExistence(timeout: 10), "the page name is not a target")
+        field.tap()
+
+        XCTAssertEqual(app.textFields.count, 0,
+                       "no system text field may open over the board")
+        XCTAssertTrue(app.staticTexts["a"].firstMatch.waitForExistence(timeout: 5),
+                      "focusing the name should bring the letters up to type it with")
+
+        app.staticTexts["Clear"].firstMatch.tap()
+        app.staticTexts["z"].firstMatch.tap()
+        XCTAssertEqual(field.label, "Name of Page, z",
+                       "the board should have typed into the name")
+    }
+
+    /// The letters belong to the keyboard, not to the page, so a tap on "a"
+    /// is a letter even mid-edit. It used to be read as a cell index and
+    /// open the editor for whatever key happened to live at that position.
+    func testLettersStayLettersWhileEditing() {
+        let app = launch()
+        app.buttons["Edit Page"].tap()
+        app.staticTexts["ABC"].firstMatch.tap()
+        app.staticTexts["a"].firstMatch.tap()
+
+        XCTAssertFalse(app.staticTexts["Button Label"].exists,
+                       "editing a page must not turn its letters into editable cells")
+    }
+
+    /// A page with no name is a page nobody can pick out of the menu. It has
+    /// to be allowed to go empty while it is being typed — clearing it is
+    /// how you replace it — so the guard belongs at the moment you look
+    /// away, not on every key.
+    func testANameClearedAndAbandonedComesBack() {
+        let app = launch()
+        app.buttons["Edit Page"].tap()
+        let field = app.buttons["pageNameField"]
+        XCTAssertTrue(field.waitForExistence(timeout: 10))
+        let original = field.label
+        field.tap()
+
+        app.staticTexts["Clear"].firstMatch.tap()
+        XCTAssertEqual(field.label, "Name of Page, ", "the name should clear while being typed")
+
+        app.staticTexts["Home"].firstMatch.tap()   // look away without typing
+        XCTAssertEqual(field.label, original, "a blank name must go back to what it was called")
+    }
+
+    func testANameClearedAndRetypedKeepsTheNewName() {
+        let app = launch()
+        app.buttons["Edit Page"].tap()
+        let field = app.buttons["pageNameField"]
+        XCTAssertTrue(field.waitForExistence(timeout: 10))
+        field.tap()
+
+        app.staticTexts["Clear"].firstMatch.tap()
+        for letter in ["b", "o", "w", "l"] {
+            app.staticTexts[letter].firstMatch.tap()
+        }
+        app.staticTexts["Home"].firstMatch.tap()
+        XCTAssertEqual(field.label, "Name of Page, bowl", "a name that was retyped must stick")
+    }
+
     private func launch() -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments += ["-skipOnboarding", "-uiTestPages", "none"]

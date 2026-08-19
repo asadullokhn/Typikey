@@ -60,6 +60,12 @@ struct SetupView: View {
                     section("Diagnostics") {
                         DiagnosticsCard()
                     }
+
+                    // Last, and on its own: nothing here should be reachable
+                    // by someone scrolling past something else.
+                    section("Reset") {
+                        ResetCard()
+                    }
                 }
                 .padding(.horizontal, 16)
                 .padding(.top, 12)

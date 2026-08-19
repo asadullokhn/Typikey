@@ -122,6 +122,11 @@ extension KeyboardViewController {
         (vocabulary.firstIndex { $0.name == "Web" } ?? 0) + 1
     }
 
+    /// allCategories() index of the Sites board (offset 1 for Recents).
+    var sitesWordsIndex: Int {
+        (vocabulary.firstIndex { $0.name == "Sites" } ?? 0) + 1
+    }
+
     /// Spec: applied once when the keyboard attaches to a field; never
     /// switches mid-typing. Manual navigation always wins afterwards.
     ///
@@ -160,9 +165,15 @@ extension KeyboardViewController {
         switch textDocumentProxy.keyboardType {
         case .numberPad?, .decimalPad?, .phonePad?:
             level = .numbers; return
-        case .emailAddress?, .URL?:
+        case .emailAddress?:
             // An address is spelled, not chosen from a board.
             level = .letters; return
+        case .URL?:
+            // An address bar is almost nothing but proper nouns, which are
+            // the most expensive thing here to spell — so it gets the board
+            // of site names rather than the letters. Search words would be
+            // the wrong ones: nobody types `highlights` into an address bar.
+            level = .words(sitesWordsIndex); return
         case .webSearch?:
             // A search box wants whole words — "YouTube", "how to" — far
             // more than it wants letters, and letters are one tap away.
@@ -296,7 +307,29 @@ extension KeyboardViewController {
     /// boards closes up behind an empty cell, which is right when a board
     /// is generated and wrong when a person arranged it — she put that key
     /// there on purpose, and he learned where it is.
-    func pageRows(_ page: KeyboardPage) -> [[ContentCell?]] {
+    func pageRows(_ page: KeyboardPage, reshaped: Bool = false) -> [[ContentCell?]] {
+        // Arranging a board used to switch the spare-cell replacement off
+        // wholesale, on the reasoning that words must not move under
+        // somebody who placed them. That is right for a board she laid out
+        // key by key and wrong for home, where editing one cell silently
+        // cost the whole feature. Reshaping runs over the words she left in
+        // place; the keys she gave a destination never move.
+        var page = page
+        if reshaped {
+            let order = plan.reshaped(
+                page.cells.compactMap { $0?.destination == nil ? $0?.label : nil }
+                    .compactMap { vocabIndex[$0] },
+                after: contextBefore())
+            var next = order.makeIterator()
+            for i in page.cells.indices where page.cells[i]?.destination == nil {
+                guard page.cells[i] != nil, let word = next.next() else { continue }
+                page.cells[i]?.label = word.text
+            }
+        }
+        return laidOut(page)
+    }
+
+    private func laidOut(_ page: KeyboardPage) -> [[ContentCell?]] {
         let cols = contentColumns
         var rows: [[ContentCell?]] = Array(
             repeating: Array(repeating: nil, count: cols), count: wordBoardRows)
@@ -354,7 +387,7 @@ extension KeyboardViewController {
             // not, because it works by moving words and she put those keys
             // where they are.
             if let home = customPage("home"), BoardLayout.isArranged(home) {
-                return pageRows(home)
+                return pageRows(home, reshaped: true)
             }
             let cells = plan.reshaped(BoardPlan.homeWords, after: contextBefore())
                 .prefix(wordSlots)
@@ -365,8 +398,14 @@ extension KeyboardViewController {
             // four grid slots belong to Enter, ⌄ and →, a 2x2 tiling no
             // longer fits eleven categories into four rows — and a category
             // that needs a taller keyboard to reach is one he won't find.
-            let span = contentColumns >= 8 ? 2 : 1
-            return board(allCategories().enumerated().map {
+            let all = allCategories()
+            // Wide tiles read better, and a board that silently drops its
+            // last category reads worst of all — that last one is Mine, the
+            // words he added himself. Two columns per tile while they fit,
+            // one when they stop, so a new category narrows the board rather
+            // than deleting one off the end of it.
+            let span = contentColumns >= 8 && all.count <= categoryTileCapacity(span: 2) ? 2 : 1
+            return board(all.enumerated().map {
                 ContentCell(.toWords($0.offset), $0.element.name, colSpan: span)
             })
         case .words(let index):
@@ -408,14 +447,55 @@ extension KeyboardViewController {
     /// `board` lays these down before any word, so a word can never be
     /// silently overwritten by one — which is how cells used to vanish.
     func gridControls(rows rowCount: Int) -> [(cell: ContentCell, row: Int, col: Int)] {
-        [(ContentCell(.cursorLeft, "Cursor left"), rowCount - 1, 0),
-         (ContentCell(.cursorRight, "Cursor right"), rowCount - 1, contentColumns - 1)]
+        [(ContentCell(.pageBack, BoardFrame.stepLabel(for: .pageBack)), rowCount - 1, 0),
+         (ContentCell(.pageForward, BoardFrame.stepLabel(for: .pageForward)),
+          rowCount - 1, contentColumns - 1)]
     }
 
     /// How many word cells a board actually has, once the design's
     /// controls have taken theirs. Derived from `gridControls` rather than
     /// written down a second time, so moving a control can never leave a
     /// stale number behind.
+    /// The board one step along, wrapping at both ends.
+    ///
+    /// Home sits at the front of the list and the categories follow it in
+    /// the order the grid shows them, so stepping is the same journey the
+    /// Categories screen offers — just without having to go through it.
+    /// Levels that are not part of that walk step back onto home.
+    func steppedLevel(by delta: Int) -> BoardLevel {
+        let count = allCategories().count
+        guard count > 0 else { return .home }
+        let stops = count + 1                      // home, then every category
+        let current: Int
+        switch level {
+        case .home: current = 0
+        case .words(let i) where i < count: current = i + 1
+        default: return .home
+        }
+        let next = ((current + delta) % stops + stops) % stops
+        return next == 0 ? .home : .words(next - 1)
+    }
+
+    /// How many tiles of a given width the word board actually holds, once
+    /// the two reserved corners have taken their cells out of the run.
+    func categoryTileCapacity(span: Int) -> Int {
+        guard span > 0 else { return 0 }
+        var tiles = 0
+        for row in 0..<wordBoardRows {
+            var column = 0
+            while column + span <= contentColumns {
+                let cells = (0..<span).map { row * contentColumns + column + $0 }
+                if cells.allSatisfy({ !BoardFrame.cursorCells.contains($0) }) {
+                    tiles += 1
+                    column += span
+                } else {
+                    column += 1
+                }
+            }
+        }
+        return tiles
+    }
+
     var wordSlots: Int {
         let reserved = gridControls(rows: wordBoardRows)
             .reduce(0) { $0 + $1.cell.colSpan }

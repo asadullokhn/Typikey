@@ -83,6 +83,7 @@ enum BoardLayout {
         case "Places":       return "🏠"
         case "Art":          return "🖼️"
         case "Web":          return "🌐"
+        case "Sites":        return "🔗"
         case "Chat":         return "💬"
         case "Little words": return "🔤"
         default:             return "🔡"
